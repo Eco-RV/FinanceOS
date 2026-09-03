@@ -24,7 +24,7 @@ Supabase (Auth + Postgres con RLS) · deploy en Vercel.
    # rellena NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY
    ```
 
-2. **Aplicar el esquema**: pega `supabase/migrations/0001_init.sql` en el
+2. **Aplicar el esquema**: pega `supabase/migrations/20260902180000_init.sql` en el
    SQL Editor de Supabase (o `supabase db push` con la CLI).
 
 3. **Correr en local**:

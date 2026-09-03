@@ -1,0 +1,22 @@
+# Supabase project config. Reference: https://supabase.com/docs/guides/cli/config
+# `project_id` is this project's ref (Dashboard → Project Settings → General).
+project_id = "kruywmrwstrdvxxdzkcd"
+
+[db]
+# Port for the local `supabase start` Postgres. Match your remote major version.
+port = 54322
+major_version = 17
+
+[db.migrations]
+# Applied in filename order. Keep the `<timestamp>_name.sql` convention.
+schema_paths = []
+
+[auth]
+enable_signup = true
+# Set to your deployed URL in production (also configure in the Dashboard).
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
