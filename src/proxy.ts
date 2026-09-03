@@ -10,8 +10,9 @@ export const config = {
     /*
      * Match everything except:
      * - _next/static, _next/image (build assets)
-     * - favicon.ico and common image files
+     * - favicon.ico and the web manifest (must stay reachable without a session)
+     * - common image files
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

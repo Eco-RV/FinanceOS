@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ACCOUNT_TYPES = ["checking", "savings", "cash"] as const;
-export const CURRENCIES = ["MXN", "USD", "EUR"] as const;
+export const CURRENCIES = ["CRC", "USD"] as const;
 
 const optionalText = z
   .string()

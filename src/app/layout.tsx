@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -14,9 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FinanceOS",
+  title: "Finance OS",
+  applicationName: "Finance OS",
   description:
     "Cortes y pagos de tarjetas, financiamientos, préstamos, gastos y ahorros.",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  appleWebApp: {
+    capable: true,
+    title: "Finance OS",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

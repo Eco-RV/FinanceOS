@@ -1,56 +1,138 @@
 "use client";
 
-import Link from "next/link";
+import type { ComponentType } from "react";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  CreditCard,
+  Landmark,
+  LayoutDashboard,
+  LoaderCircle,
+  Wallet,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { UserMenu } from "@/components/user-menu";
 
-const LINKS = [
-  { href: "/dashboard", label: "Resumen" },
-  { href: "/cuentas", label: "Cuentas" },
-  { href: "/tarjetas", label: "Tarjetas" },
+type IconType = ComponentType<{ className?: string }>;
+
+type NavItem = { href: string; label: string; icon: IconType };
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/dashboard", label: "Resumen", icon: LayoutDashboard },
+  { href: "/cuentas", label: "Cuentas", icon: Landmark },
+  { href: "/tarjetas", label: "Tarjetas", icon: CreditCard },
 ];
 
-export function AppNav({ email }: { email: string }) {
+function useIsActive() {
   const pathname = usePathname();
+  return (href: string) =>
+    pathname === href || pathname.startsWith(href + "/");
+}
+
+/** Spinner que aparece en el link tocado mientras la navegación está pendiente. */
+function PendingSpinner({ className }: { className?: string }) {
+  const { pending } = useLinkStatus();
+  return (
+    <LoaderCircle
+      aria-hidden
+      className={cn(
+        "animate-spin transition-opacity duration-150",
+        pending ? "opacity-100" : "opacity-0",
+        className,
+      )}
+    />
+  );
+}
+
+function BottomIcon({ Icon, active }: { Icon: IconType; active: boolean }) {
+  const { pending } = useLinkStatus();
+  if (pending) return <LoaderCircle className="size-5 animate-spin" />;
+  return (
+    <Icon
+      className={cn("size-5", active ? "text-foreground" : "text-muted-foreground")}
+    />
+  );
+}
+
+function Brand() {
+  return (
+    <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
+      <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
+        <Wallet className="size-4" />
+      </span>
+      <span className="text-sm font-semibold tracking-tight">
+        Finance<span className="text-muted-foreground"> OS</span>
+      </span>
+    </Link>
+  );
+}
+
+export function AppTopBar({ email }: { email: string }) {
+  const isActive = useIsActive();
 
   return (
-    <header className="border-b">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <span className="font-semibold">FinanceOS</span>
-        <nav className="flex gap-1">
-          {LINKS.map((link) => {
-            const active =
-              pathname === link.href || pathname.startsWith(link.href + "/");
+    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4">
+        <Brand />
+        <nav className="ml-2 hidden items-center gap-1 sm:flex">
+          {NAV_ITEMS.map(({ href, label }) => {
+            const active = isActive(href);
             return (
               <Link
-                key={link.href}
-                href={link.href}
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors",
                   active
                     ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                 )}
               >
-                {link.label}
+                {label}
+                <PendingSpinner className="size-3.5" />
               </Link>
             );
           })}
         </nav>
-        <form
-          action="/auth/signout"
-          method="post"
-          className="ml-auto flex items-center gap-3"
-        >
-          <span className="hidden text-sm text-muted-foreground sm:inline">
-            {email}
-          </span>
-          <Button type="submit" variant="outline" size="sm">
-            Salir
-          </Button>
-        </form>
+        <div className="ml-auto">
+          <UserMenu email={email} />
+        </div>
       </div>
     </header>
+  );
+}
+
+export function AppBottomNav() {
+  const isActive = useIsActive();
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md sm:hidden">
+      <div className="mx-auto flex max-w-5xl items-stretch justify-around">
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          const active = isActive(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className="relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] transition-colors"
+            >
+              {active ? (
+                <span className="absolute inset-x-0 top-0 mx-auto h-0.5 w-8 rounded-full bg-primary" />
+              ) : null}
+              <BottomIcon Icon={Icon} active={active} />
+              <span
+                className={
+                  active ? "font-medium text-foreground" : "text-muted-foreground"
+                }
+              >
+                {label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

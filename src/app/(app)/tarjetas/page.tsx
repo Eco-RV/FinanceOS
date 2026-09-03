@@ -1,6 +1,11 @@
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatCurrency, formatDate, daysUntil } from "@/lib/format";
+import {
+  formatCurrency,
+  formatDate,
+  daysUntil,
+  relativeDayLabel,
+} from "@/lib/format";
 import { nextCutoffDate, nextPaymentDate } from "@/lib/cards";
 import type { CreditCard } from "@/lib/types";
 import {
@@ -99,12 +104,7 @@ export default async function TarjetasPage() {
                     <TableCell>
                       día {card.payment_due_day}
                       <span className="block text-xs text-muted-foreground">
-                        {formatDate(payment)} ·{" "}
-                        {paymentIn === 0
-                          ? "hoy"
-                          : paymentIn === 1
-                            ? "mañana"
-                            : `en ${paymentIn} días`}
+                        {formatDate(payment)} · {relativeDayLabel(paymentIn)}
                       </span>
                     </TableCell>
                     <TableCell>

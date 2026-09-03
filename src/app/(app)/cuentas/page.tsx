@@ -31,8 +31,8 @@ export default async function CuentasPage() {
     .order("created_at", { ascending: true });
 
   const accounts = (data ?? []) as Account[];
-  const totalMxn = accounts
-    .filter((a) => a.currency === "MXN")
+  const totalCrc = accounts
+    .filter((a) => a.currency === "CRC")
     .reduce((sum, a) => sum + Number(a.current_balance), 0);
 
   return (
@@ -101,9 +101,9 @@ export default async function CuentasPage() {
 
       {accounts.length > 0 ? (
         <p className="text-right text-sm text-muted-foreground">
-          Total en MXN:{" "}
+          Total en colones:{" "}
           <span className="font-semibold tabular-nums text-foreground">
-            {formatCurrency(totalMxn)}
+            {formatCurrency(totalCrc)}
           </span>
         </p>
       ) : null}

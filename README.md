@@ -1,7 +1,8 @@
-# FinanceOS
+# Finance OS
 
 App personal de finanzas: cortes y pagos de tarjetas de crédito, financiamientos,
 préstamos, gastos, saldos de cuentas de débito y ahorros. Se construye por pasos.
+Pensada para móvil (web) e **instalable** en la pantalla de inicio.
 
 **Stack:** Next.js 16 (App Router) · TypeScript · Tailwind v4 · shadcn/ui ·
 Supabase (Auth + Postgres con RLS) · deploy en Vercel.
@@ -54,12 +55,21 @@ src/
     auth.ts                getUser / requireUser (DAL)
     schema.ts              validación Zod de formularios
     cards.ts               cálculo de próximo corte y fecha de pago
-    format.ts              moneda / fechas (es-MX)
+    dates.ts               crToday() — "hoy" en la zona de Costa Rica
+    format.ts              moneda (CRC / ₡) / fechas (es-CR)
+    session-actions.ts     signOutAction()
+  components/
+    app-nav.tsx            barra superior + barra inferior de pestañas (móvil)
+    user-menu.tsx          avatar + menú de sesión
   app/
+    layout.tsx             metadata, viewport, theme-color
+    manifest.ts            web manifest (instalable)
     login/                 alta e inicio de sesión
-    (app)/                 rutas protegidas
-      dashboard/           resumen y próximos pagos
+    (app)/
+      loading.tsx          esqueleto de carga entre vistas
+      dashboard/           resumen: próximos pagos y cortes
       cuentas/             CRUD de cuentas
       tarjetas/            CRUD de tarjetas
+public/icon.svg            ícono de la app
 supabase/migrations/       SQL del esquema
 ```

@@ -1,5 +1,7 @@
 /** Helpers to project the next cutoff ("corte") and payment due date of a card. */
 
+import { crToday } from "@/lib/dates";
+
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -11,7 +13,7 @@ function clampDay(year: number, month: number, day: number) {
 }
 
 /** Next occurrence of `cutoffDay` on or after today. */
-export function nextCutoffDate(cutoffDay: number, from = new Date()): Date {
+export function nextCutoffDate(cutoffDay: number, from = crToday()): Date {
   const today = startOfDay(from);
   const year = today.getFullYear();
   let month = today.getMonth();
@@ -31,7 +33,7 @@ export function nextCutoffDate(cutoffDay: number, from = new Date()): Date {
 export function nextPaymentDate(
   cutoffDay: number,
   paymentDueDay: number,
-  from = new Date(),
+  from = crToday(),
 ): Date {
   const cutoff = nextCutoffDate(cutoffDay, from);
   const monthOffset = paymentDueDay > cutoffDay ? 0 : 1;

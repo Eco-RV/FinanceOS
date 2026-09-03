@@ -94,7 +94,7 @@ export function AccountFormDialog({ account }: { account?: Account }) {
               <Select
                 id="currency"
                 name="currency"
-                defaultValue={account?.currency ?? "MXN"}
+                defaultValue={account?.currency ?? "CRC"}
               >
                 {CURRENCIES.map((c) => (
                   <option key={c} value={c}>

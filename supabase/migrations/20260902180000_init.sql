@@ -17,7 +17,8 @@ create table if not exists public.accounts (
   type            text not null default 'checking'
                     check (type in ('checking', 'savings', 'cash')),
   institution     text,
-  currency        text not null default 'MXN',
+  currency        text not null default 'CRC'
+                    check (currency in ('CRC', 'USD')),
   current_balance numeric(14, 2) not null default 0,
   archived        boolean not null default false,
   created_at      timestamptz not null default now()
@@ -54,7 +55,8 @@ create table if not exists public.credit_cards (
   cutoff_day      smallint not null check (cutoff_day between 1 and 31),
   payment_due_day smallint not null check (payment_due_day between 1 and 31),
   current_balance numeric(14, 2) not null default 0,
-  currency        text not null default 'MXN',
+  currency        text not null default 'CRC'
+                    check (currency in ('CRC', 'USD')),
   archived        boolean not null default false,
   created_at      timestamptz not null default now()
 );

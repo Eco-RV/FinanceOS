@@ -166,7 +166,7 @@ export function CardFormDialog({ card }: { card?: CreditCard }) {
             <Select
               id="currency"
               name="currency"
-              defaultValue={card?.currency ?? "MXN"}
+              defaultValue={card?.currency ?? "CRC"}
             >
               {CURRENCIES.map((c) => (
                 <option key={c} value={c}>
