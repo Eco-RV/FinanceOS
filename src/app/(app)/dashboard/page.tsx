@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   CalendarClock,
   CheckCircle2,
@@ -203,9 +204,9 @@ export default async function DashboardPage() {
         {cards.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No hay tarjetas registradas.{" "}
-            <a href="/tarjetas" className="underline">
+            <Link href="/procesos/tarjetas" className="underline">
               Agrega una
-            </a>
+            </Link>
             .
           </p>
         ) : payments.length === 0 ? (

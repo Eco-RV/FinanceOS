@@ -12,11 +12,20 @@ export function formatCurrency(amount: number, currency = "CRC") {
 }
 
 export function formatDate(date: Date | string) {
+  // Una fecha "YYYY-MM-DD" se interpreta como día calendario local, no UTC
+  // (evita el corrimiento de un día en zonas al oeste de UTC).
+  const value =
+    typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? (() => {
+          const [y, m, d] = date.split("-").map(Number);
+          return new Date(y, m - 1, d);
+        })()
+      : new Date(date);
   return new Intl.DateTimeFormat(LOCALE, {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(date));
+  }).format(value);
 }
 
 export function daysUntil(date: Date, from = crToday()) {

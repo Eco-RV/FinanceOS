@@ -13,3 +13,9 @@ export function crToday(): Date {
   const [y, m, d] = s.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
+
+/** Una Date a "YYYY-MM-DD" usando sus componentes locales (no UTC). */
+export function toISODate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}

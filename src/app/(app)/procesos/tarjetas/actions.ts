@@ -3,22 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { accountSchema } from "@/lib/schema";
+import { creditCardSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 
-function revalidate() {
-  revalidatePath("/cuentas");
+function revalidate(id?: string) {
+  revalidatePath("/procesos/tarjetas");
+  revalidatePath("/procesos");
   revalidatePath("/dashboard");
+  if (id) revalidatePath(`/procesos/tarjetas/${id}`);
 }
 
-export async function saveAccount(
+export async function saveCard(
   _prev: FormResult,
   formData: FormData,
 ): Promise<FormResult> {
   await requireUser();
 
   const id = (formData.get("id") as string) || null;
-  const parsed = accountSchema.safeParse(Object.fromEntries(formData));
+  const parsed = creditCardSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { ok: false, errors: fieldErrors(parsed.error) };
   }
@@ -27,21 +29,21 @@ export async function saveAccount(
   const values = parsed.data;
 
   const { error } = id
-    ? await supabase.from("accounts").update(values).eq("id", id)
-    : await supabase.from("accounts").insert(values);
+    ? await supabase.from("credit_cards").update(values).eq("id", id)
+    : await supabase.from("credit_cards").insert(values);
 
   if (error) return { ok: false, message: error.message };
 
-  revalidate();
+  revalidate(id ?? undefined);
   return { ok: true };
 }
 
-export async function deleteAccount(formData: FormData) {
+export async function deleteCard(formData: FormData) {
   await requireUser();
   const id = formData.get("id") as string;
   if (!id) return;
 
   const supabase = await createClient();
-  await supabase.from("accounts").delete().eq("id", id);
-  revalidate();
+  await supabase.from("credit_cards").delete().eq("id", id);
+  revalidate(id);
 }

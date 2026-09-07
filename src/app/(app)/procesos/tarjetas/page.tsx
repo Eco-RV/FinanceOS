@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -77,7 +78,12 @@ export default async function TarjetasPage() {
                 return (
                   <TableRow key={card.id}>
                     <TableCell>
-                      <span className="font-medium">{card.name}</span>
+                      <Link
+                        href={`/procesos/tarjetas/${card.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {card.name}
+                      </Link>
                       <span className="block text-xs text-muted-foreground">
                         {[card.institution, card.last_four && `•••• ${card.last_four}`]
                           .filter(Boolean)

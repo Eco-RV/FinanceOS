@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.2.0 — 2026-09-06
+
+Paso 2: movimientos y actualización automática de saldos.
+
+### Añadido
+- **Procesos**: nueva sección índice (`/procesos`) que agrupa Cuentas, Tarjetas,
+  Gastos e Ingresos.
+- **Gastos** (`/procesos/gastos`) e **Ingresos** (`/procesos/ingresos`): CRUD de
+  movimientos. Un gasto sale de una cuenta de débito o se carga a una tarjeta; un
+  ingreso entra a una cuenta.
+- **Saldos automáticos**: trigger de Postgres `transactions_balance_sync` que
+  ajusta el saldo de la cuenta y/o tarjeta en cada alta, edición o baja de
+  movimiento (las filas archivadas no afectan saldos).
+- **Detalle de tarjeta** (`/procesos/tarjetas/[id]`): saldo, límite, disponible,
+  próximo corte y pago, historial de cargos y pagos, y acción "Registrar pago /
+  abono" que baja el saldo de la cuenta origen y de la tarjeta.
+- **Ajustes** (`/ajustes`): correo, cerrar sesión y secciones "próximamente"
+  (Cuenta / App / Parámetros).
+- Tabla `transactions` (RLS por usuario) —
+  `supabase/migrations/20260906120000_transactions.sql`.
+
+### Cambiado
+- **Navegación**: 3 pestañas — Resumen · Procesos · Ajustes.
+- `/cuentas` y `/tarjetas` se movieron a `/procesos/cuentas` y `/procesos/tarjetas`
+  (redirección 308 desde las rutas viejas en `next.config.ts`).
+- El campo "Saldo actual" de cuentas y tarjetas pasa a ser **saldo de apertura /
+  ajuste manual**; los movimientos lo modifican por deltas.
+
 ## 1.1.0 — 2026-09-02
 
 App nativa para Costa Rica, orientada a móvil.
@@ -39,6 +67,5 @@ Primera versión. Base desplegable + Paso 1.
 - Esquema SQL en `supabase/migrations/` y `supabase/config.toml`.
 
 ### Pendiente
-- Paso 2: movimientos / gastos y actualización automática de saldos.
 - Paso 3: financiamientos y préstamos.
 - Paso 4: ahorros y metas.
