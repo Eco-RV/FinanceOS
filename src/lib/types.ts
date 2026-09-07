@@ -43,3 +43,14 @@ export type Transaction = {
   archived: boolean;
   created_at: string;
 };
+
+export type CategoryKind = "expense" | "income";
+
+export type Category = {
+  id: string;
+  user_id: string;
+  kind: CategoryKind;
+  name: string;
+  archived: boolean;
+  created_at: string;
+};

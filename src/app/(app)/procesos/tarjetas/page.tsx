@@ -1,14 +1,11 @@
 import Link from "next/link";
+import { Eye } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import {
-  formatCurrency,
-  formatDate,
-  daysUntil,
-  relativeDayLabel,
-} from "@/lib/format";
-import { nextCutoffDate, nextPaymentDate } from "@/lib/cards";
-import type { CreditCard } from "@/lib/types";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { cardStatement, nextCutoffDate, type CardStatement } from "@/lib/cards";
+import { crToday } from "@/lib/dates";
+import type { CreditCard, Transaction } from "@/lib/types";
 import {
   Table,
   TableBody,
@@ -17,29 +14,52 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { buttonVariants } from "@/components/ui/button";
+import { BackLink } from "@/components/back-link";
 import { DeleteButton } from "@/components/delete-button";
 import { CardFormDialog } from "./card-form";
+import { CardStatusBadge } from "./card-status";
 import { deleteCard } from "./actions";
+
+type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on">;
 
 export default async function TarjetasPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("credit_cards")
-    .select("*")
-    .eq("archived", false)
-    .order("created_at", { ascending: true });
+  const [{ data: cardData }, { data: txData }] = await Promise.all([
+    supabase
+      .from("credit_cards")
+      .select("*")
+      .eq("archived", false)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("transactions")
+      .select("card_id, type, amount, occurred_on")
+      .eq("archived", false)
+      .not("card_id", "is", null),
+  ]);
 
-  const cards = (data ?? []) as CreditCard[];
+  const cards = (cardData ?? []) as CreditCard[];
+  const txns = (txData ?? []) as CardTxn[];
+  const today = crToday();
+
+  const byCard = new Map<string, CardTxn[]>();
+  for (const t of txns) {
+    if (!t.card_id) continue;
+    const list = byCard.get(t.card_id);
+    if (list) list.push(t);
+    else byCard.set(t.card_id, [t]);
+  }
 
   return (
     <div className="flex flex-col gap-6">
+      <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Tarjetas de crédito</h1>
           <p className="text-sm text-muted-foreground">
-            Saldo, corte y fecha límite de pago de cada tarjeta.
+            Estado del corte y fecha límite de pago de cada tarjeta.
           </p>
         </div>
         <CardFormDialog />
@@ -50,11 +70,11 @@ export default async function TarjetasPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Tarjeta</TableHead>
-              <TableHead className="text-right">Saldo</TableHead>
-              <TableHead className="text-right">Límite</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead className="text-right">Saldo actual</TableHead>
+              <TableHead className="text-right">Falta pagar</TableHead>
               <TableHead>Próximo corte</TableHead>
-              <TableHead>Pago límite</TableHead>
-              <TableHead className="w-24" />
+              <TableHead className="w-32" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -69,12 +89,13 @@ export default async function TarjetasPage() {
               </TableRow>
             ) : (
               cards.map((card) => {
-                const cutoff = nextCutoffDate(card.cutoff_day);
-                const payment = nextPaymentDate(
-                  card.cutoff_day,
-                  card.payment_due_day,
+                const st: CardStatement = cardStatement(
+                  card,
+                  byCard.get(card.id) ?? [],
+                  today,
                 );
-                const paymentIn = daysUntil(payment);
+                const cutoff = nextCutoffDate(card.cutoff_day, today);
+                const owes = st.status === "pendiente" || st.status === "atrasada";
                 return (
                   <TableRow key={card.id}>
                     <TableCell>
@@ -85,21 +106,34 @@ export default async function TarjetasPage() {
                         {card.name}
                       </Link>
                       <span className="block text-xs text-muted-foreground">
-                        {[card.institution, card.last_four && `•••• ${card.last_four}`]
+                        {[
+                          card.institution,
+                          card.last_four && `•••• ${card.last_four}`,
+                        ]
                           .filter(Boolean)
                           .join(" · ") || "—"}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(
-                        Number(card.current_balance),
-                        card.currency,
-                      )}
+                    <TableCell>
+                      <CardStatusBadge
+                        status={st.status}
+                        daysToDue={st.daysToDue}
+                      />
                     </TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {card.credit_limit != null
-                        ? formatCurrency(Number(card.credit_limit), card.currency)
-                        : "—"}
+                    <TableCell className="text-right tabular-nums">
+                      {formatCurrency(Number(card.current_balance), card.currency)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {owes ? (
+                        <>
+                          {formatCurrency(st.dueAmount, card.currency)}
+                          <span className="block text-xs text-muted-foreground">
+                            {formatDate(st.dueDate)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       día {card.cutoff_day}
@@ -108,13 +142,17 @@ export default async function TarjetasPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      día {card.payment_due_day}
-                      <span className="block text-xs text-muted-foreground">
-                        {formatDate(payment)} · {relativeDayLabel(paymentIn)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
                       <div className="flex justify-end gap-1">
+                        <Link
+                          href={`/procesos/tarjetas/${card.id}`}
+                          aria-label="Ver detalle"
+                          className={buttonVariants({
+                            variant: "ghost",
+                            size: "icon",
+                          })}
+                        >
+                          <Eye className="size-4" />
+                        </Link>
                         <CardFormDialog card={card} />
                         <DeleteButton
                           id={card.id}

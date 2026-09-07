@@ -9,10 +9,12 @@ export function TransactionRowActions({
   transaction,
   accounts,
   cards,
+  categories,
 }: {
   transaction: Transaction;
   accounts: Account[];
   cards: CreditCard[];
+  categories?: string[];
 }) {
   return (
     <div className="flex justify-end gap-1">
@@ -20,6 +22,7 @@ export function TransactionRowActions({
         type={transaction.type}
         accounts={accounts}
         cards={cards}
+        categories={categories}
         fixedCardId={
           transaction.type === "card_payment"
             ? (transaction.card_id ?? undefined)

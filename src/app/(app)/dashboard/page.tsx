@@ -15,16 +15,25 @@ import {
   daysUntil,
   relativeDayLabel,
 } from "@/lib/format";
-import { nextCutoffDate, nextPaymentDate } from "@/lib/cards";
+import {
+  cardStatement,
+  nextCutoffDate,
+  type CardStatement,
+} from "@/lib/cards";
 import { crToday } from "@/lib/dates";
-import type { Account, CreditCard as CreditCardType } from "@/lib/types";
+import type {
+  Account,
+  CreditCard as CreditCardType,
+  Transaction,
+} from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type Level = "overdue" | "urgent" | "soon" | "ok";
 
-function paymentLevel(days: number): Level {
+function levelFor(days: number, overdue: boolean): Level {
+  if (overdue) return "overdue";
   if (days <= 0) return "overdue";
   if (days <= 3) return "urgent";
   if (days <= 10) return "soon";
@@ -45,12 +54,12 @@ const LEVEL_BAR: Record<Level, string> = {
   ok: "bg-muted-foreground/30",
 };
 
+type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on">;
+
 type Payment = {
   card: CreditCardType;
-  payment: Date;
-  days: number;
+  st: CardStatement;
   amount: number;
-  level: Level;
   cumulative: number;
   covered: boolean;
 };
@@ -59,15 +68,33 @@ export default async function DashboardPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const [{ data: accountsData }, { data: cardsData }] = await Promise.all([
-    supabase.from("accounts").select("*").eq("archived", false),
-    supabase.from("credit_cards").select("*").eq("archived", false),
-  ]);
+  const [{ data: accountsData }, { data: cardsData }, { data: cardTxData }] =
+    await Promise.all([
+      supabase.from("accounts").select("*").eq("archived", false),
+      supabase.from("credit_cards").select("*").eq("archived", false),
+      supabase
+        .from("transactions")
+        .select("card_id, type, amount, occurred_on")
+        .eq("archived", false)
+        .not("card_id", "is", null),
+    ]);
 
   const accounts = (accountsData ?? []) as Account[];
   const cards = (cardsData ?? []) as CreditCardType[];
-
+  const cardTxns = (cardTxData ?? []) as CardTxn[];
   const today = crToday();
+
+  const txByCard = new Map<string, CardTxn[]>();
+  for (const t of cardTxns) {
+    if (!t.card_id) continue;
+    const list = txByCard.get(t.card_id);
+    if (list) list.push(t);
+    else txByCard.set(t.card_id, [t]);
+  }
+
+  const statements = new Map<string, CardStatement>(
+    cards.map((c) => [c.id, cardStatement(c, txByCard.get(c.id) ?? [], today)]),
+  );
 
   // Solo débito en colones cuenta como dinero para pagar tarjetas.
   const availableDebit = accounts
@@ -78,39 +105,40 @@ export default async function DashboardPage() {
     accounts.reduce((s, a) => s + Number(a.current_balance), 0) -
     cards.reduce((s, c) => s + Number(c.current_balance), 0);
 
-  // Pagos pendientes, del más urgente al que tiene más tiempo.
+  // Tarjetas con saldo de contado pendiente, del más urgente al que tiene más tiempo.
   const pending = cards
-    .filter((c) => Number(c.current_balance) > 0)
-    .map((card) => {
-      const payment = nextPaymentDate(
-        card.cutoff_day,
-        card.payment_due_day,
-        today,
-      );
-      const days = daysUntil(payment, today);
-      return {
-        card,
-        payment,
-        days,
-        amount: Number(card.current_balance),
-        level: paymentLevel(days),
-      };
-    })
-    .sort((a, b) => a.days - b.days);
+    .map((card) => ({ card, st: statements.get(card.id)! }))
+    .filter(
+      ({ st }) => st.status === "pendiente" || st.status === "atrasada",
+    )
+    .sort((a, b) => a.st.daysToDue - b.st.daysToDue);
 
   // Cobertura acumulada contra el débito (solo tarjetas en CRC entran a la suma).
   const payments: Payment[] = pending.reduce<Payment[]>((rows, p) => {
     const prev = rows.at(-1)?.cumulative ?? 0;
-    const cumulative = p.card.currency === "CRC" ? prev + p.amount : prev;
-    return [...rows, { ...p, cumulative, covered: cumulative <= availableDebit }];
+    const amount = p.st.dueAmount;
+    const cumulative = p.card.currency === "CRC" ? prev + amount : prev;
+    return [
+      ...rows,
+      { ...p, amount, cumulative, covered: cumulative <= availableDebit },
+    ];
   }, []);
 
-  const totalCrcDue = pending
+  const overdue = payments.filter((p) => p.st.status === "atrasada");
+  const overdueTotal = overdue
+    .filter((p) => p.card.currency === "CRC")
+    .reduce((s, p) => s + p.amount, 0);
+
+  const totalCrcDue = payments
     .filter((p) => p.card.currency === "CRC")
     .reduce((s, p) => s + p.amount, 0);
   const dueSoon = payments
-    .filter((p) => p.card.currency === "CRC" && p.days <= 10)
+    .filter((p) => p.card.currency === "CRC" && p.st.daysToDue <= 10)
     .reduce((s, p) => s + p.amount, 0);
+  const newChargesCrc = cards
+    .filter((c) => c.currency === "CRC")
+    .reduce((s, c) => s + (statements.get(c.id)?.newCharges ?? 0), 0);
+
   const coversSoon = availableDebit >= dueSoon;
   const coverageRatio =
     availableDebit > 0
@@ -122,19 +150,42 @@ export default async function DashboardPage() {
 
   const cutoffs = cards
     .map((card) => {
+      const st = statements.get(card.id)!;
       const cutoff = nextCutoffDate(card.cutoff_day, today);
-      return {
-        card,
-        cutoff,
-        payment: nextPaymentDate(card.cutoff_day, card.payment_due_day, today),
-        days: daysUntil(cutoff, today),
-      };
+      return { card, st, cutoff, days: daysUntil(cutoff, today) };
     })
     .sort((a, b) => a.days - b.days);
+
+  const upcoming = payments.filter((p) => p.st.status !== "atrasada");
 
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-2xl font-semibold">Resumen</h1>
+
+      {overdue.length > 0 ? (
+        <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+          <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-destructive">
+              {overdue.length === 1
+                ? "1 tarjeta atrasada"
+                : `${overdue.length} tarjetas atrasadas`}
+              {overdueTotal > 0
+                ? ` · ${formatCurrency(overdueTotal)} sin pagar`
+                : ""}{" "}
+              — genera intereses
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {overdue
+                .map(
+                  (p) =>
+                    `${p.card.name} (venció ${relativeDayLabel(p.st.daysToDue)})`,
+                )
+                .join(" · ")}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2">
         <div className="grid gap-4 sm:grid-cols-3">
@@ -144,24 +195,23 @@ export default async function DashboardPage() {
             icon={<Wallet className="size-4" />}
           />
           <Stat
-            title="A pagar (próx. 10 días)"
-            value={formatCurrency(dueSoon)}
-            negative={!coversSoon && dueSoon > 0}
+            title="A pagar de contado"
+            value={formatCurrency(totalCrcDue)}
+            negative={totalCrcDue > availableDebit && totalCrcDue > 0}
             icon={<CalendarClock className="size-4" />}
           />
           <Stat
-            title="Deuda total en tarjetas"
-            value={formatCurrency(totalCrcDue)}
+            title="Consumo sin cortar"
+            value={formatCurrency(newChargesCrc)}
             icon={<CreditCard className="size-4" />}
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Patrimonio neto (todas las cuentas − deuda):{" "}
-          {formatCurrency(netWorth)}
+          Patrimonio neto (todas las cuentas − deuda): {formatCurrency(netWorth)}
         </p>
       </div>
 
-      {payments.length > 0 ? (
+      {dueSoon > 0 ? (
         <div
           className={cn(
             "flex items-start gap-3 rounded-lg border p-4",
@@ -175,32 +225,26 @@ export default async function DashboardPage() {
           )}
           <div className="flex flex-1 flex-col gap-2">
             <p className="text-sm font-medium">
-              {dueSoon === 0
-                ? "No tenés pagos de tarjeta en los próximos 10 días."
-                : coversSoon
-                  ? "Tu débito cubre los pagos de los próximos 10 días."
-                  : `Con tu débito te faltan ${formatCurrency(
-                      dueSoon - availableDebit,
-                    )} para los pagos de los próximos 10 días.`}
+              {coversSoon
+                ? "Tu débito cubre los pagos de contado de los próximos 10 días."
+                : `Con tu débito te faltan ${formatCurrency(
+                    dueSoon - availableDebit,
+                  )} para los pagos de los próximos 10 días.`}
             </p>
-            {dueSoon > 0 ? (
-              <>
-                <Bar
-                  value={coverageRatio}
-                  className={coversSoon ? "bg-foreground/70" : "bg-destructive"}
-                />
-                <p className="text-xs tabular-nums text-muted-foreground">
-                  A pagar {formatCurrency(dueSoon)} · Disponible{" "}
-                  {formatCurrency(availableDebit)}
-                </p>
-              </>
-            ) : null}
+            <Bar
+              value={coverageRatio}
+              className={coversSoon ? "bg-foreground/70" : "bg-destructive"}
+            />
+            <p className="text-xs tabular-nums text-muted-foreground">
+              A pagar {formatCurrency(dueSoon)} · Disponible{" "}
+              {formatCurrency(availableDebit)}
+            </p>
           </div>
         </div>
       ) : null}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Próximos pagos</h2>
+        <h2 className="text-lg font-medium">Pagos de contado</h2>
         {cards.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No hay tarjetas registradas.{" "}
@@ -211,20 +255,24 @@ export default async function DashboardPage() {
           </p>
         ) : payments.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Ninguna tarjeta tiene saldo pendiente. Estás al día.
+            Ninguna tarjeta tiene saldo de contado pendiente. Estás al día.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-lg border">
-            {payments.map((p, i) => (
-              <div key={p.card.id}>
-                {firstUncovered === i && i > 0 ? (
-                  <p className="border-y bg-muted/40 px-4 py-1.5 text-xs text-muted-foreground">
-                    Desde aquí los pagos superan tu disponible en débito
-                  </p>
-                ) : null}
-                <PaymentRow p={p} />
-              </div>
-            ))}
+          <div className="flex flex-col gap-4">
+            {overdue.length > 0 ? (
+              <PaymentGroup title="Atrasadas" payments={overdue} />
+            ) : null}
+            {upcoming.length > 0 ? (
+              <PaymentGroup
+                title="Por vencer"
+                payments={upcoming}
+                dividerAt={
+                  firstUncovered >= 0
+                    ? firstUncovered - overdue.length
+                    : undefined
+                }
+              />
+            ) : null}
           </div>
         )}
       </section>
@@ -233,15 +281,15 @@ export default async function DashboardPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-medium">Próximos cortes</h2>
           <p className="text-sm text-muted-foreground">
-            El corte fija el saldo que vas a tener que pagar en la fecha límite.
+            El corte fija el saldo de contado que vas a tener que pagar.
           </p>
           <div className="overflow-hidden rounded-lg border">
-            {cutoffs.map(({ card, cutoff, payment, days }) => (
+            {cutoffs.map(({ card, st, cutoff, days }) => (
               <CutoffRow
                 key={card.id}
                 card={card}
+                st={st}
                 cutoff={cutoff}
-                payment={payment}
                 days={days}
               />
             ))}
@@ -260,14 +308,46 @@ function cardSubtitle(card: CreditCardType) {
   );
 }
 
+function PaymentGroup({
+  title,
+  payments,
+  dividerAt,
+}: {
+  title: string;
+  payments: Payment[];
+  dividerAt?: number;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {title}
+      </p>
+      <div className="overflow-hidden rounded-lg border">
+        {payments.map((p, i) => (
+          <div key={p.card.id}>
+            {dividerAt === i && i > 0 ? (
+              <p className="border-y bg-muted/40 px-4 py-1.5 text-xs text-muted-foreground">
+                Desde aquí los pagos superan tu disponible en débito
+              </p>
+            ) : null}
+            <PaymentRow p={p} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PaymentRow({ p }: { p: Payment }) {
-  const { card, payment, days, amount, level } = p;
-  const badgeText =
-    days < 0
-      ? `vencido ${relativeDayLabel(days)}`
-      : days === 0
-        ? "vence hoy"
-        : `vence ${relativeDayLabel(days)}`;
+  const { card, st, amount } = p;
+  const days = st.daysToDue;
+  const overdue = st.status === "atrasada";
+  const level = levelFor(days, overdue);
+  const badgeText = overdue
+    ? `venció ${relativeDayLabel(days)}`
+    : days === 0
+      ? "vence hoy"
+      : `vence ${relativeDayLabel(days)}`;
   const proximity = Math.max(0, Math.min(1, 1 - days / 30));
   const subtitle = cardSubtitle(card);
 
@@ -300,7 +380,7 @@ function PaymentRow({ p }: { p: Payment }) {
       <div className="flex items-center gap-2">
         <Bar value={proximity} className={LEVEL_BAR[level]} />
         <span className="shrink-0 text-xs text-muted-foreground">
-          {formatDate(payment)}
+          {formatDate(st.dueDate)}
         </span>
       </div>
     </div>
@@ -309,13 +389,13 @@ function PaymentRow({ p }: { p: Payment }) {
 
 function CutoffRow({
   card,
+  st,
   cutoff,
-  payment,
   days,
 }: {
   card: CreditCardType;
+  st: CardStatement;
   cutoff: Date;
-  payment: Date;
   days: number;
 }) {
   const soon = days <= 1;
@@ -324,7 +404,9 @@ function CutoffRow({
       <div className="min-w-0">
         <p className="font-medium">{card.name}</p>
         <p className="text-xs text-muted-foreground">
-          Define el pago del {formatDate(payment)}
+          {st.newCharges > 0
+            ? `${formatCurrency(st.newCharges, card.currency)} sin cortar`
+            : "Sin consumo nuevo"}
         </p>
       </div>
       <div className="flex flex-col items-end">

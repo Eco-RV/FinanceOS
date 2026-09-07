@@ -17,6 +17,8 @@ type Props = {
   transactions: Transaction[];
   accounts: Account[];
   cards: CreditCard[];
+  /** Categorías para el selector del editar (gastos/ingresos o cargos de tarjeta). */
+  categories?: string[];
   /** "list" = vista de gastos/ingresos · "card" = historial dentro de una tarjeta. */
   context?: "list" | "card";
   emptyLabel?: string;
@@ -34,6 +36,7 @@ export function TransactionList({
   transactions,
   accounts,
   cards,
+  categories = [],
   context = "list",
   emptyLabel = "Aún no hay movimientos.",
 }: Props) {
@@ -115,6 +118,7 @@ export function TransactionList({
                       transaction={t}
                       accounts={accounts}
                       cards={cards}
+                      categories={categories}
                     />
                   </TableCell>
                 </TableRow>

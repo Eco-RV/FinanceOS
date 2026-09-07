@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.2.1 — 2026-09-07
+
+Estado de cuenta de tarjetas, alerta de atraso y categorías configurables.
+
+### Añadido
+- **Estado de cuenta por tarjeta** (`cardStatement` en `src/lib/cards.ts`): saldo al
+  corte, pagos aplicados desde el corte, **cuánto falta pagar de contado** antes de la
+  fecha límite y consumo aún sin cortar. Se calcula desde los movimientos con fecha.
+- **Alerta de atraso**: si venció la fecha límite y queda saldo de contado sin pagar,
+  banner rojo "Atrasada N días — genera intereses" en el detalle de la tarjeta y en el
+  Resumen.
+- **Categorías configurables** (`/ajustes/categorias`): CRUD de categorías de gastos e
+  ingresos, con botón "cargar categorías sugeridas". Los selectores de gasto/ingreso
+  usan estas; las listas fijas quedan como fallback. Tabla `categories` —
+  `supabase/migrations/20260906130000_categories.sql`.
+- **Botón "ver detalle"** (ícono de ojo) en cada fila de la lista de tarjetas.
+- **Botón de regresar** (`← <sección>`) arriba a la izquierda en las sub-páginas
+  (`src/components/back-link.tsx`).
+
+### Cambiado
+- **Resumen** rediseñado: los montos a pagar son ahora **de contado** (`dueAmount`),
+  no el saldo total; pagos agrupados en "Atrasadas" / "Por vencer"; stat "Consumo sin
+  cortar"; banner de tarjetas atrasadas.
+- La lista de tarjetas muestra una columna **Estado** (al día / pendiente / atrasada) y
+  cuánto falta pagar.
+
 ## 1.2.0 — 2026-09-06
 
 Paso 2: movimientos y actualización automática de saldos.

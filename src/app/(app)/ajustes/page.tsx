@@ -1,4 +1,5 @@
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Tags } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { signOutAction } from "@/lib/session-actions";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,6 @@ import {
 const SOON: { title: string; description: string }[] = [
   { title: "Cuenta", description: "Cambiar contraseña y correo." },
   { title: "App", description: "Tema, moneda base y formato de fecha." },
-  {
-    title: "Parámetros",
-    description: "Catálogo de categorías y cuentas por defecto.",
-  },
 ];
 
 export default async function AjustesPage() {
@@ -47,6 +44,23 @@ export default async function AjustesPage() {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-3">
+        <Link
+          href="/ajustes/categorias"
+          className="rounded-xl transition-colors hover:bg-muted/40"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tags className="size-4 text-muted-foreground" />
+                Categorías
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Categorías de gastos e ingresos.
+            </CardContent>
+          </Card>
+        </Link>
+
         {SOON.map(({ title, description }) => (
           <Card key={title}>
             <CardHeader>

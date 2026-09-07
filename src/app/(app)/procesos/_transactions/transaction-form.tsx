@@ -14,10 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
-import {
-  EXPENSE_CATEGORIES,
-  INCOME_CATEGORIES,
-} from "@/lib/schema";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/lib/dates";
 import { originValue } from "@/lib/transactions";
@@ -28,6 +24,8 @@ type Props = {
   type: TransactionType;
   accounts: Account[];
   cards?: CreditCard[];
+  /** Categorías configuradas para gastos/ingresos (no aplica a card_payment). */
+  categories?: string[];
   fixedCardId?: string;
   fixedCardBalance?: number;
   transaction?: Transaction;
@@ -56,6 +54,7 @@ export function TransactionForm({
   type,
   accounts,
   cards = [],
+  categories: categoryOptions = [],
   fixedCardId,
   fixedCardBalance,
   transaction,
@@ -71,12 +70,10 @@ export function TransactionForm({
     transaction ? String(transaction.amount) : "",
   );
 
-  const baseCategories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
   const categories =
-    transaction?.category &&
-    !(baseCategories as readonly string[]).includes(transaction.category)
-      ? [transaction.category, ...baseCategories]
-      : baseCategories;
+    transaction?.category && !categoryOptions.includes(transaction.category)
+      ? [transaction.category, ...categoryOptions]
+      : categoryOptions;
 
   const cardId = fixedCardId ?? transaction?.card_id ?? "";
   const showOrigin = type !== "card_payment" || accounts.length > 1;

@@ -56,6 +56,9 @@ export type CreditCardInput = z.infer<typeof creditCardSchema>;
 
 export const TRANSACTION_TYPES = ["expense", "income", "card_payment"] as const;
 
+export const CATEGORY_KINDS = ["expense", "income"] as const;
+
+/** Lista sugerida / fallback cuando el usuario aún no configuró categorías. */
 export const EXPENSE_CATEGORIES = [
   "Comida",
   "Transporte",
@@ -153,3 +156,14 @@ export const transactionSchema = z
   });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
+
+export const categorySchema = z.object({
+  kind: z.enum(CATEGORY_KINDS),
+  name: z
+    .string()
+    .trim()
+    .min(1, "El nombre es obligatorio")
+    .max(40, "Máximo 40 caracteres"),
+});
+
+export type CategoryInput = z.infer<typeof categorySchema>;
