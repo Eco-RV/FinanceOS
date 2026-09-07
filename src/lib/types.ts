@@ -26,3 +26,31 @@ export type CreditCard = {
   archived: boolean;
   created_at: string;
 };
+
+export type TransactionType = "expense" | "income" | "card_payment";
+
+export type Transaction = {
+  id: string;
+  user_id: string;
+  type: TransactionType;
+  amount: number;
+  currency: string;
+  occurred_on: string; // "YYYY-MM-DD"
+  category: string | null;
+  note: string | null;
+  account_id: string | null;
+  card_id: string | null;
+  archived: boolean;
+  created_at: string;
+};
+
+export type CategoryKind = "expense" | "income";
+
+export type Category = {
+  id: string;
+  user_id: string;
+  kind: CategoryKind;
+  name: string;
+  archived: boolean;
+  created_at: string;
+};

@@ -4,11 +4,11 @@ import type { ComponentType } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CreditCard,
-  Landmark,
   LayoutDashboard,
   LoaderCircle,
+  Settings2,
   Wallet,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/user-menu";
@@ -19,8 +19,8 @@ type NavItem = { href: string; label: string; icon: IconType };
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Resumen", icon: LayoutDashboard },
-  { href: "/cuentas", label: "Cuentas", icon: Landmark },
-  { href: "/tarjetas", label: "Tarjetas", icon: CreditCard },
+  { href: "/procesos", label: "Procesos", icon: Workflow },
+  { href: "/ajustes", label: "Ajustes", icon: Settings2 },
 ];
 
 function useIsActive() {

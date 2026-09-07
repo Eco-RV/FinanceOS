@@ -1,0 +1,173 @@
+import Link from "next/link";
+import { Eye } from "lucide-react";
+import { requireUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { cardStatement, nextCutoffDate, type CardStatement } from "@/lib/cards";
+import { crToday } from "@/lib/dates";
+import type { CreditCard, Transaction } from "@/lib/types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { buttonVariants } from "@/components/ui/button";
+import { BackLink } from "@/components/back-link";
+import { DeleteButton } from "@/components/delete-button";
+import { CardFormDialog } from "./card-form";
+import { CardStatusBadge } from "./card-status";
+import { deleteCard } from "./actions";
+
+type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on">;
+
+export default async function TarjetasPage() {
+  await requireUser();
+
+  const supabase = await createClient();
+  const [{ data: cardData }, { data: txData }] = await Promise.all([
+    supabase
+      .from("credit_cards")
+      .select("*")
+      .eq("archived", false)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("transactions")
+      .select("card_id, type, amount, occurred_on")
+      .eq("archived", false)
+      .not("card_id", "is", null),
+  ]);
+
+  const cards = (cardData ?? []) as CreditCard[];
+  const txns = (txData ?? []) as CardTxn[];
+  const today = crToday();
+
+  const byCard = new Map<string, CardTxn[]>();
+  for (const t of txns) {
+    if (!t.card_id) continue;
+    const list = byCard.get(t.card_id);
+    if (list) list.push(t);
+    else byCard.set(t.card_id, [t]);
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <BackLink href="/procesos" label="Procesos" />
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Tarjetas de crédito</h1>
+          <p className="text-sm text-muted-foreground">
+            Estado del corte y fecha límite de pago de cada tarjeta.
+          </p>
+        </div>
+        <CardFormDialog />
+      </div>
+
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tarjeta</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead className="text-right">Saldo actual</TableHead>
+              <TableHead className="text-right">Falta pagar</TableHead>
+              <TableHead>Próximo corte</TableHead>
+              <TableHead className="w-32" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {cards.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="py-10 text-center text-muted-foreground"
+                >
+                  Aún no tienes tarjetas. Agrega la primera.
+                </TableCell>
+              </TableRow>
+            ) : (
+              cards.map((card) => {
+                const st: CardStatement = cardStatement(
+                  card,
+                  byCard.get(card.id) ?? [],
+                  today,
+                );
+                const cutoff = nextCutoffDate(card.cutoff_day, today);
+                const owes = st.status === "pendiente" || st.status === "atrasada";
+                return (
+                  <TableRow key={card.id}>
+                    <TableCell>
+                      <Link
+                        href={`/procesos/tarjetas/${card.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {card.name}
+                      </Link>
+                      <span className="block text-xs text-muted-foreground">
+                        {[
+                          card.institution,
+                          card.last_four && `•••• ${card.last_four}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <CardStatusBadge
+                        status={st.status}
+                        daysToDue={st.daysToDue}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCurrency(Number(card.current_balance), card.currency)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {owes ? (
+                        <>
+                          {formatCurrency(st.dueAmount, card.currency)}
+                          <span className="block text-xs text-muted-foreground">
+                            {formatDate(st.dueDate)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      día {card.cutoff_day}
+                      <span className="block text-xs text-muted-foreground">
+                        {formatDate(cutoff)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-1">
+                        <Link
+                          href={`/procesos/tarjetas/${card.id}`}
+                          aria-label="Ver detalle"
+                          className={buttonVariants({
+                            variant: "ghost",
+                            size: "icon",
+                          })}
+                        >
+                          <Eye className="size-4" />
+                        </Link>
+                        <CardFormDialog card={card} />
+                        <DeleteButton
+                          id={card.id}
+                          action={deleteCard}
+                          confirmLabel={`¿Eliminar la tarjeta "${card.name}"?`}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}

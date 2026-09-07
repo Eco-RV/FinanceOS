@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { BackLink } from "@/components/back-link";
 import { DeleteButton } from "@/components/delete-button";
 import { AccountFormDialog } from "./account-form";
 import { deleteAccount } from "./actions";
@@ -37,6 +38,7 @@ export default async function CuentasPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Cuentas</h1>
