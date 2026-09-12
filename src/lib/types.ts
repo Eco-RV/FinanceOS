@@ -40,6 +40,22 @@ export type Transaction = {
   note: string | null;
   account_id: string | null;
   card_id: string | null;
+  financing_id: string | null;
+  installment_no: number | null;
+  archived: boolean;
+  created_at: string;
+};
+
+export type Financing = {
+  id: string;
+  user_id: string;
+  card_id: string;
+  description: string;
+  category: string | null;
+  total_amount: number;
+  months: number;
+  currency: string;
+  first_charge_on: string; // "YYYY-MM-DD"
   archived: boolean;
   created_at: string;
 };

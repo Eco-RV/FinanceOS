@@ -115,28 +115,47 @@ export function cardStatement(
     card.payment_due_day,
   );
   const cutoffISO = toISODate(lastCutoff);
+  const todayISO = toISODate(today);
 
+  // "Después del corte" se parte en dos: lo que ya ocurrió (cuenta como
+  // consumo/pago pendiente de cortar) y lo programado a futuro (p. ej. cuotas
+  // de un financiamiento que aún no llegan a su fecha) — eso último no debe
+  // aparecer todavía como "consumo sin cortar" ni afectar `dueAmount`, aunque
+  // sí forma parte de `balanceByMovements` (la deuda total ya comprometida).
   let chargesThru = 0;
   let paymentsThru = 0;
-  let chargesAfter = 0;
-  let paymentsAfter = 0;
+  let chargesPosted = 0;
+  let paymentsPosted = 0;
+  let chargesFuture = 0;
+  let paymentsFuture = 0;
 
   for (const t of txns) {
     const amount = Number(t.amount) || 0;
-    const beforeOrAtCutoff = t.occurred_on <= cutoffISO;
-    if (t.type === "expense") {
-      if (beforeOrAtCutoff) chargesThru += amount;
-      else chargesAfter += amount;
-    } else if (t.type === "card_payment") {
-      if (beforeOrAtCutoff) paymentsThru += amount;
-      else paymentsAfter += amount;
+    const isExpense = t.type === "expense";
+    const isPayment = t.type === "card_payment";
+    if (!isExpense && !isPayment) continue;
+
+    if (t.occurred_on <= cutoffISO) {
+      if (isExpense) chargesThru += amount;
+      else paymentsThru += amount;
+    } else if (t.occurred_on <= todayISO) {
+      if (isExpense) chargesPosted += amount;
+      else paymentsPosted += amount;
+    } else {
+      if (isExpense) chargesFuture += amount;
+      else paymentsFuture += amount;
     }
   }
 
   const statementBalance = Math.max(0, chargesThru - paymentsThru);
-  const dueAmount = Math.max(0, statementBalance - paymentsAfter);
+  const dueAmount = Math.max(0, statementBalance - paymentsPosted);
   const balanceByMovements =
-    chargesThru + chargesAfter - paymentsThru - paymentsAfter;
+    chargesThru +
+    chargesPosted +
+    chargesFuture -
+    paymentsThru -
+    paymentsPosted -
+    paymentsFuture;
 
   const daysToDue = daysUntil(dueDate, today);
 
@@ -151,9 +170,9 @@ export function cardStatement(
     lastCutoff,
     dueDate,
     statementBalance,
-    paidAfterCutoff: paymentsAfter,
+    paidAfterCutoff: paymentsPosted,
     dueAmount,
-    newCharges: chargesAfter,
+    newCharges: chargesPosted,
     balanceByMovements,
     status,
     daysToDue,

@@ -67,6 +67,7 @@ export function TransactionList({
           ) : (
             transactions.map((t) => {
               const amount = displayAmount(t, context);
+              const isInstallment = Boolean(t.financing_id);
               const detail = isCard
                 ? t.type === "card_payment"
                   ? `Desde ${originLabel(t, accounts, cards)}`
@@ -81,10 +82,18 @@ export function TransactionList({
                     {isCard ? (
                       <Badge
                         variant={
-                          t.type === "card_payment" ? "secondary" : "outline"
+                          t.type === "card_payment"
+                            ? "secondary"
+                            : isInstallment
+                              ? "secondary"
+                              : "outline"
                         }
                       >
-                        {t.type === "card_payment" ? "Pago" : "Cargo"}
+                        {t.type === "card_payment"
+                          ? "Pago"
+                          : isInstallment
+                            ? "Cuota"
+                            : "Cargo"}
                       </Badge>
                     ) : (
                       <>
@@ -114,12 +123,18 @@ export function TransactionList({
                     {formatCurrency(amount, t.currency)}
                   </TableCell>
                   <TableCell>
-                    <TransactionRowActions
-                      transaction={t}
-                      accounts={accounts}
-                      cards={cards}
-                      categories={categories}
-                    />
+                    {isInstallment ? (
+                      <span className="block text-right text-xs text-muted-foreground">
+                        Ver en Financiamientos
+                      </span>
+                    ) : (
+                      <TransactionRowActions
+                        transaction={t}
+                        accounts={accounts}
+                        cards={cards}
+                        categories={categories}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               );

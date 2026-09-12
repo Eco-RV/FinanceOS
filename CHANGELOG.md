@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.2.2 — 2026-09-11
+
+Financiamientos de tarjeta de crédito (tasa 0, sin intereses).
+
+### Añadido
+- **Financiamientos** en el detalle de tarjeta (`/procesos/tarjetas/[id]`): registrá
+  una compra a cuotas (descripción, categoría, monto total, número de meses, fecha
+  de la compra) y se reparte en cuotas mensuales iguales, con el mismo día de la
+  compra (ajustado en meses cortos). El total baja el **disponible** de la tarjeta
+  de inmediato (igual que un banco bloquea el cupo completo), aunque cada cuota
+  "cae a cobro" en su mes correspondiente. Tabla `financings` + stored procedure
+  `create_financing` (crea el plan y sus N cuotas en una sola transacción) —
+  `supabase/Versionamiento/1.2.2/`.
+- Las cuotas aparecen en "Movimientos" marcadas como "Cuota" (no editables/borrables
+  individualmente); un financiamiento se borra completo desde la nueva sección, lo
+  que revierte todo su efecto en el saldo.
+
+### Cambiado
+- `cardStatement` (`src/lib/cards.ts`) ahora distingue cargos/pagos **ya ocurridos**
+  de los **programados a futuro** (cuotas de un financiamiento que aún no llegan a su
+  fecha): estos últimos no cuentan todavía como "consumo sin cortar" ni afectan lo
+  que falta pagar, aunque sí forman parte de la deuda total y del disponible.
+- **Convención de base de datos**: `supabase/migrations/` queda congelada como
+  historial; el SQL nuevo (esquema y funciones) se organiza por versión en
+  `supabase/Versionamiento/<version>/`, numerado en orden de ejecución.
+
 ## 1.2.1 — 2026-09-07
 
 Estado de cuenta de tarjetas, alerta de atraso y categorías configurables.

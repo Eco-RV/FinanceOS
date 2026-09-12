@@ -14,13 +14,15 @@ import { crToday } from "@/lib/dates";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import { categoryNames } from "@/lib/categories";
 import { cn } from "@/lib/utils";
-import type { Account, CreditCard, Transaction } from "@/lib/types";
+import type { Account, CreditCard, Financing, Transaction } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink } from "@/components/back-link";
 import { CardFormDialog } from "../card-form";
 import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
 import { TransactionList } from "../../_transactions/transaction-list";
+import { FinancingForm } from "../_financiamientos/financing-form";
+import { FinancingList } from "../_financiamientos/financing-list";
 
 export default async function CardDetailPage({
   params,
@@ -34,6 +36,7 @@ export default async function CardDetailPage({
     { data: txData },
     { data: accData },
     { data: catData },
+    { data: financingData },
   ] = await Promise.all([
     supabase
       .from("credit_cards")
@@ -58,6 +61,12 @@ export default async function CardDetailPage({
       .eq("kind", "expense")
       .eq("archived", false)
       .order("name", { ascending: true }),
+    supabase
+      .from("financings")
+      .select("*")
+      .eq("card_id", id)
+      .eq("archived", false)
+      .order("created_at", { ascending: false }),
   ]);
 
   if (!cardData) notFound();
@@ -66,6 +75,7 @@ export default async function CardDetailPage({
   const transactions = (txData ?? []) as Transaction[];
   const accounts = (accData ?? []) as Account[];
   const categories = categoryNames(catData ?? [], EXPENSE_CATEGORIES);
+  const financings = (financingData ?? []) as Financing[];
   const today = crToday();
 
   const balance = Number(card.current_balance);
@@ -175,6 +185,28 @@ export default async function CardDetailPage({
           value={formatDate(payment)}
           hint={`día ${card.payment_due_day} · ${relativeDayLabel(paymentIn)}`}
         />
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg font-medium">Financiamientos</h2>
+          <FinancingForm
+            cardId={card.id}
+            currency={card.currency}
+            categories={categories}
+          />
+        </div>
+        {financings.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Sin financiamientos activos en esta tarjeta.
+          </p>
+        ) : (
+          <FinancingList
+            financings={financings}
+            transactions={transactions}
+            today={today}
+          />
+        )}
       </div>
 
       <div className="flex flex-col gap-3">

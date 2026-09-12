@@ -167,3 +167,33 @@ export const categorySchema = z.object({
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;
+
+// ─────────────────────────────  financiamientos  ─────────────────────────────
+
+export const financingSchema = z.object({
+  card_id: z.string().regex(/^[0-9a-fA-F-]{36}$/, "Tarjeta inválida"),
+  description: z
+    .string()
+    .trim()
+    .min(1, "La descripción es obligatoria")
+    .max(80),
+  category: z
+    .string()
+    .trim()
+    .min(1, "Elegí una categoría")
+    .max(40),
+  total_amount: z.coerce
+    .number()
+    .finite("Monto inválido")
+    .positive("El monto debe ser mayor que cero"),
+  months: z.coerce
+    .number()
+    .int()
+    .min(2, "Mínimo 2 cuotas")
+    .max(48, "Máximo 48 cuotas"),
+  first_charge_on: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+});
+
+export type FinancingInput = z.infer<typeof financingSchema>;

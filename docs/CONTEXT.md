@@ -36,7 +36,8 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
 | Lógica de tarjetas | `src/lib/cards.ts` | `nextCutoffDate`, `nextPaymentDate`, `lastCutoffDate`, `paymentDueForCutoff` (clamp de día en meses cortos). `cardStatement(card, txns, from)` → estado de cuenta del corte vigente: `statementBalance` (saldo de contado = cargos − pagos **con fecha <= último corte**), `paidAfterCutoff`, `dueAmount` (falta pagar antes de `dueDate` para no generar intereses), `newCharges` (consumo posterior al corte), `status` (`sin-movimientos`/`sin-saldo`/`al-dia`/`pendiente`/`atrasada`), `daysToDue`. |
 | Formato es-CR | `src/lib/format.ts` | `formatCurrency` (default `CRC`, símbolo ₡ forzado con `narrowSymbol`), `formatDate` (una string `"YYYY-MM-DD"` se lee como día local, no UTC), `daysUntil` (`from = crToday()`), `relativeDayLabel` ("hoy" / "mañana" / "en 5 días" / "hace 2 días"). Monedas soportadas: `CRC` (default) y `USD` — ver `CURRENCIES` en `src/lib/schema.ts`. |
 | Resumen / dashboard | `src/app/(app)/dashboard/page.tsx` | Server component; calcula contra `crToday()`. Trae cuentas + tarjetas + movimientos de tarjeta y arma un `cardStatement` por tarjeta. Los montos "a pagar" son **de contado** (`dueAmount`), no `current_balance`. Secciones: banner de atraso (si hay tarjetas `atrasada`), stats (disponible débito · a pagar de contado · consumo sin cortar), callout de cobertura vs. débito, "Pagos de contado" agrupados (**Atrasadas** / **Por vencer**) y "Próximos cortes". |
-| Tipos de dominio | `src/lib/types.ts` | `Account`, `CreditCard`, `Transaction` (`TransactionType`), `Category` (`CategoryKind`). |
+| Tipos de dominio | `src/lib/types.ts` | `Account`, `CreditCard`, `Transaction` (`TransactionType`), `Category` (`CategoryKind`), `Financing`. |
+| Financiamientos (tasa 0) | `src/app/(app)/procesos/tarjetas/_financiamientos/` + tabla `financings` + SP `create_financing` | Compra a cuotas sin interés sobre una tarjeta: `FinancingForm` (descripción, categoría, monto total, meses, fecha de primera cuota) llama `createFinancing` → `supabase.rpc('create_financing', ...)`, que crea la fila en `financings` y de una vez las N cuotas como `transactions` tipo `expense` (`financing_id`, `installment_no`, `note` con "cuota i/N"), fechadas mes a mes con el mismo día de la compra (clamp en meses cortos, igual que `clampDay` de `cards.ts`). El trigger de saldo ya existente suma el total al `current_balance` de inmediato. `FinancingList` muestra los planes activos y los borra completos (`deleteFinancing`, cascade). Solo crear/borrar — no hay edición ni cancelación parcial. |
 | Rutas | `src/app/login/` (auth), grupo `src/app/(app)/` (protegido: `layout.tsx` llama `requireUser()`): `/dashboard`, `/procesos` (índice + `cuentas`, `tarjetas`, `tarjetas/[id]`, `gastos`, `ingresos`), `/ajustes` (+ `/ajustes/categorias`) | `src/app/(app)/loading.tsx` = esqueleto de carga entre vistas. `/cuentas` y `/tarjetas` redirigen 308 a `/procesos/*` desde `next.config.ts`. |
 | Navegación | `src/components/app-nav.tsx` (`"use client"`) + `src/components/back-link.tsx` | 3 pestañas: **Resumen** (`/dashboard`) · **Procesos** (`/procesos`) · **Ajustes** (`/ajustes`); `useIsActive` hace prefix-match, así que `/procesos/*` ilumina Procesos. `AppTopBar` (marca + pestañas en `sm+` + `UserMenu`) y `AppBottomNav` (tabs inferiores en móvil). `<BackLink href label />` = enlace "← <índice>" arriba a la izquierda en cada sub-página (`/procesos/*`, `/ajustes/categorias`). `UserMenu` (`src/components/user-menu.tsx`): avatar + dropdown con correo y cerrar sesión. |
 | Instalable (PWA-lite) | `src/app/manifest.ts`, `public/icon.svg`, `viewport`/`metadata` en `src/app/layout.tsx` | `display: standalone`, `theme-color` claro/oscuro, `apple-touch-icon`. Sin service worker. |
@@ -46,8 +47,17 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
 
 ## Base de datos
 
-- Esquema: `supabase/migrations/` (p. ej. `20260902180000_init.sql`). Aplicar en el
-  SQL Editor de Supabase o con `supabase db push`.
+- Esquema histórico (hasta v1.2.1): `supabase/migrations/` (p. ej.
+  `20260902180000_init.sql`), aplicado en su momento vía SQL Editor de Supabase o
+  `supabase db push`. **Desde v1.2.2 esta carpeta no recibe archivos nuevos** — queda
+  congelada como historial de lo ya aplicado.
+- **A partir de v1.2.2**: todo SQL nuevo (tablas/columnas, RLS, índices, funciones /
+  stored procedures) vive en `supabase/Versionamiento/<version>/`, una carpeta por
+  versión de la app, con los archivos numerados en **orden de ejecución** (`00_...`,
+  `01_...`, ...). El usuario los corre a mano en el SQL Editor de Supabase; la carpeta
+  queda como respaldo legible de qué se ejecutó en cada release. Al publicar una
+  versión, el siguiente desarrollo abre `supabase/Versionamiento/<version-siguiente>/`
+  con lo que haga falta (migraciones y/o SPs).
 - Config local: `supabase/config.toml`.
 - Tablas: `accounts` (checking/savings/cash), `credit_cards` (con `cutoff_day`,
   `payment_due_day`, `current_balance`) y `transactions` (movimientos). **Todas con RLS
@@ -69,6 +79,14 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
 - `categories` (`20260906130000_categories.sql`): `kind in ('expense','income')`,
   `name` (1–40 chars). RLS + 4 policies + índice parcial + **índice único parcial**
   `(user_id, kind, lower(name)) where not archived` (choque → `error.code === '23505'`).
+- `financings` (`supabase/Versionamiento/1.2.2/00_financings_schema.sql`): plan de
+  cuotas sin interés sobre una tarjeta — `card_id`, `description`, `category`,
+  `total_amount`, `months` (2–48), `currency` (heredada de la tarjeta), `first_charge_on`.
+  RLS + 4 policies + índices parciales, mismo patrón que el resto. `transactions` suma
+  `financing_id` (FK `on delete cascade`) e `installment_no`, nullable — solo los
+  poblan las cuotas generadas por el SP `create_financing`
+  (`01_create_financing_function.sql`), que inserta el plan y sus N cuotas en una sola
+  función `security invoker` (atómico).
 
 ## Comandos
 
@@ -84,7 +102,7 @@ npm run lint     # eslint
 |------|---------|--------|
 | 1 | Base desplegable + auth + **cuentas de débito** + **tarjetas de crédito** (saldo, corte, pago) + dashboard resumen | ✅ v1.0.0 (tag + release) |
 | 2 | Movimientos / gastos e ingresos, actualización de saldos por trigger, detalle de tarjeta con pagos/abonos | ✅ v1.2.0 · estado de cuenta + alerta de atraso + categorías configurables en v1.2.1 |
-| 3 | Financiamientos y préstamos (amortización) | ⏳ |
+| 3 | Financiamientos y préstamos (amortización) | 🔶 financiamientos de tarjeta a tasa 0 en v1.2.2 · préstamos con interés/amortización pendientes |
 | 4 | Ahorros y metas | ⏳ |
 
 ## Gotchas
@@ -108,3 +126,12 @@ npm run lint     # eslint
   cuenta origen) se re-ajusta — revisá saldos después de borrar.
 - `transactions.category` es **texto libre**: renombrar o borrar una categoría en
   `/ajustes/categorias` no toca los movimientos históricos.
+- Un financiamiento genera sus cuotas **con fecha futura desde el día 0**. Por eso
+  `cardStatement` (`src/lib/cards.ts`) separa "después del corte" en lo ya ocurrido
+  (`occurred_on <= hoy`, cuenta como `newCharges`/`dueAmount`) y lo programado a
+  futuro (`occurred_on > hoy`, no cuenta todavía) — solo `balanceByMovements` y
+  `current_balance` incluyen el total completo de inmediato. Si se agrega otro flujo
+  que inserte movimientos con fecha futura, revisar que siga esta misma regla.
+- Borrar un financiamiento borra (cascade) **todas** sus cuotas, pasadas y futuras, y
+  el trigger revierte el saldo completo — no hay forma de "cancelar a la mitad"
+  dejando las cuotas ya cortadas.
