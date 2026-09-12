@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { BackLink } from "@/components/back-link";
 import { DeleteButton } from "@/components/delete-button";
+import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { AccountFormDialog } from "./account-form";
 import { deleteAccount } from "./actions";
 
@@ -49,57 +50,91 @@ export default async function CuentasPage() {
         <AccountFormDialog />
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Institución</TableHead>
-              <TableHead className="text-right">Saldo</TableHead>
-              <TableHead className="w-24" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {accounts.length === 0 ? (
+      {accounts.length === 0 ? (
+        <div className="rounded-lg border">
+          <Table>
+            <TableBody>
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="py-10 text-center text-muted-foreground"
-                >
+                <TableCell className="py-10 text-center text-muted-foreground">
                   Aún no tienes cuentas. Agrega la primera.
                 </TableCell>
               </TableRow>
-            ) : (
-              accounts.map((account) => (
-                <TableRow key={account.id}>
-                  <TableCell className="font-medium">{account.name}</TableCell>
-                  <TableCell>{TYPE_LABELS[account.type]}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {account.institution ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatCurrency(
-                      Number(account.current_balance),
-                      account.currency,
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-1">
-                      <AccountFormDialog account={account} />
-                      <DeleteButton
-                        id={account.id}
-                        action={deleteAccount}
-                        confirmLabel={`¿Eliminar la cuenta "${account.name}"?`}
-                      />
-                    </div>
-                  </TableCell>
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <>
+          <div className="hidden rounded-lg border sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Institución</TableHead>
+                  <TableHead className="text-right">Saldo</TableHead>
+                  <TableHead className="w-24" />
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {accounts.map((account) => (
+                  <TableRow key={account.id}>
+                    <TableCell className="font-medium">{account.name}</TableCell>
+                    <TableCell>{TYPE_LABELS[account.type]}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {account.institution ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCurrency(
+                        Number(account.current_balance),
+                        account.currency,
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-1">
+                        <AccountFormDialog account={account} />
+                        <DeleteButton
+                          id={account.id}
+                          action={deleteAccount}
+                          confirmLabel={`¿Eliminar la cuenta "${account.name}"?`}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <MobileList>
+            {accounts.map((account) => (
+              <MobileCard
+                key={account.id}
+                title={account.name}
+                meta={account.institution ?? undefined}
+                actions={
+                  <>
+                    <AccountFormDialog account={account} />
+                    <DeleteButton
+                      id={account.id}
+                      action={deleteAccount}
+                      confirmLabel={`¿Eliminar la cuenta "${account.name}"?`}
+                    />
+                  </>
+                }
+              >
+                <MobileField label="Tipo" value={TYPE_LABELS[account.type]} />
+                <MobileField
+                  label="Saldo"
+                  value={formatCurrency(
+                    Number(account.current_balance),
+                    account.currency,
+                  )}
+                />
+              </MobileCard>
+            ))}
+          </MobileList>
+        </>
+      )}
 
       {accounts.length > 0 ? (
         <p className="text-right text-sm text-muted-foreground">

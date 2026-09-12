@@ -30,6 +30,8 @@ type Props = {
   fixedCardBalance?: number;
   transaction?: Transaction;
   triggerLabel?: string;
+  /** Botón circular fijo (para el acceso rápido global) en vez del botón inline. */
+  fab?: boolean;
 };
 
 const NEW_LABEL: Record<TransactionType, string> = {
@@ -59,6 +61,7 @@ export function TransactionForm({
   fixedCardBalance,
   transaction,
   triggerLabel,
+  fab = false,
 }: Props) {
   const editing = Boolean(transaction);
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
@@ -94,6 +97,12 @@ export function TransactionForm({
         render={
           editing ? (
             <Button variant="ghost" size="icon" aria-label="Editar" />
+          ) : fab ? (
+            <Button
+              size="icon-lg"
+              aria-label={triggerLabel ?? NEW_LABEL[type]}
+              className="fixed right-4 bottom-20 z-30 rounded-full shadow-lg sm:right-6 sm:bottom-6"
+            />
           ) : (
             <Button size="sm" />
           )
@@ -101,6 +110,8 @@ export function TransactionForm({
       >
         {editing ? (
           <Pencil className="size-4" />
+        ) : fab ? (
+          <Plus className="size-5" />
         ) : (
           <>
             <Plus className="size-4" /> {triggerLabel ?? NEW_LABEL[type]}

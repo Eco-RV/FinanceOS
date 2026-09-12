@@ -4,6 +4,8 @@ import {
   CalendarClock,
   CheckCircle2,
   CreditCard,
+  Layers,
+  Receipt,
   TriangleAlert,
   Wallet,
 } from "lucide-react";
@@ -20,10 +22,11 @@ import {
   nextCutoffDate,
   type CardStatement,
 } from "@/lib/cards";
-import { crToday } from "@/lib/dates";
+import { crToday, toISODate } from "@/lib/dates";
 import type {
   Account,
   CreditCard as CreditCardType,
+  Financing,
   Transaction,
 } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,7 +57,10 @@ const LEVEL_BAR: Record<Level, string> = {
   ok: "bg-muted-foreground/30",
 };
 
-type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on">;
+type CardTxn = Pick<
+  Transaction,
+  "card_id" | "type" | "amount" | "occurred_on" | "financing_id"
+>;
 
 type Payment = {
   card: CreditCardType;
@@ -67,22 +73,47 @@ type Payment = {
 export default async function DashboardPage() {
   await requireUser();
 
+  const today = crToday();
+  const monthStartISO = toISODate(new Date(today.getFullYear(), today.getMonth(), 1));
+  const todayISO = toISODate(today);
+
   const supabase = await createClient();
-  const [{ data: accountsData }, { data: cardsData }, { data: cardTxData }] =
-    await Promise.all([
-      supabase.from("accounts").select("*").eq("archived", false),
-      supabase.from("credit_cards").select("*").eq("archived", false),
-      supabase
-        .from("transactions")
-        .select("card_id, type, amount, occurred_on")
-        .eq("archived", false)
-        .not("card_id", "is", null),
-    ]);
+  const [
+    { data: accountsData },
+    { data: cardsData },
+    { data: cardTxData },
+    { data: monthExpenseData },
+    { data: financingData },
+  ] = await Promise.all([
+    supabase.from("accounts").select("*").eq("archived", false),
+    supabase.from("credit_cards").select("*").eq("archived", false),
+    supabase
+      .from("transactions")
+      .select("card_id, type, amount, occurred_on, financing_id")
+      .eq("archived", false)
+      .not("card_id", "is", null),
+    supabase
+      .from("transactions")
+      .select("amount")
+      .eq("type", "expense")
+      .eq("archived", false)
+      .gte("occurred_on", monthStartISO)
+      .lte("occurred_on", todayISO),
+    supabase.from("financings").select("*").eq("archived", false),
+  ]);
 
   const accounts = (accountsData ?? []) as Account[];
   const cards = (cardsData ?? []) as CreditCardType[];
   const cardTxns = (cardTxData ?? []) as CardTxn[];
-  const today = crToday();
+  const financings = (financingData ?? []) as Financing[];
+
+  const monthlyExpenseTotal = (monthExpenseData ?? []).reduce(
+    (s, t) => s + Number(t.amount),
+    0,
+  );
+  const financingPending = cardTxns
+    .filter((t) => t.financing_id && t.occurred_on > todayISO)
+    .reduce((s, t) => s + Number(t.amount), 0);
 
   const txByCard = new Map<string, CardTxn[]>();
   for (const t of cardTxns) {
@@ -206,8 +237,25 @@ export default async function DashboardPage() {
             icon={<CreditCard className="size-4" />}
           />
         </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Stat
+            title="Gasto del mes"
+            value={formatCurrency(monthlyExpenseTotal)}
+            icon={<Receipt className="size-4" />}
+          />
+          {financings.length > 0 ? (
+            <Stat
+              title="Financiamientos activos"
+              value={`${financings.length} activo${financings.length === 1 ? "" : "s"}`}
+              icon={<Layers className="size-4" />}
+            />
+          ) : null}
+        </div>
         <p className="text-xs text-muted-foreground">
           Patrimonio neto (todas las cuentas − deuda): {formatCurrency(netWorth)}
+          {financings.length > 0
+            ? ` · Pendiente en financiamientos: ${formatCurrency(financingPending)}`
+            : ""}
         </p>
       </div>
 

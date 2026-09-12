@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.3 — 2026-09-11
+
+Mejoras de UI/UX orientadas a mobile: Resumen más útil, acceso rápido a
+gastos y tablas sin scroll horizontal.
+
+### Añadido
+- **Botón flotante "Nuevo gasto"** visible en todas las pantallas (Resumen,
+  Procesos, Ajustes), pensado para el uso diario desde el celular.
+  `TransactionForm` gana la prop `fab`; los datos se cargan una vez en
+  `src/app/(app)/layout.tsx`.
+- **Resumen** con dos stats nuevos: "Gasto del mes" (todos los gastos del
+  mes en curso) y "Financiamientos activos" (cantidad + total pendiente en
+  cuotas futuras, sumado a la línea de patrimonio neto).
+- **Tablas responsive**: Cuentas, Tarjetas, Movimientos y Financiamientos se
+  ven como tarjetas apiladas en mobile (`src/components/mobile-list.tsx`) —
+  sin scroll horizontal y con las acciones de editar/borrar siempre a la
+  vista. En pantallas `sm`+ se ven exactamente igual que antes.
+
 ## 1.2.2 — 2026-09-11
 
 Financiamientos de tarjeta de crédito (tasa 0, sin intereses).

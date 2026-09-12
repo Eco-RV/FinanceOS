@@ -17,6 +17,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { DeleteButton } from "@/components/delete-button";
+import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { CardFormDialog } from "./card-form";
 import { CardStatusBadge } from "./card-status";
 import { deleteCard } from "./actions";
@@ -52,6 +53,13 @@ export default async function TarjetasPage() {
     else byCard.set(t.card_id, [t]);
   }
 
+  const rows = cards.map((card) => {
+    const st: CardStatement = cardStatement(card, byCard.get(card.id) ?? [], today);
+    const cutoff = nextCutoffDate(card.cutoff_day, today);
+    const owes = st.status === "pendiente" || st.status === "atrasada";
+    return { card, st, cutoff, owes };
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <BackLink href="/procesos" label="Procesos" />
@@ -65,38 +73,34 @@ export default async function TarjetasPage() {
         <CardFormDialog />
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tarjeta</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Saldo actual</TableHead>
-              <TableHead className="text-right">Falta pagar</TableHead>
-              <TableHead>Próximo corte</TableHead>
-              <TableHead className="w-32" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {cards.length === 0 ? (
+      {cards.length === 0 ? (
+        <div className="rounded-lg border">
+          <Table>
+            <TableBody>
               <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="py-10 text-center text-muted-foreground"
-                >
+                <TableCell className="py-10 text-center text-muted-foreground">
                   Aún no tienes tarjetas. Agrega la primera.
                 </TableCell>
               </TableRow>
-            ) : (
-              cards.map((card) => {
-                const st: CardStatement = cardStatement(
-                  card,
-                  byCard.get(card.id) ?? [],
-                  today,
-                );
-                const cutoff = nextCutoffDate(card.cutoff_day, today);
-                const owes = st.status === "pendiente" || st.status === "atrasada";
-                return (
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <>
+          <div className="hidden rounded-lg border sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tarjeta</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Saldo actual</TableHead>
+                  <TableHead className="text-right">Falta pagar</TableHead>
+                  <TableHead>Próximo corte</TableHead>
+                  <TableHead className="w-32" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map(({ card, st, cutoff, owes }) => (
                   <TableRow key={card.id}>
                     <TableCell>
                       <Link
@@ -162,12 +166,68 @@ export default async function TarjetasPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <MobileList>
+            {rows.map(({ card, st, cutoff, owes }) => (
+              <MobileCard
+                key={card.id}
+                title={
+                  <Link href={`/procesos/tarjetas/${card.id}`} className="hover:underline">
+                    {card.name}
+                  </Link>
+                }
+                meta={
+                  [card.institution, card.last_four && `•••• ${card.last_four}`]
+                    .filter(Boolean)
+                    .join(" · ") || undefined
+                }
+                actions={
+                  <>
+                    <Link
+                      href={`/procesos/tarjetas/${card.id}`}
+                      aria-label="Ver detalle"
+                      className={buttonVariants({ variant: "ghost", size: "icon" })}
+                    >
+                      <Eye className="size-4" />
+                    </Link>
+                    <CardFormDialog card={card} />
+                    <DeleteButton
+                      id={card.id}
+                      action={deleteCard}
+                      confirmLabel={`¿Eliminar la tarjeta "${card.name}"?`}
+                    />
+                  </>
+                }
+              >
+                <MobileField
+                  label="Estado"
+                  value={<CardStatusBadge status={st.status} daysToDue={st.daysToDue} />}
+                />
+                <MobileField
+                  label="Saldo actual"
+                  value={formatCurrency(Number(card.current_balance), card.currency)}
+                />
+                <MobileField
+                  label="Falta pagar"
+                  value={
+                    owes
+                      ? `${formatCurrency(st.dueAmount, card.currency)} (${formatDate(st.dueDate)})`
+                      : "—"
+                  }
+                />
+                <MobileField
+                  label="Próximo corte"
+                  value={`día ${card.cutoff_day} · ${formatDate(cutoff)}`}
+                />
+              </MobileCard>
+            ))}
+          </MobileList>
+        </>
+      )}
     </div>
   );
 }
