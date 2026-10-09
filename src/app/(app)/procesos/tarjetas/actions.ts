@@ -26,7 +26,10 @@ export async function saveCard(
   }
 
   const supabase = await createClient();
-  const values = parsed.data;
+  // Sin selector de banco en el formulario (aún no hay bancos) no se toca la
+  // columna: así guardar una tarjeta sigue funcionando antes de la migración 1.3.0.
+  const { bank_id, ...rest } = parsed.data;
+  const values = formData.has("bank_id") ? { ...rest, bank_id } : rest;
 
   const { error } = id
     ? await supabase.from("credit_cards").update(values).eq("id", id)

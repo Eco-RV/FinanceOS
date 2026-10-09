@@ -1,8 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-/** Paths reachable without an authenticated session. */
-const PUBLIC_PATHS = ["/login", "/auth"];
+/**
+ * Paths reachable without an authenticated session. `/api/sync-mail` no lleva
+ * sesión de usuario: la protege un secreto Bearer (CRON_SECRET) en la propia ruta.
+ */
+const PUBLIC_PATHS = ["/login", "/auth", "/privacidad", "/api/sync-mail"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some(

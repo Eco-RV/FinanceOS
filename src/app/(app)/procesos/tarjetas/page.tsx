@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cardStatement, nextCutoffDate, type CardStatement } from "@/lib/cards";
 import { crToday } from "@/lib/dates";
-import type { CreditCard, Transaction } from "@/lib/types";
+import type { Bank, CreditCard, Transaction } from "@/lib/types";
 import {
   Table,
   TableBody,
@@ -28,7 +28,8 @@ export default async function TarjetasPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const [{ data: cardData }, { data: txData }] = await Promise.all([
+  const [{ data: cardData }, { data: txData }, { data: bankData }] =
+    await Promise.all([
     supabase
       .from("credit_cards")
       .select("*")
@@ -39,9 +40,15 @@ export default async function TarjetasPage() {
       .select("card_id, type, amount, occurred_on")
       .eq("archived", false)
       .not("card_id", "is", null),
+    supabase
+      .from("banks")
+      .select("id, name")
+      .eq("archived", false)
+      .order("name", { ascending: true }),
   ]);
 
   const cards = (cardData ?? []) as CreditCard[];
+  const banks = (bankData ?? []) as Pick<Bank, "id" | "name">[];
   const txns = (txData ?? []) as CardTxn[];
   const today = crToday();
 
@@ -70,7 +77,7 @@ export default async function TarjetasPage() {
             Estado del corte y fecha límite de pago de cada tarjeta.
           </p>
         </div>
-        <CardFormDialog />
+        <CardFormDialog banks={banks} />
       </div>
 
       {cards.length === 0 ? (
@@ -157,7 +164,7 @@ export default async function TarjetasPage() {
                         >
                           <Eye className="size-4" />
                         </Link>
-                        <CardFormDialog card={card} />
+                        <CardFormDialog card={card} banks={banks} />
                         <DeleteButton
                           id={card.id}
                           action={deleteCard}
@@ -194,7 +201,7 @@ export default async function TarjetasPage() {
                     >
                       <Eye className="size-4" />
                     </Link>
-                    <CardFormDialog card={card} />
+                    <CardFormDialog card={card} banks={banks} />
                     <DeleteButton
                       id={card.id}
                       action={deleteCard}

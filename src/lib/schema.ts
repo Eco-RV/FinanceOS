@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PARSER_KEYS } from "./mail/parsers/index.ts";
 
 export const ACCOUNT_TYPES = ["checking", "savings", "cash"] as const;
 export const CURRENCIES = ["CRC", "USD"] as const;
@@ -31,6 +32,12 @@ export const creditCardSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{4}$/, "Deben ser 4 dígitos")
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
+  bank_id: z
+    .string()
+    .regex(/^[0-9a-fA-F-]{36}$/, "Banco inválido")
     .optional()
     .or(z.literal(""))
     .transform((v) => (v ? v : null)),
@@ -197,3 +204,32 @@ export const financingSchema = z.object({
 });
 
 export type FinancingInput = z.infer<typeof financingSchema>;
+
+// ─────────────────────────────  bancos  ─────────────────────────────
+
+/** "a@x.cr, B@y.cr" (o una por línea) → ["a@x.cr", "b@y.cr"], sin duplicados. */
+const senderList = z
+  .string()
+  .transform((v) =>
+    [...new Set(v.split(/[\s,;]+/).map((e) => e.trim().toLowerCase()))].filter(
+      Boolean,
+    ),
+  )
+  .pipe(
+    z
+      .array(z.email("Correo inválido"))
+      .min(1, "Agregá al menos un remitente")
+      .max(10, "Máximo 10 remitentes"),
+  );
+
+export const bankSchema = z.object({
+  name: z.string().trim().min(1, "El nombre es obligatorio").max(60),
+  sender_emails: senderList,
+  parser_key: z.enum(PARSER_KEYS, "Elegí un formato"),
+  enabled: z
+    .string()
+    .optional()
+    .transform((v) => v === "on" || v === "true"),
+});
+
+export type BankInput = z.infer<typeof bankSchema>;

@@ -15,10 +15,16 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { CURRENCIES } from "@/lib/schema";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import type { CreditCard } from "@/lib/types";
+import type { Bank, CreditCard } from "@/lib/types";
 import { saveCard } from "./actions";
 
-export function CardFormDialog({ card }: { card?: CreditCard }) {
+export function CardFormDialog({
+  card,
+  banks = [],
+}: {
+  card?: CreditCard;
+  banks?: Pick<Bank, "id" | "name">[];
+}) {
   const editing = Boolean(card);
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveCard,
@@ -175,6 +181,28 @@ export function CardFormDialog({ card }: { card?: CreditCard }) {
               ))}
             </Select>
           </FormField>
+
+          {banks.length > 0 ? (
+            <FormField
+              label="Banco para importar correos (opcional)"
+              htmlFor="bank_id"
+              error={errors?.bank_id}
+              hint="Ayuda a identificar la tarjeta en los avisos de compra"
+            >
+              <Select
+                id="bank_id"
+                name="bank_id"
+                defaultValue={card?.bank_id ?? ""}
+              >
+                <option value="">Sin banco</option>
+                {banks.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+          ) : null}
 
           {message ? (
             <p className="text-sm text-destructive">{message}</p>

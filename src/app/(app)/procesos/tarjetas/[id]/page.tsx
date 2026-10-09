@@ -14,7 +14,13 @@ import { crToday } from "@/lib/dates";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import { categoryNames } from "@/lib/categories";
 import { cn } from "@/lib/utils";
-import type { Account, CreditCard, Financing, Transaction } from "@/lib/types";
+import type {
+  Account,
+  Bank,
+  CreditCard,
+  Financing,
+  Transaction,
+} from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink } from "@/components/back-link";
 import { CardFormDialog } from "../card-form";
@@ -37,6 +43,7 @@ export default async function CardDetailPage({
     { data: accData },
     { data: catData },
     { data: financingData },
+    { data: bankData },
   ] = await Promise.all([
     supabase
       .from("credit_cards")
@@ -67,6 +74,11 @@ export default async function CardDetailPage({
       .eq("card_id", id)
       .eq("archived", false)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("banks")
+      .select("id, name")
+      .eq("archived", false)
+      .order("name", { ascending: true }),
   ]);
 
   if (!cardData) notFound();
@@ -107,7 +119,10 @@ export default async function CardDetailPage({
               <p className="text-sm text-muted-foreground">{subtitle}</p>
             ) : null}
           </div>
-          <CardFormDialog card={card} />
+          <CardFormDialog
+            card={card}
+            banks={(bankData ?? []) as Pick<Bank, "id" | "name">[]}
+          />
         </div>
       </div>
 

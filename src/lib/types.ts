@@ -18,6 +18,7 @@ export type CreditCard = {
   name: string;
   institution: string | null;
   last_four: string | null;
+  bank_id: string | null;
   credit_limit: number | null;
   cutoff_day: number;
   payment_due_day: number;
@@ -68,5 +69,47 @@ export type Category = {
   kind: CategoryKind;
   name: string;
   archived: boolean;
+  created_at: string;
+};
+
+export type Bank = {
+  id: string;
+  user_id: string;
+  name: string;
+  sender_emails: string[];
+  parser_key: string;
+  enabled: boolean;
+  archived: boolean;
+  created_at: string;
+};
+
+export type PendingStatus = "pending" | "approved" | "rejected";
+
+export type PendingTransaction = {
+  id: string;
+  user_id: string;
+  bank_id: string | null;
+  source_message_id: string;
+  merchant: string;
+  amount: number;
+  currency: string;
+  occurred_on: string; // "YYYY-MM-DD"
+  last_four: string | null;
+  auth_code: string | null;
+  reference: string | null;
+  card_id: string | null;
+  suggested_category: string | null;
+  status: PendingStatus;
+  transaction_id: string | null;
+  archived: boolean;
+  created_at: string;
+};
+
+export type MailConnection = {
+  id: string;
+  user_id: string;
+  provider: "gmail";
+  email: string;
+  last_synced_at: string | null;
   created_at: string;
 };

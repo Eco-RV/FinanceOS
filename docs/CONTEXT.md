@@ -13,6 +13,12 @@ saldos de cuentas de débito y ahorros.
 - Supabase project ref: `kruywmrwstrdvxxdzkcd`. Deploy: Vercel.
 - `.env.local` es un placeholder; el usuario crea el proyecto Supabase y aplica la
   migración.
+- **Documentación funcional**: `docs/historias-usuario/` tiene las historias de
+  usuario por proceso principal (Cuentas, Tarjetas, Gastos, Ingresos, Bancos — un
+  archivo por proceso). Es un documento vivo: cualquier cambio de
+  comportamiento en esos módulos se refleja ahí en el mismo cambio, igual que
+  se mantiene este archivo. Ver la convención completa en
+  `docs/historias-usuario/README.md`.
 
 ## Stack
 
@@ -38,7 +44,9 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
 | Resumen / dashboard | `src/app/(app)/dashboard/page.tsx` | Server component; calcula contra `crToday()`. Trae cuentas + tarjetas + movimientos de tarjeta y arma un `cardStatement` por tarjeta. Los montos "a pagar" son **de contado** (`dueAmount`), no `current_balance`. Secciones: banner de atraso (si hay tarjetas `atrasada`), stats (disponible débito · a pagar de contado · consumo sin cortar), callout de cobertura vs. débito, "Pagos de contado" agrupados (**Atrasadas** / **Por vencer**) y "Próximos cortes". |
 | Tipos de dominio | `src/lib/types.ts` | `Account`, `CreditCard`, `Transaction` (`TransactionType`), `Category` (`CategoryKind`), `Financing`. |
 | Financiamientos (tasa 0) | `src/app/(app)/procesos/tarjetas/_financiamientos/` + tabla `financings` + SP `create_financing` | Compra a cuotas sin interés sobre una tarjeta: `FinancingForm` (descripción, categoría, monto total, meses, fecha de primera cuota) llama `createFinancing` → `supabase.rpc('create_financing', ...)`, que crea la fila en `financings` y de una vez las N cuotas como `transactions` tipo `expense` (`financing_id`, `installment_no`, `note` con "cuota i/N"), fechadas mes a mes con el mismo día de la compra (clamp en meses cortos, igual que `clampDay` de `cards.ts`). El trigger de saldo ya existente suma el total al `current_balance` de inmediato. `FinancingList` muestra los planes activos y los borra completos (`deleteFinancing`, cascade). Solo crear/borrar — no hay edición ni cancelación parcial. |
-| Rutas | `src/app/login/` (auth), grupo `src/app/(app)/` (protegido: `layout.tsx` llama `requireUser()`): `/dashboard`, `/procesos` (índice + `cuentas`, `tarjetas`, `tarjetas/[id]`, `gastos`, `ingresos`), `/ajustes` (+ `/ajustes/categorias`) | `src/app/(app)/loading.tsx` = esqueleto de carga entre vistas. `/cuentas` y `/tarjetas` redirigen 308 a `/procesos/*` desde `next.config.ts`. |
+| Importación desde correo | `src/lib/mail/` (`gmail.ts`, `crypto.ts`, `sync.ts`, `merchants.ts`, `html.ts`, `parsers/`) + `src/app/api/{sync-mail,gmail/connect,gmail/callback}/route.ts` + `src/lib/supabase/admin.ts` + `.github/workflows/sync-mail.yml` | Lee avisos de compra de los bancos (tabla `banks`: remitentes + `parser_key`) por Gmail API readonly, **sin IA**: un parser determinístico por banco (`parsers/index.ts` = registro; contrato `MailParser` en `types.ts`). `syncConnection` es idempotente (`unique (user_id, source_message_id)`), casa la tarjeta por `credit_cards.last_four` (+ `bank_id` si hay choque) y deja el resultado en `pending_transactions`. El refresh token se guarda cifrado (AES-256-GCM, `MAIL_TOKEN_KEY`). `/api/sync-mail` es pública en `proxy.ts` pero exige `Authorization: Bearer CRON_SECRET`, corre con service role y la llama GitHub Actions cada 2 h. Los imports dentro de `src/lib/mail/` llevan extensión `.ts` para que `node --test` los corra sin dependencias (`allowImportingTsExtensions`). |
+| Bancos / Por confirmar | `src/app/(app)/ajustes/bancos/` + `src/app/(app)/procesos/pendientes/` | `/ajustes/bancos`: CRUD de bancos + conectar/desconectar Gmail. `/procesos/pendientes`: aprobar (crea `expense` en la tarjeta + aprende `merchant_rules`) o descartar; `syncNow` = misma sincronización con la sesión del usuario. |
+| Rutas | `src/app/login/` (auth), grupo `src/app/(app)/` (protegido: `layout.tsx` llama `requireUser()`): `/dashboard`, `/procesos` (índice + `cuentas`, `tarjetas`, `tarjetas/[id]`, `gastos`, `ingresos`, `pendientes`), `/ajustes` (+ `/ajustes/categorias`, `/ajustes/bancos`) | `src/app/(app)/loading.tsx` = esqueleto de carga entre vistas. `/cuentas` y `/tarjetas` redirigen 308 a `/procesos/*` desde `next.config.ts`. |
 | Navegación | `src/components/app-nav.tsx` (`"use client"`) + `src/components/back-link.tsx` | 3 pestañas: **Resumen** (`/dashboard`) · **Procesos** (`/procesos`) · **Ajustes** (`/ajustes`); `useIsActive` hace prefix-match, así que `/procesos/*` ilumina Procesos. `AppTopBar` (marca + pestañas en `sm+` + `UserMenu`) y `AppBottomNav` (tabs inferiores en móvil). `<BackLink href label />` = enlace "← <índice>" arriba a la izquierda en cada sub-página (`/procesos/*`, `/ajustes/categorias`). `UserMenu` (`src/components/user-menu.tsx`): avatar + dropdown con correo y cerrar sesión. `src/app/(app)/layout.tsx` también trae cuentas/tarjetas/categorías una vez y renderiza el FAB global (ver fila siguiente). |
 | Acceso rápido / responsive | `src/components/mobile-list.tsx` (`MobileList`/`MobileCard`/`MobileField`) + `TransactionForm` prop `fab` | El layout de `(app)` muestra un botón flotante "Nuevo gasto" (`TransactionForm type="expense" fab`) en todas las páginas. Las listas con muchas columnas (Cuentas, Tarjetas, Movimientos, Financiamientos) renderizan **dos vistas**: la `<Table>` de siempre envuelta en `hidden sm:block`, y un bloque `sm:hidden` con `MobileList`/`MobileCard` que muestra la misma fila como tarjeta apilada (mismos componentes de acción, sin lógica nueva) — así en mobile no hace falta scroll horizontal para editar/borrar. |
 | Instalable (PWA-lite) | `src/app/manifest.ts`, `public/icon.svg`, `viewport`/`metadata` en `src/app/layout.tsx` | `display: standalone`, `theme-color` claro/oscuro, `apple-touch-icon`. Sin service worker. |
@@ -89,13 +97,24 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
   (`01_create_financing_function.sql`), que inserta el plan y sus N cuotas en una sola
   función `security invoker` (atómico).
 
+- `banks`, `mail_connections`, `pending_transactions`, `merchant_rules`
+  (`supabase/Versionamiento/1.3.0/00_banks_and_pending.sql`): mismo patrón de RLS +
+  4 policies. `credit_cards` suma `bank_id` (FK nullable, `on delete set null`).
+  `pending_transactions` es solo staging: **no toca saldos** hasta que se aprueba y
+  se crea el `expense`.
+
 ## Comandos
 
 ```bash
 npm run dev     # next dev (Turbopack)
 npm run build
 npm run lint     # eslint
+npm test         # node --test (parsers, cifrado, claves de comercio)
 ```
+
+Variables de entorno de la importación de correo (ver `.env.example`):
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `MAIL_TOKEN_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`. En GitHub (secrets): `APP_URL`, `CRON_SECRET`.
 
 ## Roadmap
 
@@ -133,6 +152,12 @@ npm run lint     # eslint
   futuro (`occurred_on > hoy`, no cuenta todavía) — solo `balanceByMovements` y
   `current_balance` incluyen el total completo de inmediato. Si se agrega otro flujo
   que inserte movimientos con fecha futura, revisar que siga esta misma regla.
+- Un aviso del banco solo se importa si el remitente está en un banco **activo** y
+  el parser lo reconoce; si el banco cambia la plantilla del correo, los avisos se
+  ignoran en silencio hasta ajustar el parser (agregar un fixture real + test).
+- Un pendiente solo se aprueba contra una tarjeta de **su misma moneda**.
+- `SUPABASE_SERVICE_ROLE_KEY` salta RLS: solo se usa en `createAdminClient()` para
+  el cron; nunca con prefijo `NEXT_PUBLIC_` ni en código de cliente.
 - Borrar un financiamiento borra (cascade) **todas** sus cuotas, pasadas y futuras, y
   el trigger revierte el saldo completo — no hay forma de "cancelar a la mitad"
   dejando las cuotas ya cortadas.
