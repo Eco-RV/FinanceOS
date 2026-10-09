@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.3.0 — 2026-10-08
+
+Compras con tarjeta importadas automáticamente desde los correos del banco,
+sin IA ni tokens, con una bandeja para confirmarlas.
+
+### Añadido
+- **Bancos** (`/ajustes/bancos`): registrá los bancos con sus remitentes y el
+  formato del correo; conectá tu Gmail con permiso de **solo lectura**
+  (OAuth, token guardado cifrado con AES-256-GCM). Solo se leen correos de los
+  remitentes que registrás.
+- **Por confirmar** (`/procesos/pendientes`): las compras detectadas llegan a una
+  bandeja; al aprobar eligís tarjeta y categoría y se crea el gasto (el trigger
+  ajusta el saldo). Botón "Sincronizar" para leer el correo al momento. El índice
+  de Procesos muestra cuántas hay pendientes.
+- **Parser determinístico por banco** (`src/lib/mail/parsers/`), primero BAC
+  Credomatic, con fixture real y tests. Agregar un banco = un archivo + registro.
+- **Categoría sugerida por comercio** (`merchant_rules`): se aprende al aprobar.
+- Selector de **banco** opcional en la tarjeta; la tarjeta se identifica por sus
+  últimos 4 dígitos (`last_four`) y se desempata con el banco.
+- Ruta `/api/sync-mail` (Bearer `CRON_SECRET`, service role, idempotente) lista
+  para el cron de la v1.3.1.
+- Página pública `/privacidad` (requisito de Google OAuth) y `npm test`.
+- Historia de usuario nueva: `docs/historias-usuario/bancos.md`.
+
+### Base de datos
+- `supabase/Versionamiento/1.3.0/00_banks_and_pending.sql`: tablas `banks`,
+  `mail_connections`, `pending_transactions`, `merchant_rules` y
+  `credit_cards.bank_id`.
+
+### Configuración
+- Variables nuevas (ver `.env.example`): `GOOGLE_CLIENT_ID`,
+  `GOOGLE_CLIENT_SECRET`, `MAIL_TOKEN_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `CRON_SECRET`.
+
+### Pendiente (v1.3.1)
+- Workflow de GitHub Actions que sincroniza cada 2 h (hoy la lectura es manual).
+
 ## 1.2.3 — 2026-09-11
 
 Mejoras de UI/UX orientadas a mobile: Resumen más útil, acceso rápido a

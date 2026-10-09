@@ -7,7 +7,7 @@
 Importa automáticamente las compras con tarjeta desde los avisos que envía el
 banco por correo. El usuario registra sus bancos (remitentes + formato del
 correo), conecta su Gmail en modo solo lectura y un proceso programado lee los
-avisos nuevos cada pocas horas **sin IA ni tokens** (un parser determinístico por
+avisos nuevos **sin IA ni tokens** (un parser determinístico por
 banco). Cada compra detectada llega a una bandeja "Por confirmar"; solo al
 aprobarla se crea el gasto y se ajusta el saldo de la tarjeta.
 
@@ -41,8 +41,9 @@ Como usuario quiero que las compras con tarjeta se detecten solas, para no
 registrarlas a mano.
 
 **Criterios de aceptación**
-- Un workflow de GitHub Actions llama cada 2 horas a `/api/sync-mail` (protegida
-  con un secreto Bearer, `CRON_SECRET`).
+- En v1.3.0 la lectura es **manual**: el botón "Sincronizar" de `/procesos/pendientes`.
+  La ruta `/api/sync-mail` (protegida con un secreto Bearer, `CRON_SECRET`) ya
+  existe; el workflow de GitHub Actions que la llama cada 2 horas llega en v1.3.1.
 - Leer dos veces el mismo correo no duplica nada (`unique (user_id,
   source_message_id)`).
 - La tarjeta se identifica por los **últimos 4 dígitos** del aviso contra
@@ -66,7 +67,7 @@ para que solo entren a mis saldos las que son correctas.
 - Solo se ofrecen tarjetas de la **misma moneda** de la compra (no hay
   conversión).
 - Descartar marca el pendiente `rejected`; no crea gasto.
-- "Sincronizar" lee el correo en el momento, sin esperar al cron.
+- "Sincronizar" lee el correo en el momento (único disparador en v1.3.0).
 
 ### 5. Categoría sugerida
 Como usuario quiero que la app recuerde la categoría de cada comercio, para
@@ -100,6 +101,7 @@ distinga tarjetas de bancos distintos con los mismos últimos 4 dígitos.
 
 ## Pendiente / fuera de alcance
 
+- Lectura automática programada (GitHub Actions cada 2 h): pendiente para v1.3.1.
 - Solo Gmail; IMAP queda como alternativa futura tras la misma interfaz.
 - Solo gastos con tarjeta de crédito: no importa débitos, transferencias ni
   reversos.
