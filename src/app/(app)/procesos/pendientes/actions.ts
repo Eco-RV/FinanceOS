@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { merchantKey } from "@/lib/mail/merchants";
 import { syncConnection } from "@/lib/mail/sync";
-import type { PendingTransaction } from "@/lib/types";
-import { assertSameCurrency, isCurrency } from "@/domain";
+import {
+  approvePending as approvePendingUseCase,
+  rejectPending as rejectPendingUseCase,
+} from "@/application";
+import { repositories } from "@/infrastructure/container";
 
 const uuid = z.string().regex(/^[0-9a-fA-F-]{36}$/);
 
@@ -34,66 +36,9 @@ export async function approvePending(formData: FormData) {
   await requireUser();
   const parsed = approveSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return;
-  const { id, card_id, category } = parsed.data;
 
-  const supabase = await createClient();
-  const { data: pendingData } = await supabase
-    .from("pending_transactions")
-    .select("*")
-    .eq("id", id)
-    .eq("status", "pending")
-    .maybeSingle();
-  const pending = pendingData as PendingTransaction | null;
-  if (!pending) return;
-
-  // I5: sin conversión de moneda, la compra debe ser en la moneda de la tarjeta.
-  const { data: card } = await supabase
-    .from("credit_cards")
-    .select("currency")
-    .eq("id", card_id)
-    .maybeSingle();
-  if (!card || !isCurrency(card.currency) || !isCurrency(pending.currency)) return;
-  try {
-    assertSameCurrency(pending.currency, card.currency, "I5");
-  } catch {
-    return;
-  }
-
-  const { data: tx, error } = await supabase
-    .from("transactions")
-    .insert({
-      type: "expense",
-      amount: pending.amount,
-      occurred_on: pending.occurred_on,
-      category,
-      note: pending.merchant.slice(0, 200),
-      currency: pending.currency,
-      account_id: null,
-      card_id,
-    })
-    .select("id")
-    .single();
-  if (error || !tx) return;
-
-  await supabase
-    .from("pending_transactions")
-    .update({ status: "approved", transaction_id: tx.id, card_id })
-    .eq("id", id);
-
-  const key = merchantKey(pending.merchant);
-  const { data: rule } = await supabase
-    .from("merchant_rules")
-    .select("id")
-    .eq("merchant_key", key)
-    .eq("archived", false)
-    .maybeSingle();
-  if (rule) {
-    await supabase.from("merchant_rules").update({ category }).eq("id", rule.id);
-  } else {
-    await supabase.from("merchant_rules").insert({ merchant_key: key, category });
-  }
-
-  revalidate(card_id);
+  const result = await approvePendingUseCase(await repositories(), parsed.data);
+  if (result.ok) revalidate(parsed.data.card_id);
 }
 
 export async function rejectPending(formData: FormData) {
@@ -101,13 +46,8 @@ export async function rejectPending(formData: FormData) {
   const id = uuid.safeParse(formData.get("id"));
   if (!id.success) return;
 
-  const supabase = await createClient();
-  await supabase
-    .from("pending_transactions")
-    .update({ status: "rejected" })
-    .eq("id", id.data)
-    .eq("status", "pending");
-  revalidate();
+  const result = await rejectPendingUseCase(await repositories(), id.data);
+  if (result.ok) revalidate();
 }
 
 export type SyncNowResult =

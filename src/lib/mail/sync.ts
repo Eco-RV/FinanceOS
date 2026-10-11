@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { decryptToken } from "./crypto.ts";
 import { getMessage, listMessageIds, refreshAccessToken } from "./gmail.ts";
-import { merchantKey } from "./merchants.ts";
+import { merchantKey } from "../../domain/importing/merchant.ts";
 import { getParser } from "./parsers/index.ts";
 
 type Connection = {

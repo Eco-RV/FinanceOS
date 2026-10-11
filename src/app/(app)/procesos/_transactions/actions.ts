@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { transactionSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 import { parseOrigin } from "@/lib/transactions";
-import { DomainError, isCurrency, validateMovement, type Currency } from "@/domain";
+import { deleteMovement, saveMovement } from "@/application";
+import { repositories } from "@/infrastructure/container";
 
-function revalidateTx(cardIds: (string | null | undefined)[] = []) {
+function revalidateTx(cardIds: string[] = []) {
   revalidatePath("/dashboard");
   revalidatePath("/procesos");
   revalidatePath("/procesos/gastos");
@@ -36,63 +36,19 @@ export async function saveTransaction(
     parsed.data;
   const { kind, id: originId } = parseOrigin(origin);
 
-  const account_id = kind === "account" ? originId : null;
-  const resolvedCardId =
-    type === "card_payment" ? card_id : kind === "card" ? originId : null;
-
-  const supabase = await createClient();
-
-  const currencyOf = async (table: "accounts" | "credit_cards", rowId: string | null) => {
-    if (!rowId) return null;
-    const { data } = await supabase.from(table).select("currency").eq("id", rowId).single();
-    return data && isCurrency(data.currency) ? data.currency : null;
-  };
-
-  // Reglas de dominio: categoría obligatoria, abono cuenta→tarjeta en la misma
-  // moneda (M1/M3/M5). La moneda del movimiento es la del origen.
-  let currency: Currency;
-  try {
-    currency = validateMovement({
-      type,
-      amount,
-      category,
-      accountCurrency: await currencyOf("accounts", account_id),
-      cardCurrency: await currencyOf("credit_cards", resolvedCardId),
-    });
-  } catch (e) {
-    if (e instanceof DomainError) return { ok: false, message: e.message };
-    throw e;
-  }
-
-  const values = {
+  const result = await saveMovement(await repositories(), {
+    id,
     type,
     amount,
     occurred_on,
     category,
     note,
-    currency,
-    account_id,
-    card_id: resolvedCardId,
-  };
+    account_id: kind === "account" ? originId : null,
+    card_id: type === "card_payment" ? card_id : kind === "card" ? originId : null,
+  });
+  if (!result.ok) return { ok: false, message: result.message };
 
-  // Si es edición, guardamos la tarjeta anterior para revalidar su detalle.
-  let prevCardId: string | null = null;
-  if (id) {
-    const { data } = await supabase
-      .from("transactions")
-      .select("card_id")
-      .eq("id", id)
-      .single();
-    prevCardId = data?.card_id ?? null;
-  }
-
-  const { error } = id
-    ? await supabase.from("transactions").update(values).eq("id", id)
-    : await supabase.from("transactions").insert(values);
-
-  if (error) return { ok: false, message: error.message };
-
-  revalidateTx([resolvedCardId, prevCardId]);
+  revalidateTx(result.value.affectedCardIds);
   return { ok: true };
 }
 
@@ -101,12 +57,6 @@ export async function deleteTransaction(formData: FormData) {
   const id = formData.get("id") as string;
   if (!id) return;
 
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("transactions")
-    .select("card_id")
-    .eq("id", id)
-    .single();
-  await supabase.from("transactions").delete().eq("id", id);
-  revalidateTx([data?.card_id]);
+  const result = await deleteMovement(await repositories(), id);
+  if (result.ok) revalidateTx(result.value.affectedCardIds);
 }

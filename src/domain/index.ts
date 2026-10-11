@@ -14,3 +14,4 @@ export * from "./cards/statement.ts";
 export * from "./financing/installments.ts";
 export * from "./financing/amortization.ts";
 export * from "./coverage/coverage.ts";
+export * from "./importing/merchant.ts";

@@ -5,9 +5,9 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Capa de dominio pura (docs/dominio/arquitectura.md): sin framework ni infra.
+  // Dominio y aplicación puros (docs/dominio/arquitectura.md): sin framework ni infra.
   {
-    files: ["src/domain/**/*.ts"],
+    files: ["src/domain/**/*.ts", "src/application/**/*.ts"],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -16,7 +16,7 @@ const eslintConfig = defineConfig([
             {
               group: ["next", "next/*", "react", "react/*", "react-dom", "@supabase/*", "zod", "server-only", "@/*"],
               message:
-                "src/domain es puro: nada de framework, infraestructura ni alias @/ (usa imports relativos con .ts).",
+                "src/domain y src/application son puros: nada de framework, infraestructura ni alias @/ (usa imports relativos con .ts).",
             },
           ],
         },

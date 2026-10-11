@@ -22,6 +22,15 @@ sin tocar las reglas.
 - El dashboard, el registro de movimientos y la aprobación de pendientes usan
   las reglas del dominio; se eliminan `src/lib/cards.ts` y `src/lib/dates.ts`.
 
+### Fase 2 — casos de uso y adaptadores
+- `src/application/`: puertos (repositorios) y casos de uso para registrar,
+  editar y borrar movimientos, crear y borrar financiamientos, y aprobar o
+  descartar pendientes. Probados con repositorios en memoria (51 tests).
+- `src/infrastructure/`: adaptador Supabase de esos puertos y un único punto
+  (`container.ts`) para elegir la base de datos.
+- Las Server Actions de esos flujos ya no consultan Supabase directamente.
+- Una cuenta o tarjeta archivada ya no se acepta como origen de un movimiento.
+
 ## 1.3.0 — 2026-10-08
 
 Compras con tarjeta importadas automáticamente desde los correos del banco,

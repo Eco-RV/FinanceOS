@@ -38,7 +38,7 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 
 0. **Lenguaje y reglas** (esta carpeta). ✅
 1. `src/domain/` puro con tests. ✅ (ver detalle abajo)
-2. Casos de uso + puertos; Server Actions delgadas; Supabase como adaptador.
+2. Casos de uso + puertos; Server Actions delgadas; Supabase como adaptador. ✅ para los flujos con reglas (ver detalle abajo)
 3. Saldos: el dominio decide; el saldo guardado (o el trigger) queda como
    proyección para rendimiento, verificable contra los movimientos.
 
@@ -54,8 +54,32 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 | `financing/amortization.ts` | F5 | — (nuevo, base para 2.0.0) |
 | `coverage/coverage.ts` | Cobertura del débito vs. pagos de contado | `dashboard/page.tsx` |
 
-Siguen fuera (Fase 2/3): el trigger de saldos y el SP de cuotas como
-implementación en Postgres, y el acceso a datos dentro de las Server Actions.
+Siguen fuera (Fase 3): el trigger de saldos y el SP de cuotas como
+implementación en Postgres.
+
+## Fase 2 — casos de uso y adaptadores
+
+| Pieza | Archivo | Qué hace |
+|---|---|---|
+| Puertos | `src/application/ports.ts` | Interfaces que necesitan los casos de uso: cuentas, tarjetas, movimientos, financiamientos, pendientes, reglas de comercio. |
+| Resultado | `src/application/result.ts` | `UseCaseResult` (`ok` / `fail` con id de regla); `run()` convierte `DomainError` e `InfrastructureError` en un fallo mostrable. |
+| Casos de uso | `src/application/{movements,financings,pending}.ts` | `saveMovement`, `deleteMovement`, `createFinancing`, `deleteFinancing`, `approvePending`, `rejectPending`. Probados con fakes en memoria (`fakes.test-helpers.ts`). |
+| Adaptador | `src/infrastructure/supabase/repositories.ts` | Implementa los puertos con Supabase (RLS por usuario). |
+| Contenedor | `src/infrastructure/container.ts` | `repositories()`: el único lugar donde se elige la base de datos. |
+| Server Actions | `src/app/(app)/procesos/{_transactions,_financiamientos,pendientes}/actions.ts` | Solo: sesión → validar formulario (Zod) → caso de uso → refrescar vistas. |
+
+Decisiones de esta fase:
+
+- **Lecturas directas (CQRS liviano)**: las páginas siguen consultando
+  Supabase para mostrar datos; los cálculos sí pasan por el dominio
+  (`cardStatement`, `computeCoverage`). Solo las **escrituras** pasan por casos
+  de uso, que es donde viven las reglas.
+- **CRUD sin reglas propias** (cuentas, tarjetas, categorías, bancos) y la
+  sincronización de correo todavía hablan con Supabase desde su action; se
+  migran cuando ganen reglas (p. ej. G5 desactivar vs. eliminar, C3 una
+  tarjeta de débito por cuenta).
+- `G4` empieza a aplicarse: una cuenta o tarjeta archivada ya no se ofrece
+  como origen al registrar (el adaptador no la encuentra).
 
 ## Decisiones de infraestructura
 
