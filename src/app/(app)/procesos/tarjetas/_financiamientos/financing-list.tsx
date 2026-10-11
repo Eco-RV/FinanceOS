@@ -9,9 +9,12 @@ import {
 import { DeleteButton } from "@/components/delete-button";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { toISODate } from "@/lib/dates";
+import { toISODate } from "@/domain";
 import type { Financing, Transaction } from "@/lib/types";
 import { deleteFinancing } from "./actions";
+
+const CONFIRM =
+  "¿Eliminar este financiamiento? Se borran las cuotas futuras; las que ya se cobraron se conservan (podés quitarlas a mano).";
 
 type Props = {
   financings: Financing[];
@@ -29,7 +32,12 @@ export function FinancingList({ financings, transactions, today }: Props) {
       .sort((a, b) => (a.occurred_on < b.occurred_on ? -1 : 1));
     const pending = installments.filter((t) => t.occurred_on > todayISO);
     const monthlyAmount = f.total_amount / f.months;
-    return { f, pending, monthlyAmount };
+    const status = f.cancelled_on
+      ? `Cancelado el ${formatDate(f.cancelled_on)} · ${installments.length} cuota(s) conservada(s)`
+      : pending[0]
+        ? formatDate(pending[0].occurred_on)
+        : "Completado";
+    return { f, pending, monthlyAmount, status };
   });
 
   return (
@@ -47,7 +55,7 @@ export function FinancingList({ financings, transactions, today }: Props) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map(({ f, pending, monthlyAmount }) => (
+            {rows.map(({ f, pending, monthlyAmount, status }) => (
               <TableRow key={f.id}>
                 <TableCell>
                   <span className="font-medium">{f.description}</span>
@@ -69,15 +77,11 @@ export function FinancingList({ financings, transactions, today }: Props) {
                 <TableCell className="text-right tabular-nums">
                   {pending.length}
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {pending[0] ? formatDate(pending[0].occurred_on) : "Completado"}
-                </TableCell>
+                <TableCell className="text-muted-foreground">{status}</TableCell>
                 <TableCell>
-                  <DeleteButton
-                    id={f.id}
-                    action={deleteFinancing}
-                    confirmLabel="¿Eliminar este financiamiento? Se borrarán todas sus cuotas y se revertirá el saldo de la tarjeta."
-                  />
+                  {f.cancelled_on ? null : (
+                    <DeleteButton id={f.id} action={deleteFinancing} confirmLabel={CONFIRM} />
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -86,17 +90,15 @@ export function FinancingList({ financings, transactions, today }: Props) {
       </div>
 
       <MobileList>
-        {rows.map(({ f, pending, monthlyAmount }) => (
+        {rows.map(({ f, pending, monthlyAmount, status }) => (
           <MobileCard
             key={f.id}
             title={f.description}
             meta={f.category ?? undefined}
             actions={
-              <DeleteButton
-                id={f.id}
-                action={deleteFinancing}
-                confirmLabel="¿Eliminar este financiamiento? Se borrarán todas sus cuotas y se revertirá el saldo de la tarjeta."
-              />
+              f.cancelled_on ? undefined : (
+                <DeleteButton id={f.id} action={deleteFinancing} confirmLabel={CONFIRM} />
+              )
             }
           >
             <MobileField
@@ -108,10 +110,7 @@ export function FinancingList({ financings, transactions, today }: Props) {
               value={`≈ ${formatCurrency(monthlyAmount, f.currency)} / ${f.months} meses`}
             />
             <MobileField label="Restantes" value={pending.length} />
-            <MobileField
-              label="Próxima cuota"
-              value={pending[0] ? formatDate(pending[0].occurred_on) : "Completado"}
-            />
+            <MobileField label="Próxima cuota" value={status} />
           </MobileCard>
         ))}
       </MobileList>

@@ -6,11 +6,19 @@ import { createClient } from "@/lib/supabase/server";
 import {
   formatCurrency,
   formatDate,
-  daysUntil,
   relativeDayLabel,
 } from "@/lib/format";
-import { cardStatement, nextCutoffDate, nextPaymentDate } from "@/lib/cards";
-import { crToday } from "@/lib/dates";
+import {
+  cardAvailability,
+  cardStatementsByCurrency,
+  crToday,
+  daysUntil,
+  isCurrency,
+  nextCutoffDate,
+  nextPaymentDate,
+  type Currency,
+} from "@/domain";
+import { CardBalances, urgentDaysToDue } from "../card-money";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import { categoryNames } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -24,6 +32,7 @@ import type {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink } from "@/components/back-link";
 import { CardFormDialog } from "../card-form";
+import { cardOpeningsById } from "@/lib/transactions";
 import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
 import { TransactionList } from "../../_transactions/transaction-list";
@@ -44,6 +53,7 @@ export default async function CardDetailPage({
     { data: catData },
     { data: financingData },
     { data: bankData },
+    { data: rateData },
   ] = await Promise.all([
     supabase
       .from("credit_cards")
@@ -79,6 +89,13 @@ export default async function CardDetailPage({
       .select("id, name")
       .eq("archived", false)
       .order("name", { ascending: true }),
+    supabase
+      .from("exchange_rates")
+      .select("rate_on, usd_crc")
+      .eq("archived", false)
+      .order("rate_on", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (!cardData) notFound();
@@ -90,15 +107,28 @@ export default async function CardDetailPage({
   const financings = (financingData ?? []) as Financing[];
   const today = crToday();
 
-  const balance = Number(card.current_balance);
   const limit = card.credit_limit != null ? Number(card.credit_limit) : null;
+  const limitCurrency: Currency = isCurrency(card.currency) ? card.currency : "CRC";
   const cutoff = nextCutoffDate(card.cutoff_day, today);
   const payment = nextPaymentDate(card.cutoff_day, card.payment_due_day, today);
   const paymentIn = daysUntil(payment, today);
 
-  const st = cardStatement(card, transactions, today);
-  const overdue = st.status === "atrasada";
-  const settled = st.status === "al-dia" || st.status === "sin-saldo";
+  // T1: un estado de cuenta por moneda; el estado de la tarjeta es el más grave.
+  const multi = cardStatementsByCurrency(
+    { ...card, currency: limitCurrency },
+    transactions.map((t) => ({ ...t, currency: isCurrency(t.currency) ? t.currency : "CRC" })),
+    today,
+  );
+  const st = multi.byCurrency[limitCurrency]!;
+  const rate = rateData
+    ? { rate_on: rateData.rate_on as string, usd_crc: Number(rateData.usd_crc) }
+    : null;
+  const balances = {
+    CRC: Number(card.current_balance),
+    USD: Number(card.usd_balance ?? 0),
+  };
+  // T2: disponible = límite − saldos convertidos a la moneda del límite.
+  const availability = cardAvailability({ creditLimit: limit, limitCurrency, balances, rate });
 
   const subtitle =
     [card.institution, card.last_four && `•••• ${card.last_four}`]
@@ -113,7 +143,7 @@ export default async function CardDetailPage({
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold">{card.name}</h1>
-              <CardStatusBadge status={st.status} daysToDue={st.daysToDue} />
+              <CardStatusBadge status={multi.status} daysToDue={urgentDaysToDue(multi)} />
             </div>
             {subtitle ? (
               <p className="text-sm text-muted-foreground">{subtitle}</p>
@@ -121,73 +151,91 @@ export default async function CardDetailPage({
           </div>
           <CardFormDialog
             card={card}
+            openings={cardOpeningsById(
+              transactions
+                .filter((t) => t.type === "opening_balance")
+                .map((t) => ({ ...t, account_id: null })),
+            ).get(card.id)}
             banks={(bankData ?? []) as Pick<Bank, "id" | "name">[]}
           />
         </div>
       </div>
 
-      {/* Estado de cuenta del corte vigente */}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Estado de cuenta</h2>
+      {/* Estado de cuenta del corte vigente, una sección por moneda (T1) */}
+      {multi.currencies.map((cur) => {
+        const s = multi.byCurrency[cur]!;
+        const overdue = s.status === "atrasada";
+        const settled = s.status === "al-dia" || s.status === "sin-saldo";
+        return (
+          <section key={cur} className="flex flex-col gap-3">
+            <h2 className="text-lg font-medium">
+              Estado de cuenta{multi.currencies.length > 1 ? ` en ${cur === "CRC" ? "colones" : "dólares"}` : ""}
+            </h2>
 
-        {overdue ? (
-          <Alert tone="danger">
-            <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
-            <p className="text-sm font-medium">
-              Atrasada {Math.abs(st.daysToDue)} día
-              {Math.abs(st.daysToDue) === 1 ? "" : "s"} — el pago venció el{" "}
-              {formatDate(st.dueDate)} y genera intereses. Falta pagar{" "}
-              {formatCurrency(st.dueAmount, card.currency)}.
-            </p>
-          </Alert>
-        ) : settled ? (
-          <Alert tone="ok">
-            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-foreground/70" />
-            <p className="text-sm font-medium">
-              {st.status === "sin-saldo"
-                ? "No hubo saldo en el último corte."
-                : "Estás al día con el corte."}
-            </p>
-          </Alert>
-        ) : null}
+            {overdue ? (
+              <Alert tone="danger">
+                <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
+                <p className="text-sm font-medium">
+                  Atrasada {Math.abs(s.daysToDue)} día
+                  {Math.abs(s.daysToDue) === 1 ? "" : "s"} — el pago venció el{" "}
+                  {formatDate(s.dueDate)} y genera intereses. Falta pagar{" "}
+                  {formatCurrency(s.dueAmount, cur)}.
+                </p>
+              </Alert>
+            ) : settled ? (
+              <Alert tone="ok">
+                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-foreground/70" />
+                <p className="text-sm font-medium">
+                  {s.status === "sin-saldo"
+                    ? "No hubo saldo en el último corte."
+                    : "Estás al día con el corte."}
+                </p>
+              </Alert>
+            ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Stat
-            title="Saldo al corte"
-            value={formatCurrency(st.statementBalance, card.currency)}
-            hint={`corte del ${formatDate(st.lastCutoff)}`}
-          />
-          <Stat
-            title="Pagos desde el corte"
-            value={formatCurrency(st.paidAfterCutoff, card.currency)}
-          />
-          <Stat
-            title="Falta pagar"
-            value={formatCurrency(st.dueAmount, card.currency)}
-            hint={`antes del ${formatDate(st.dueDate)}`}
-            emphasis={
-              overdue ? "danger" : st.dueAmount > 0 ? "warn" : undefined
-            }
-          />
-          <Stat
-            title="Consumo sin cortar"
-            value={formatCurrency(st.newCharges, card.currency)}
-            hint={`entra al corte del ${formatDate(cutoff)}`}
-          />
-        </div>
-      </section>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Stat
+                title="Saldo al corte"
+                value={formatCurrency(s.statementBalance, cur)}
+                hint={`corte del ${formatDate(s.lastCutoff)}`}
+              />
+              <Stat title="Pagos desde el corte" value={formatCurrency(s.paidAfterCutoff, cur)} />
+              <Stat
+                title="Falta pagar"
+                value={formatCurrency(s.dueAmount, cur)}
+                hint={`antes del ${formatDate(s.dueDate)}`}
+                emphasis={overdue ? "danger" : s.dueAmount > 0 ? "warn" : undefined}
+              />
+              <Stat
+                title="Consumo sin cortar"
+                value={formatCurrency(s.newCharges, cur)}
+                hint={`entra al corte del ${formatDate(cutoff)}`}
+              />
+            </div>
+          </section>
+        );
+      })}
 
       {/* Datos del plástico */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat title="Saldo actual" value={formatCurrency(balance, card.currency)} />
+        <Stat title="Saldo actual" value={<CardBalances card={card} />} />
         <Stat
           title="Límite"
-          value={limit != null ? formatCurrency(limit, card.currency) : "—"}
+          value={limit != null ? formatCurrency(limit, limitCurrency) : "—"}
         />
         <Stat
           title="Disponible"
           value={
-            limit != null ? formatCurrency(limit - balance, card.currency) : "—"
+            availability.available != null
+              ? formatCurrency(availability.available, limitCurrency)
+              : "—"
+          }
+          hint={
+            availability.missingRate
+              ? "Falta el tipo de cambio (Ajustes → Tipo de cambio)"
+              : rate && balances.USD !== 0
+                ? `con $1 = ${formatCurrency(rate.usd_crc, "CRC")} (${formatDate(rate.rate_on)})`
+                : undefined
           }
         />
         <Stat
@@ -232,7 +280,7 @@ export default async function CardDetailPage({
               type="card_payment"
               accounts={accounts}
               fixedCardId={card.id}
-              fixedCardBalance={st.dueAmount > 0 ? st.dueAmount : balance}
+              fixedCardBalance={st.dueAmount > 0 ? st.dueAmount : balances[limitCurrency]}
               triggerLabel="Registrar pago / abono"
             />
           ) : null}
@@ -249,6 +297,7 @@ export default async function CardDetailPage({
           categories={categories}
           context="card"
           emptyLabel="Sin movimientos registrados en esta tarjeta."
+          cancelledFinancingIds={financings.filter((f) => f.cancelled_on).map((f) => f.id)}
         />
       </div>
     </div>

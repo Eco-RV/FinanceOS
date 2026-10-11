@@ -3,6 +3,7 @@
 import { DeleteButton } from "@/components/delete-button";
 import type { Account, CreditCard, Transaction } from "@/lib/types";
 import { TransactionForm } from "./transaction-form";
+import { TransferForm } from "./transfer-form";
 import { deleteTransaction } from "./actions";
 
 export function TransactionRowActions({
@@ -16,6 +17,22 @@ export function TransactionRowActions({
   cards: CreditCard[];
   categories?: string[];
 }) {
+  // El saldo inicial se edita desde el formulario de la cuenta o tarjeta.
+  if (transaction.type === "opening_balance") return null;
+
+  if (transaction.type === "transfer") {
+    return (
+      <div className="flex justify-end gap-1">
+        <TransferForm accounts={accounts} transaction={transaction} />
+        <DeleteButton
+          id={transaction.id}
+          action={deleteTransaction}
+          confirmLabel="¿Eliminar esta transferencia?"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-end gap-1">
       <TransactionForm

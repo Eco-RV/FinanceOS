@@ -1,15 +1,12 @@
-import type { Transaction, Account, CreditCard } from "@/lib/types";
+import type { Transaction, Account, CreditCard, OpeningBalance } from "@/lib/types";
 
 export const TRANSACTION_TYPE_LABELS = {
   expense: "Gasto",
   income: "Ingreso",
   card_payment: "Pago de tarjeta",
+  opening_balance: "Saldo inicial",
+  transfer: "Transferencia",
 } as const;
-
-/** Efecto con signo sobre el saldo mostrado, para historiales. */
-export function signedAmount(t: Pick<Transaction, "type" | "amount">): number {
-  return t.type === "income" ? Number(t.amount) : -Number(t.amount);
-}
 
 /** "account:<id>" | "card:<id>" -> partes. */
 export function parseOrigin(token: string): {
@@ -42,4 +39,35 @@ export function originLabel(
     if (c) return c.name;
   }
   return "—";
+}
+
+type OpeningRow = {
+  account_id: string | null;
+  card_id: string | null;
+  amount: number;
+  occurred_on: string;
+};
+
+/** Saldos iniciales indexados por id de cuenta o tarjeta. */
+export function openingsById(rows: OpeningRow[] | null | undefined): Map<string, OpeningBalance> {
+  const map = new Map<string, OpeningBalance>();
+  for (const r of rows ?? []) {
+    const id = r.account_id ?? r.card_id;
+    if (id) map.set(id, { amount: Number(r.amount), occurred_on: r.occurred_on });
+  }
+  return map;
+}
+
+/** Saldos iniciales de tarjetas por moneda (T1: puede haber uno en CRC y otro en USD). */
+export function cardOpeningsById(
+  rows: (OpeningRow & { currency: string })[] | null | undefined,
+): Map<string, Partial<Record<string, OpeningBalance>>> {
+  const map = new Map<string, Partial<Record<string, OpeningBalance>>>();
+  for (const r of rows ?? []) {
+    if (!r.card_id) continue;
+    const byCurrency = map.get(r.card_id) ?? {};
+    byCurrency[r.currency] = { amount: Number(r.amount), occurred_on: r.occurred_on };
+    map.set(r.card_id, byCurrency);
+  }
+  return map;
 }

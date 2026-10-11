@@ -1,5 +1,69 @@
 # Changelog
 
+## 2.0.0 — 2026-10-12
+
+Rediseño por dominio (DDD pragmático): la lógica de negocio se separa de la
+base de datos, el login y el correo para que pueda cambiar la infraestructura
+sin tocar las reglas.
+
+### Fase 0 — lenguaje y reglas
+- `docs/dominio/`: glosario, mapa de contextos, reglas (rechaza vs. advierte)
+  y arquitectura objetivo, a partir del documento *BusinessLogic Finance OS*.
+- Historia propuesta de financiamiento con interés (tabla de amortización) en
+  `docs/historias-usuario/tarjetas.md`.
+- Se descarta la sincronización automática de correo (v1.3.1): siempre manual.
+
+### Fase 1 — dominio puro
+- `src/domain/`: dinero en céntimos, calendario, libro de movimientos (signos y
+  saldos derivados), estado de cuenta de tarjetas, cuotas tasa 0, tabla de
+  amortización (sistema francés) y cobertura del débito. 42 tests con
+  `node --test`, sin base de datos.
+- ESLint impide que `src/domain/` importe Next, React, Supabase, Zod o `@/`.
+- El dashboard, el registro de movimientos y la aprobación de pendientes usan
+  las reglas del dominio; se eliminan `src/lib/cards.ts` y `src/lib/dates.ts`.
+
+### Fase 2 — casos de uso y adaptadores
+- `src/application/`: puertos (repositorios) y casos de uso para registrar,
+  editar y borrar movimientos, crear y borrar financiamientos, y aprobar o
+  descartar pendientes. Probados con repositorios en memoria (51 tests).
+- `src/infrastructure/`: adaptador Supabase de esos puertos y un único punto
+  (`container.ts`) para elegir la base de datos.
+- Las Server Actions de esos flujos ya no consultan Supabase directamente.
+- Una cuenta o tarjeta archivada ya no se acepta como origen de un movimiento.
+
+### Fase 3 — saldos como proyección verificable
+- **Saldo inicial como movimiento** (`opening_balance`): el formulario de cuenta y
+  tarjeta pide "Saldo inicial" (con signo) y su fecha; el saldo actual ya no se
+  edita a mano. En la tarjeta aparece como "Saldo inicial" y cuenta como cargo en
+  su fecha.
+- **Ajustes → Verificar saldos**: compara cada saldo guardado con sus movimientos y
+  permite recalcular.
+- Las cuotas de un financiamiento las calcula el dominio y la base las guarda tal
+  cual (`create_financing_v2`, valida cantidad y suma).
+
+### Funciones nuevas
+- **Eliminar un financiamiento conserva las cuotas ya cobradas** (fecha ≤ hoy); se
+  borran solo las futuras y el plan queda como "Cancelado". Las cuotas conservadas
+  se pueden quitar a mano desde el historial de la tarjeta.
+- **Transferencias entre cuentas propias** (`/procesos/transferencias`): misma
+  moneda, cuentas distintas; no cuentan como gasto ni ingreso.
+- **SINPE**: botón "Nuevo SINPE" en Gastos; gasto desde cuenta con destinatario y
+  teléfono opcionales.
+- **Tarjeta bimoneda**: cada tarjeta lleva saldo y estado de cuenta en colones y en
+  dólares; la moneda de la tarjeta pasa a ser la del límite. Cargos con selector de
+  moneda, abonos al saldo de la moneda de la cuenta, saldo inicial en ₡ y $, y
+  **disponible** con el tipo de cambio manual (**Ajustes → Tipo de cambio**). Los
+  pendientes del correo se aprueban contra cualquier tarjeta.
+
+### Base de datos (correr a mano, en orden, ANTES de desplegar)
+- `supabase/Versionamiento/2.0.0/00_opening_balance.sql`
+- `supabase/Versionamiento/2.0.0/01_balance_projection.sql`
+- `supabase/Versionamiento/2.0.0/02_migrate_opening_balances.sql`
+- `supabase/Versionamiento/2.0.0/03_create_financing_v2.sql`
+- `supabase/Versionamiento/2.0.0/04_cancel_financing.sql`
+- `supabase/Versionamiento/2.0.0/05_transfers_and_sinpe.sql`
+- `supabase/Versionamiento/2.0.0/06_multicurrency_cards.sql`
+
 ## 1.3.0 — 2026-10-08
 
 Compras con tarjeta importadas automáticamente desde los correos del banco,

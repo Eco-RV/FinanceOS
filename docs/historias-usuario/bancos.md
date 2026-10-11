@@ -64,8 +64,8 @@ para que solo entren a mis saldos las que son correctas.
   monto, banco y últimos 4. El índice de Procesos muestra cuántas hay.
 - Aprobar exige tarjeta y categoría; crea un `expense` sobre la tarjeta (el
   trigger de saldos hace el resto) y marca el pendiente `approved`.
-- Solo se ofrecen tarjetas de la **misma moneda** de la compra (no hay
-  conversión).
+- Se ofrecen todas las tarjetas: desde 2.0.0 son bimoneda, y la compra va al
+  saldo de **su** moneda en la tarjeta elegida (no hay conversión).
 - Descartar marca el pendiente `rejected`; no crea gasto.
 - "Sincronizar" lee el correo en el momento (único disparador en v1.3.0).
 
@@ -112,3 +112,5 @@ distinga tarjetas de bancos distintos con los mismos últimos 4 dígitos.
 
 - **2026-10-08 (v1.3.0)** — Primera versión: bancos, conexión Gmail, lectura
   programada, bandeja "Por confirmar" y categorías sugeridas por comercio.
+- **2026-10-11 (v2.0.0, en desarrollo)** — Un pendiente se aprueba contra
+  cualquier tarjeta (bimoneda); va al saldo de la moneda de la compra.

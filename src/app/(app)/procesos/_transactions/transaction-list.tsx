@@ -9,10 +9,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { originLabel, signedAmount } from "@/lib/transactions";
+import { signedAmount } from "@/domain";
+import { originLabel } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 import type { Account, CreditCard, Transaction } from "@/lib/types";
+import { DeleteButton } from "@/components/delete-button";
 import { TransactionRowActions } from "./transaction-row-actions";
+import { deleteTransaction } from "./actions";
 
 type Props = {
   transactions: Transaction[];
@@ -23,14 +26,23 @@ type Props = {
   /** "list" = vista de gastos/ingresos · "card" = historial dentro de una tarjeta. */
   context?: "list" | "card";
   emptyLabel?: string;
+  /** Financiamientos cancelados: sus cuotas conservadas se pueden quitar a mano (F4). */
+  cancelledFinancingIds?: string[];
 };
 
 /** Monto con signo según el contexto (flujo de caja vs. deuda de la tarjeta). */
 function displayAmount(t: Transaction, context: "list" | "card"): number {
+  // Una transferencia no es entrada ni salida neta: se muestra el monto movido.
+  if (t.type === "transfer") return Number(t.amount);
   if (context === "card") {
     return t.type === "card_payment" ? -Number(t.amount) : Number(t.amount);
   }
   return signedAmount(t);
+}
+
+function concept(t: Transaction): string {
+  if (t.type === "transfer") return "Transferencia";
+  return t.category ?? "—";
 }
 
 export function TransactionList({
@@ -40,6 +52,7 @@ export function TransactionList({
   categories = [],
   context = "list",
   emptyLabel = "Aún no hay movimientos.",
+  cancelledFinancingIds = [],
 }: Props) {
   const isCard = context === "card";
 
@@ -62,22 +75,50 @@ export function TransactionList({
   const rows = transactions.map((t) => {
     const amount = displayAmount(t, context);
     const isInstallment = Boolean(t.financing_id);
-    const detail = isCard
-      ? t.type === "card_payment"
-        ? `Desde ${originLabel(t, accounts, cards)}`
-        : (t.category ?? "Cargo")
-      : originLabel(t, accounts, cards);
+    const isOpening = t.type === "opening_balance";
+    const sinpeTo = [t.counterparty_name, t.counterparty_phone].filter(Boolean).join(" · ");
+    const detail = isOpening
+      ? "Saldo inicial"
+      : t.type === "transfer"
+        ? `${originLabel(t, accounts, cards)} → ${
+            accounts.find((a) => a.id === t.to_account_id)?.name ?? "—"
+          }`
+        : t.channel === "sinpe"
+          ? `${originLabel(t, accounts, cards)} · SINPE${sinpeTo ? ` a ${sinpeTo}` : ""}`
+          : isCard
+        ? t.type === "card_payment"
+          ? `Desde ${originLabel(t, accounts, cards)}`
+          : (t.category ?? "Cargo")
+        : originLabel(t, accounts, cards);
     const typeBadge = isCard ? (
       <Badge
         variant={
-          t.type === "card_payment" ? "secondary" : isInstallment ? "secondary" : "outline"
+          t.type === "card_payment" || isInstallment || isOpening ? "secondary" : "outline"
         }
       >
-        {t.type === "card_payment" ? "Pago" : isInstallment ? "Cuota" : "Cargo"}
+        {t.type === "card_payment"
+          ? "Pago"
+          : isOpening
+            ? "Saldo inicial"
+            : isInstallment
+              ? "Cuota"
+              : "Cargo"}
       </Badge>
     ) : null;
-    const actions = isInstallment ? (
+    const fromCancelledPlan =
+      isInstallment && cancelledFinancingIds.includes(t.financing_id!);
+    const actions = fromCancelledPlan ? (
+      <div className="flex justify-end">
+        <DeleteButton
+          id={t.id}
+          action={deleteTransaction}
+          confirmLabel="¿Quitar esta cuota de un financiamiento cancelado?"
+        />
+      </div>
+    ) : isInstallment ? (
       <span className="text-xs text-muted-foreground">Ver en Financiamientos</span>
+    ) : isOpening ? (
+      <span className="text-xs text-muted-foreground">Se edita en la tarjeta</span>
     ) : (
       <TransactionRowActions
         transaction={t}
@@ -113,7 +154,7 @@ export function TransactionList({
                   typeBadge
                 ) : (
                   <>
-                    <span className="font-medium">{t.category ?? "—"}</span>
+                    <span className="font-medium">{concept(t)}</span>
                     {t.note ? (
                       <span className="block text-xs text-muted-foreground">
                         {t.note}
@@ -152,7 +193,7 @@ export function TransactionList({
           >
             <MobileField
               label={isCard ? "Tipo" : "Concepto"}
-              value={isCard ? typeBadge : (t.category ?? "—")}
+              value={isCard ? typeBadge : concept(t)}
             />
             <MobileField label={isCard ? "Detalle" : "Origen"} value={detail} />
             {t.note ? <MobileField label="Nota" value={t.note} /> : null}

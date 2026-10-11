@@ -15,13 +15,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import { crToday, toISODate } from "@/lib/dates";
+import { crToday, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
+import { CURRENCIES } from "@/lib/schema";
 import type { Account, CreditCard, Transaction, TransactionType } from "@/lib/types";
 import { saveTransaction } from "./actions";
 
+/**
+ * Tipos que se registran con este formulario. El saldo inicial va en el de
+ * cuenta/tarjeta y la transferencia tiene su propio formulario.
+ */
+export type FormTransactionType = Exclude<TransactionType, "opening_balance" | "transfer">;
+
 type Props = {
-  type: TransactionType;
+  type: FormTransactionType;
   accounts: Account[];
   cards?: CreditCard[];
   /** Categorías configuradas para gastos/ingresos (no aplica a card_payment). */
@@ -32,21 +39,23 @@ type Props = {
   triggerLabel?: string;
   /** Botón circular fijo (para el acceso rápido global) en vez del botón inline. */
   fab?: boolean;
+  /** Gasto por SINPE Móvil: solo desde cuentas, con destinatario y teléfono. */
+  sinpe?: boolean;
 };
 
-const NEW_LABEL: Record<TransactionType, string> = {
+const NEW_LABEL: Record<FormTransactionType, string> = {
   expense: "Nuevo gasto",
   income: "Nuevo ingreso",
   card_payment: "Registrar pago / abono",
 };
 
-const SUCCESS: Record<TransactionType, string> = {
+const SUCCESS: Record<FormTransactionType, string> = {
   expense: "Gasto registrado",
   income: "Ingreso registrado",
   card_payment: "Pago registrado",
 };
 
-const DIALOG_TITLE: Record<TransactionType, string> = {
+const DIALOG_TITLE: Record<FormTransactionType, string> = {
   expense: "gasto",
   income: "ingreso",
   card_payment: "pago",
@@ -62,11 +71,13 @@ export function TransactionForm({
   transaction,
   triggerLabel,
   fab = false,
+  sinpe: sinpeProp = false,
 }: Props) {
   const editing = Boolean(transaction);
+  const sinpe = sinpeProp || transaction?.channel === "sinpe";
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveTransaction,
-    editing ? "Movimiento actualizado" : SUCCESS[type],
+    editing ? "Movimiento actualizado" : sinpe ? "SINPE registrado" : SUCCESS[type],
   );
 
   const [amount, setAmount] = useState(
@@ -85,6 +96,13 @@ export function TransactionForm({
     : type === "card_payment" && accounts.length === 1
       ? `account:${accounts[0].id}`
       : "";
+
+  // T1: un cargo con tarjeta puede ser en CRC o USD; en una cuenta manda su moneda.
+  const [origin, setOrigin] = useState(defaultOrigin);
+  const originIsCard = type === "expense" && !sinpe && origin.startsWith("card:");
+  const originCard = originIsCard
+    ? cards.find((c) => `card:${c.id}` === origin)
+    : undefined;
 
   const canPayTotal =
     type === "card_payment" &&
@@ -123,11 +141,13 @@ export function TransactionForm({
         <DialogHeader>
           <DialogTitle>
             {editing
-              ? `Editar ${DIALOG_TITLE[type]}`
-              : triggerLabel ?? NEW_LABEL[type]}
+              ? `Editar ${sinpe ? "SINPE" : DIALOG_TITLE[type]}`
+              : triggerLabel ?? (sinpe ? "Nuevo SINPE" : NEW_LABEL[type])}
           </DialogTitle>
           <DialogDescription>
-            {type === "card_payment"
+            {sinpe
+              ? "Pago por SINPE Móvil desde una cuenta. Cuenta como gasto."
+              : type === "card_payment"
               ? "Baja el saldo de la tarjeta y de la cuenta origen."
               : type === "income"
                 ? "Suma el monto al saldo de la cuenta."
@@ -137,6 +157,7 @@ export function TransactionForm({
 
         <form action={submit} className="flex flex-col gap-4">
           <input type="hidden" name="type" value={type} />
+          {sinpe ? <input type="hidden" name="channel" value="sinpe" /> : null}
           {transaction ? (
             <input type="hidden" name="id" value={transaction.id} />
           ) : null}
@@ -211,14 +232,19 @@ export function TransactionForm({
           {showOrigin ? (
             <FormField
               label={
-                type === "expense" ? "Origen (cuenta o tarjeta)" : "Cuenta origen"
+                type === "expense" && !sinpe ? "Origen (cuenta o tarjeta)" : "Cuenta origen"
               }
               htmlFor="origin"
               error={errors?.origin}
             >
-              <Select id="origin" name="origin" defaultValue={defaultOrigin}>
+              <Select
+                id="origin"
+                name="origin"
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+              >
                 <option value="">Elegí…</option>
-                {type === "expense" ? (
+                {type === "expense" && !sinpe ? (
                   <>
                     <optgroup label="Cuentas">
                       {accounts.map((a) => (
@@ -244,6 +270,58 @@ export function TransactionForm({
                     </option>
                   ))
                 )}
+              </Select>
+            </FormField>
+          ) : null}
+
+          {sinpe ? (
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                label="Destinatario (opcional)"
+                htmlFor="counterparty_name"
+                error={errors?.counterparty_name}
+              >
+                <Input
+                  id="counterparty_name"
+                  name="counterparty_name"
+                  maxLength={80}
+                  defaultValue={transaction?.counterparty_name ?? ""}
+                />
+              </FormField>
+              <FormField
+                label="Teléfono (opcional)"
+                htmlFor="counterparty_phone"
+                error={errors?.counterparty_phone}
+              >
+                <Input
+                  id="counterparty_phone"
+                  name="counterparty_phone"
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="8888-8888"
+                  defaultValue={transaction?.counterparty_phone ?? ""}
+                />
+              </FormField>
+            </div>
+          ) : null}
+
+          {originIsCard ? (
+            <FormField label="Moneda del cargo" htmlFor="currency" error={errors?.currency}>
+              <Select
+                key={origin}
+                id="currency"
+                name="currency"
+                defaultValue={
+                  transaction?.card_id && `card:${transaction.card_id}` === origin
+                    ? transaction.currency
+                    : (originCard?.currency ?? "CRC")
+                }
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </Select>
             </FormField>
           ) : null}

@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import {
+  createFinancing as createFinancingUseCase,
+  deleteFinancing as deleteFinancingUseCase,
+} from "@/application";
+import { repositories } from "@/infrastructure/container";
 import { financingSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 
@@ -23,22 +27,10 @@ export async function createFinancing(
     return { ok: false, errors: fieldErrors(parsed.error) };
   }
 
-  const { card_id, description, category, total_amount, months, first_charge_on } =
-    parsed.data;
+  const result = await createFinancingUseCase(await repositories(), parsed.data);
+  if (!result.ok) return { ok: false, message: result.message };
 
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("create_financing", {
-    p_card_id: card_id,
-    p_description: description,
-    p_category: category,
-    p_total_amount: total_amount,
-    p_months: months,
-    p_first_charge_on: first_charge_on,
-  });
-
-  if (error) return { ok: false, message: "No se pudo crear el financiamiento." };
-
-  revalidateFinancing(card_id);
+  revalidateFinancing(parsed.data.card_id);
   return { ok: true };
 }
 
@@ -47,13 +39,6 @@ export async function deleteFinancing(formData: FormData) {
   const id = formData.get("id") as string;
   if (!id) return;
 
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("financings")
-    .select("card_id")
-    .eq("id", id)
-    .single();
-
-  await supabase.from("financings").delete().eq("id", id);
-  revalidateFinancing(data?.card_id);
+  const result = await deleteFinancingUseCase(await repositories(), id);
+  if (result.ok) revalidateFinancing(result.value.cardId);
 }

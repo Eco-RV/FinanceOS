@@ -22,13 +22,25 @@ export type CreditCard = {
   credit_limit: number | null;
   cutoff_day: number;
   payment_due_day: number;
+  /** Saldo en CRC (proyección). */
   current_balance: number;
+  /** Saldo en USD (proyección, 2.0.0 — tarjeta bimoneda). */
+  usd_balance?: number;
+  /** Moneda del límite de crédito (2.0.0). */
   currency: string;
   archived: boolean;
   created_at: string;
 };
 
-export type TransactionType = "expense" | "income" | "card_payment";
+export type TransactionType =
+  | "expense"
+  | "income"
+  | "card_payment"
+  | "opening_balance"
+  | "transfer";
+
+/** Saldo inicial de una cuenta o tarjeta (movimiento `opening_balance`, C1). */
+export type OpeningBalance = { amount: number; occurred_on: string };
 
 export type Transaction = {
   id: string;
@@ -43,6 +55,12 @@ export type Transaction = {
   card_id: string | null;
   financing_id: string | null;
   installment_no: number | null;
+  /** Cuenta destino de una transferencia (2.0.0). */
+  to_account_id?: string | null;
+  /** "sinpe" en gastos por SINPE Móvil (2.0.0). */
+  channel?: "sinpe" | null;
+  counterparty_name?: string | null;
+  counterparty_phone?: string | null;
   archived: boolean;
   created_at: string;
 };
@@ -57,6 +75,8 @@ export type Financing = {
   months: number;
   currency: string;
   first_charge_on: string; // "YYYY-MM-DD"
+  /** Fecha en que se eliminó (F4): las cuotas posteriores ya no existen. */
+  cancelled_on?: string | null;
   archived: boolean;
   created_at: string;
 };

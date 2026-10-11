@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { merchantKey } from "./merchants.ts";
+import { merchantKey } from "./merchant.ts";
 
 test("quita el código de sucursal", () => {
   assert.equal(merchantKey("WALMART GUADALUPE WCN0"), "walmart guadalupe");

@@ -80,7 +80,8 @@ export default async function PendientesPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {pending.map((p) => {
-            const options = cards.filter((c) => c.currency === p.currency);
+            // T1: toda tarjeta acepta CRC y USD; la compra va al saldo de su moneda.
+            const options = cards;
             const bank = banks.find((b) => b.id === p.bank_id);
             const cats =
               p.suggested_category && !categories.includes(p.suggested_category)
@@ -142,8 +143,7 @@ export default async function PendientesPage() {
 
                   {options.length === 0 ? (
                     <p className="text-xs text-destructive">
-                      No tenés ninguna tarjeta en {p.currency} para registrar esta
-                      compra.
+                      No tenés ninguna tarjeta para registrar esta compra.
                     </p>
                   ) : null}
 

@@ -11,18 +11,18 @@ import {
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import {
-  formatCurrency,
-  formatDate,
+  cardStatementsByCurrency,
+  computeCoverage,
+  isCurrency,
+  crToday,
   daysUntil,
-  relativeDayLabel,
-} from "@/lib/format";
-import {
-  cardStatement,
   nextCutoffDate,
+  toISODate,
   type CardStatement,
-} from "@/lib/cards";
-import { crToday, toISODate } from "@/lib/dates";
+  type CoveragePayment,
+} from "@/domain";
 import type {
   Account,
   CreditCard as CreditCardType,
@@ -57,18 +57,12 @@ const LEVEL_BAR: Record<Level, string> = {
   ok: "bg-muted-foreground/30",
 };
 
+type Payment = CoveragePayment<CreditCardType>;
+
 type CardTxn = Pick<
   Transaction,
-  "card_id" | "type" | "amount" | "occurred_on" | "financing_id"
+  "card_id" | "type" | "amount" | "occurred_on" | "financing_id" | "currency"
 >;
-
-type Payment = {
-  card: CreditCardType;
-  st: CardStatement;
-  amount: number;
-  cumulative: number;
-  covered: boolean;
-};
 
 export default async function DashboardPage() {
   await requireUser();
@@ -89,7 +83,7 @@ export default async function DashboardPage() {
     supabase.from("credit_cards").select("*").eq("archived", false),
     supabase
       .from("transactions")
-      .select("card_id, type, amount, occurred_on, financing_id")
+      .select("card_id, type, amount, occurred_on, financing_id, currency")
       .eq("archived", false)
       .not("card_id", "is", null),
     supabase
@@ -123,67 +117,56 @@ export default async function DashboardPage() {
     else txByCard.set(t.card_id, [t]);
   }
 
-  const statements = new Map<string, CardStatement>(
-    cards.map((c) => [c.id, cardStatement(c, txByCard.get(c.id) ?? [], today)]),
+  // T1: un estado de cuenta por moneda de cada tarjeta.
+  const multiByCard = new Map(
+    cards.map((c) => [
+      c.id,
+      cardStatementsByCurrency(
+        { ...c, currency: isCurrency(c.currency) ? c.currency : "CRC" },
+        (txByCard.get(c.id) ?? []).map((t) => ({
+          ...t,
+          currency: isCurrency(t.currency) ? t.currency : "CRC",
+        })),
+        today,
+      ),
+    ]),
   );
+  // Cada moneda de cada tarjeta entra como un "pago" aparte, con el saldo de
+  // esa moneda: la cobertura solo suma los de CRC (ver computeCoverage).
+  const cardEntries = cards.flatMap((card) => {
+    const multi = multiByCard.get(card.id)!;
+    return multi.currencies.map((cur) => ({
+      card: {
+        ...card,
+        currency: cur,
+        current_balance: cur === "USD" ? Number(card.usd_balance ?? 0) : Number(card.current_balance),
+      },
+      st: multi.byCurrency[cur]!,
+    }));
+  });
 
-  // Solo débito en colones cuenta como dinero para pagar tarjetas.
-  const availableDebit = accounts
-    .filter((a) => a.type === "checking" && a.currency === "CRC")
-    .reduce((s, a) => s + Number(a.current_balance), 0);
-
-  const netWorth =
-    accounts.reduce((s, a) => s + Number(a.current_balance), 0) -
-    cards.reduce((s, c) => s + Number(c.current_balance), 0);
-
-  // Tarjetas con saldo de contado pendiente, del más urgente al que tiene más tiempo.
-  const pending = cards
-    .map((card) => ({ card, st: statements.get(card.id)! }))
-    .filter(
-      ({ st }) => st.status === "pendiente" || st.status === "atrasada",
-    )
-    .sort((a, b) => a.st.daysToDue - b.st.daysToDue);
-
-  // Cobertura acumulada contra el débito (solo tarjetas en CRC entran a la suma).
-  const payments: Payment[] = pending.reduce<Payment[]>((rows, p) => {
-    const prev = rows.at(-1)?.cumulative ?? 0;
-    const amount = p.st.dueAmount;
-    const cumulative = p.card.currency === "CRC" ? prev + amount : prev;
-    return [
-      ...rows,
-      { ...p, amount, cumulative, covered: cumulative <= availableDebit },
-    ];
-  }, []);
-
-  const overdue = payments.filter((p) => p.st.status === "atrasada");
-  const overdueTotal = overdue
-    .filter((p) => p.card.currency === "CRC")
-    .reduce((s, p) => s + p.amount, 0);
-
-  const totalCrcDue = payments
-    .filter((p) => p.card.currency === "CRC")
-    .reduce((s, p) => s + p.amount, 0);
-  const dueSoon = payments
-    .filter((p) => p.card.currency === "CRC" && p.st.daysToDue <= 10)
-    .reduce((s, p) => s + p.amount, 0);
-  const newChargesCrc = cards
-    .filter((c) => c.currency === "CRC")
-    .reduce((s, c) => s + (statements.get(c.id)?.newCharges ?? 0), 0);
-
-  const coversSoon = availableDebit >= dueSoon;
-  const coverageRatio =
-    availableDebit > 0
-      ? Math.min(dueSoon / availableDebit, 1)
-      : dueSoon > 0
-        ? 1
-        : 0;
-  const firstUncovered = payments.findIndex((p) => !p.covered);
+  // Cobertura del débito contra los pagos de contado: regla de dominio.
+  const {
+    availableDebit,
+    netWorth,
+    payments,
+    overdue,
+    overdueTotal,
+    totalDue: totalCrcDue,
+    dueSoon,
+    newCharges: newChargesCrc,
+    coversSoon,
+    coverageRatio,
+    firstUncovered,
+  } = computeCoverage(accounts, cardEntries);
 
   const cutoffs = cards
     .map((card) => {
-      const st = statements.get(card.id)!;
+      const multi = multiByCard.get(card.id)!;
+      const cur = multi.currencies[0];
+      const st = multi.byCurrency[cur]!;
       const cutoff = nextCutoffDate(card.cutoff_day, today);
-      return { card, st, cutoff, days: daysUntil(cutoff, today) };
+      return { card: { ...card, currency: cur }, st, cutoff, days: daysUntil(cutoff, today) };
     })
     .sort((a, b) => a.days - b.days);
 

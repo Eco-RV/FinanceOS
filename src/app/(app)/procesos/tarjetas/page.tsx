@@ -2,9 +2,14 @@ import Link from "next/link";
 import { Eye } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatCurrency, formatDate } from "@/lib/format";
-import { cardStatement, nextCutoffDate, type CardStatement } from "@/lib/cards";
-import { crToday } from "@/lib/dates";
+import { formatDate } from "@/lib/format";
+import {
+  cardStatementsByCurrency,
+  crToday,
+  isCurrency,
+  nextCutoffDate,
+  type Currency,
+} from "@/domain";
 import type { Bank, CreditCard, Transaction } from "@/lib/types";
 import {
   Table,
@@ -19,10 +24,12 @@ import { BackLink } from "@/components/back-link";
 import { DeleteButton } from "@/components/delete-button";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { CardFormDialog } from "./card-form";
+import { cardOpeningsById } from "@/lib/transactions";
+import { CardBalances, CardOwed, urgentDaysToDue } from "./card-money";
 import { CardStatusBadge } from "./card-status";
 import { deleteCard } from "./actions";
 
-type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on">;
+type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on" | "currency">;
 
 export default async function TarjetasPage() {
   await requireUser();
@@ -37,7 +44,7 @@ export default async function TarjetasPage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("transactions")
-      .select("card_id, type, amount, occurred_on")
+      .select("card_id, type, amount, occurred_on, currency")
       .eq("archived", false)
       .not("card_id", "is", null),
     supabase
@@ -50,6 +57,11 @@ export default async function TarjetasPage() {
   const cards = (cardData ?? []) as CreditCard[];
   const banks = (bankData ?? []) as Pick<Bank, "id" | "name">[];
   const txns = (txData ?? []) as CardTxn[];
+  const openings = cardOpeningsById(
+    txns
+      .filter((t) => t.type === "opening_balance")
+      .map((t) => ({ ...t, account_id: null })),
+  );
   const today = crToday();
 
   const byCard = new Map<string, CardTxn[]>();
@@ -61,10 +73,17 @@ export default async function TarjetasPage() {
   }
 
   const rows = cards.map((card) => {
-    const st: CardStatement = cardStatement(card, byCard.get(card.id) ?? [], today);
+    const limitCurrency: Currency = isCurrency(card.currency) ? card.currency : "CRC";
+    const m = cardStatementsByCurrency(
+      { ...card, currency: limitCurrency },
+      (byCard.get(card.id) ?? []).map((t) => ({
+        ...t,
+        currency: isCurrency(t.currency) ? t.currency : "CRC",
+      })),
+      today,
+    );
     const cutoff = nextCutoffDate(card.cutoff_day, today);
-    const owes = st.status === "pendiente" || st.status === "atrasada";
-    return { card, st, cutoff, owes };
+    return { card, m, cutoff };
   });
 
   return (
@@ -107,7 +126,7 @@ export default async function TarjetasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map(({ card, st, cutoff, owes }) => (
+                {rows.map(({ card, m, cutoff }) => (
                   <TableRow key={card.id}>
                     <TableCell>
                       <Link
@@ -126,25 +145,13 @@ export default async function TarjetasPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <CardStatusBadge
-                        status={st.status}
-                        daysToDue={st.daysToDue}
-                      />
+                      <CardStatusBadge status={m.status} daysToDue={urgentDaysToDue(m)} />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {formatCurrency(Number(card.current_balance), card.currency)}
+                      <CardBalances card={card} />
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {owes ? (
-                        <>
-                          {formatCurrency(st.dueAmount, card.currency)}
-                          <span className="block text-xs text-muted-foreground">
-                            {formatDate(st.dueDate)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <CardOwed m={m} />
                     </TableCell>
                     <TableCell>
                       día {card.cutoff_day}
@@ -164,7 +171,7 @@ export default async function TarjetasPage() {
                         >
                           <Eye className="size-4" />
                         </Link>
-                        <CardFormDialog card={card} banks={banks} />
+                        <CardFormDialog card={card} openings={openings.get(card.id)} banks={banks} />
                         <DeleteButton
                           id={card.id}
                           action={deleteCard}
@@ -179,7 +186,7 @@ export default async function TarjetasPage() {
           </div>
 
           <MobileList>
-            {rows.map(({ card, st, cutoff, owes }) => (
+            {rows.map(({ card, m, cutoff }) => (
               <MobileCard
                 key={card.id}
                 title={
@@ -201,7 +208,7 @@ export default async function TarjetasPage() {
                     >
                       <Eye className="size-4" />
                     </Link>
-                    <CardFormDialog card={card} banks={banks} />
+                    <CardFormDialog card={card} openings={openings.get(card.id)} banks={banks} />
                     <DeleteButton
                       id={card.id}
                       action={deleteCard}
@@ -212,20 +219,10 @@ export default async function TarjetasPage() {
               >
                 <MobileField
                   label="Estado"
-                  value={<CardStatusBadge status={st.status} daysToDue={st.daysToDue} />}
+                  value={<CardStatusBadge status={m.status} daysToDue={urgentDaysToDue(m)} />}
                 />
-                <MobileField
-                  label="Saldo actual"
-                  value={formatCurrency(Number(card.current_balance), card.currency)}
-                />
-                <MobileField
-                  label="Falta pagar"
-                  value={
-                    owes
-                      ? `${formatCurrency(st.dueAmount, card.currency)} (${formatDate(st.dueDate)})`
-                      : "—"
-                  }
-                />
+                <MobileField label="Saldo actual" value={<CardBalances card={card} />} />
+                <MobileField label="Falta pagar" value={<CardOwed m={m} />} />
                 <MobileField
                   label="Próximo corte"
                   value={`día ${card.cutoff_day} · ${formatDate(cutoff)}`}

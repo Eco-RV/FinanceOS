@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { CardStatementStatus } from "@/lib/cards";
+import type { CardStatementStatus } from "@/domain";
 
 const AMBER =
   "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400";

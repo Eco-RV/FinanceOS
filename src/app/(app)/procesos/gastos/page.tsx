@@ -55,16 +55,27 @@ export default async function GastosPage() {
         <div>
           <h1 className="text-2xl font-semibold">Gastos</h1>
           <p className="text-sm text-muted-foreground">
-            Pagos desde una cuenta de débito o cargos a una tarjeta.
+            Pagos desde una cuenta de débito (incluido SINPE) o cargos a una tarjeta.
           </p>
         </div>
         {canRegister ? (
-          <TransactionForm
-            type="expense"
-            accounts={accounts}
-            cards={cards}
-            categories={categories}
-          />
+          <div className="flex flex-wrap justify-end gap-2">
+            {accounts.length > 0 ? (
+              <TransactionForm
+                type="expense"
+                sinpe
+                accounts={accounts}
+                categories={categories}
+                triggerLabel="Nuevo SINPE"
+              />
+            ) : null}
+            <TransactionForm
+              type="expense"
+              accounts={accounts}
+              cards={cards}
+              categories={categories}
+            />
+          </div>
         ) : null}
       </div>
 

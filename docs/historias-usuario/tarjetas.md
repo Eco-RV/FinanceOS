@@ -20,12 +20,15 @@ para llevar su control en la app.
 - Campos: `name` (obligatorio), `institution` (opcional), `last_four`
   (opcional, exactamente 4 dígitos), `credit_limit` (opcional, ≥ 0),
   `cutoff_day` y `payment_due_day` (obligatorios, 1-31 cada uno),
-  `current_balance`, `currency` (`CRC`/`USD`).
+  `currency` (`CRC`/`USD`), **saldo inicial** (con signo) y su **fecha**.
 - `bank_id` (opcional): banco de la tarjeta, usado para identificarla al importar
   compras desde el correo (ver [`bancos.md`](./bancos.md)). `last_four` es lo que
   se casa contra el aviso del banco.
-- `current_balance` al crear es el saldo de apertura, igual que en cuentas:
-  los movimientos posteriores lo ajustan por delta.
+- El saldo inicial se guarda como un movimiento `opening_balance` (C1), igual
+  que en cuentas, y aparece en el historial de la tarjeta como "Saldo inicial".
+  Cuenta como **cargo en su fecha**: si es anterior al último corte, entra en
+  el saldo al corte y el pago de contado. Se edita desde "Editar tarjeta", no
+  desde la lista de movimientos.
 
 ### 2. Editar o eliminar una tarjeta
 Como usuario quiero editar los datos de una tarjeta o eliminarla si ya no la
@@ -64,8 +67,15 @@ contado y antes de qué fecha.
   intereses).
 - Si está `al-dia` o `sin-saldo`, se muestra una confirmación en vez de
   alerta.
-- También se muestran los datos del plástico: saldo actual total, límite,
-  disponible (límite − saldo), próximo corte y fecha límite de pago.
+- Si la tarjeta tiene movimientos en las dos monedas, hay un estado de cuenta
+  **por moneda** (colones y dólares), cada uno con su saldo al corte, pagos,
+  falta pagar y consumo sin cortar. El estado de la tarjeta es el más grave de
+  los dos (T1).
+- También se muestran los datos del plástico: saldo actual por moneda, límite
+  (en la moneda del límite), disponible, próximo corte y fecha límite de pago.
+- **Disponible** = límite − saldo en la moneda del límite − saldo en la otra
+  moneda convertido con el último tipo de cambio de Ajustes (T2). Si hay saldo
+  en otra moneda y no hay tipo de cambio, se muestra "—" con un aviso.
 
 ### 5. Registrar un pago o abono de tarjeta
 Como usuario quiero registrar un pago desde una cuenta de débito hacia una
@@ -75,9 +85,10 @@ calcularlo a mano.
 **Criterios de aceptación**
 - El monto sugerido al abrir el formulario es `dueAmount` (lo que falta pagar
   del corte) si es mayor que cero; si no, el saldo total de la tarjeta.
-- La cuenta de origen y la tarjeta deben estar en la misma moneda — la action
-  rechaza el pago si no coinciden (no hay conversión).
-- El pago resta el mismo monto de la cuenta y de la tarjeta.
+- El abono baja el saldo de la tarjeta **en la moneda de la cuenta origen**
+  (T1/M5): desde una cuenta en dólares se abona el saldo en dólares; no hay
+  conversión.
+- El pago resta el mismo monto de la cuenta y del saldo de esa moneda.
 
 ### 6. Crear un financiamiento (compra a cuotas sin interés)
 Como usuario quiero registrar una compra a cuotas sobre una tarjeta
@@ -100,31 +111,80 @@ Como usuario quiero ver los financiamientos activos de una tarjeta y
 eliminar uno completo si ya no aplica.
 
 **Criterios de aceptación**
-- Eliminar un financiamiento borra en cascada **todas** sus cuotas, pasadas y
-  futuras, y el trigger revierte el saldo completo que ese financiamiento
-  había sumado.
-- No existe edición ni cancelación parcial (ver *Pendiente*).
+- Eliminar un financiamiento (regla F4) borra solo las cuotas **futuras**
+  (fecha posterior a hoy) y el trigger revierte solo ese monto. Las cuotas que
+  ya ocurrieron se conservan y el plan queda como "Cancelado el <fecha> · N
+  cuota(s) conservada(s)". Si ninguna cuota había ocurrido, el plan se borra
+  completo.
+- Las cuotas conservadas de un plan cancelado se pueden quitar a mano desde el
+  historial de la tarjeta (botón eliminar en la fila).
+- No existe edición de un financiamiento (ver *Pendiente*).
 
 ## Reglas de negocio
 
 - El estado de cuenta (`cardStatement`) se calcula **solo desde los
   movimientos con fecha**, nunca desde `current_balance` directamente. El
-  flujo esperado es: registrar el saldo inicial de la tarjeta como un
-  `expense` con fecha **anterior** al corte, y cada consumo nuevo con su
-  fecha real.
-- Un pago de tarjeta exige la misma moneda entre cuenta origen y tarjeta.
+  saldo inicial de la tarjeta es un movimiento "Saldo inicial" con fecha
+  (antes se registraba como un `expense` anterior al corte, que sigue
+  funcionando), y cada consumo nuevo va con su fecha real.
+- Las cuotas de un financiamiento las calcula el dominio
+  (`installmentSchedule`) y la base las guarda tal cual
+  (`create_financing_v2`), validando cantidad y suma.
+- Tarjeta bimoneda (T1): cada cargo, abono y saldo inicial va al saldo de su
+  moneda; `credit_cards.currency` es la **moneda del límite**.
+- Un cargo con tarjeta se registra en CRC o USD (selector "Moneda del cargo").
 - Un financiamiento no tiene interés (tasa 0); préstamos con interés son un
   concepto distinto, todavía no implementado (ver *Pendiente*).
 
 ## Pendiente / fuera de alcance
 
-- No hay edición ni cancelación parcial de un financiamiento (solo
-  crear/borrar completo).
+- No hay edición de un financiamiento (solo crear y eliminar/cancelar).
 - No hay "archivar" tarjeta desde la interfaz, igual que en cuentas.
 - Préstamos con interés y tabla de amortización — roadmap paso 3, no
   implementado.
-- Tarjetas en `USD` no entran en los cálculos de cobertura del dashboard
-  (se listan, pero no suman).
+- Los saldos en `USD` de las tarjetas no entran en los cálculos de cobertura
+  del dashboard (se listan, pero no suman).
+- El tipo de cambio es manual; no se consulta el BCCR todavía.
+
+### Propuesta (2.0.0): financiamiento con interés
+
+> Historia redactada para entender el comportamiento antes de implementarlo.
+> Reglas en [`../dominio/reglas.md`](../dominio/reglas.md) (F5) y términos en
+> [`../dominio/glosario.md`](../dominio/glosario.md).
+
+Como usuario quiero registrar una compra a cuotas **con interés** sobre una
+tarjeta, para saber cuánto me cuesta realmente y qué parte de cada cuota es
+interés.
+
+**Ejemplo**: compra de ₡600 000 a 12 meses, tasa 24 % anual (2 % mensual),
+sistema francés (cuota fija).
+
+- Cuota fija = capital × i / (1 − (1 + i)^−n) = **₡56 735,76**.
+- Total pagado ₡680 829,10 → **₡80 829,10 de interés**.
+
+| Cuota | Interés | Abono al capital | Capital restante |
+|---|---|---|---|
+| 1 | ₡12 000,00 | ₡44 735,76 | ₡555 264,24 |
+| 2 | ₡11 105,28 | ₡45 630,47 | ₡509 633,77 |
+| 3 | ₡10 192,68 | ₡46 543,08 | ₡463 090,69 |
+| … | baja | sube | … |
+| 12 | ₡1 112,47 | ₡55 623,29 | ₡0,00 |
+
+**Criterios de aceptación (propuestos)**
+- Al crear se piden tarjeta, monto (capital), meses, tasa anual y fecha de
+  la primera cuota.
+- El **capital** resta al disponible de la tarjeta desde el día 1, igual que
+  en tasa 0; a medida que se pagan cuotas, el disponible se libera por el
+  abono al capital.
+- Cada mes la cuota entra al estado de cuenta como cargo, separando
+  **interés** y **abono al capital** (dos líneas o una con desglose), en la
+  sección de cuotas de la tarjeta.
+- Se ve la tabla completa: cuotas pagadas, pendientes, interés pagado y por
+  pagar.
+- Eliminar el plan borra solo las cuotas futuras (regla F4).
+- Préstamos usan la misma tabla de amortización.
+- Cada banco puede tener particularidades (redondeos, cargos extra); antes de
+  implementar se valida contra un estado de cuenta real.
 
 ## Historial
 
@@ -133,3 +193,17 @@ eliminar uno completo si ya no aplica.
   `_financiamientos/`.
 - **2026-10-08 (v1.3.0)** — `bank_id` opcional en la tarjeta y `last_four` como llave
   para importar compras desde el correo (ver `bancos.md`).
+- **2026-10-11 (v2.0.0, en desarrollo)** — Propuesta de financiamiento con
+  interés (historia de ejemplo con tabla de amortización). El glosario y las
+  reglas de dominio pasan a `docs/dominio/`; decisiones nuevas que cambian este
+  módulo (tarjeta bimoneda con límite en colones, borrar financiamiento solo
+  borra cuotas futuras, abonos a cuota y reembolsos de familia) se
+  implementarán en 2.0.0.
+- **2026-10-11 (v2.0.0, en desarrollo)** — Saldo inicial como movimiento
+  `opening_balance` con fecha (editable desde "Editar tarjeta"); cuotas de
+  financiamiento calculadas por el dominio y guardadas con `create_financing_v2`.
+- **2026-10-11 (v2.0.0, en desarrollo)** — Eliminar un financiamiento conserva
+  las cuotas ya ocurridas (F4, `04_cancel_financing.sql`).
+- **2026-10-11 (v2.0.0, en desarrollo)** — Tarjeta bimoneda: saldo y estado de
+  cuenta por moneda, límite en su moneda, disponible con tipo de cambio manual,
+  saldo inicial en ₡ y $ (`06_multicurrency_cards.sql`).

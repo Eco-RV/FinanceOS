@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { PARSER_KEYS } from "./mail/parsers/index.ts";
+import { CURRENCIES } from "../domain/shared/money.ts";
 
+export { CURRENCIES };
 export const ACCOUNT_TYPES = ["checking", "savings", "cash"] as const;
-export const CURRENCIES = ["CRC", "USD"] as const;
 
 const optionalText = z
   .string()
@@ -17,12 +18,24 @@ const optionalAmount = z.preprocess(
   z.coerce.number().nonnegative().nullable(),
 );
 
+/**
+ * Saldo inicial (C1): se guarda como un movimiento `opening_balance`, no en
+ * `current_balance`. Monto con signo; vacío = 0 (sin saldo inicial).
+ */
+const openingFields = {
+  opening_amount: z.preprocess(
+    (v) => (v === "" || v == null ? 0 : v),
+    z.coerce.number().finite("Monto inválido"),
+  ),
+  opening_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+};
+
 export const accountSchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio").max(80),
   type: z.enum(ACCOUNT_TYPES),
   institution: optionalText,
   currency: z.enum(CURRENCIES),
-  current_balance: z.coerce.number().finite("Monto inválido"),
+  ...openingFields,
 });
 
 export const creditCardSchema = z.object({
@@ -52,8 +65,12 @@ export const creditCardSchema = z.object({
     .int()
     .min(1, "Día 1-31")
     .max(31, "Día 1-31"),
-  current_balance: z.coerce.number().finite("Monto inválido"),
+  /** Moneda del límite de crédito (T2). La tarjeta acepta cargos en CRC y USD (T1). */
   currency: z.enum(CURRENCIES),
+  /** Saldo inicial por moneda (T1); vacío = 0. */
+  opening_crc: openingFields.opening_amount,
+  opening_usd: openingFields.opening_amount,
+  opening_date: openingFields.opening_date,
 });
 
 export type AccountInput = z.infer<typeof accountSchema>;
@@ -61,6 +78,8 @@ export type CreditCardInput = z.infer<typeof creditCardSchema>;
 
 // ─────────────────────────────  movimientos  ─────────────────────────────
 
+/** Tipos que se registran desde el formulario de movimientos. El saldo inicial
+ * (`opening_balance`) se gestiona desde el formulario de cuenta o tarjeta. */
 export const TRANSACTION_TYPES = ["expense", "income", "card_payment"] as const;
 
 export const CATEGORY_KINDS = ["expense", "income"] as const;
@@ -119,6 +138,30 @@ export const transactionSchema = z
       .transform((v) => (v ? v : null)),
     note: optionalNote,
     origin: originToken,
+    // Moneda de un cargo con tarjeta (T1). En cuentas manda la de la cuenta.
+    currency: z
+      .enum(CURRENCIES)
+      .optional()
+      .or(z.literal(""))
+      .transform((v) => (v ? v : null)),
+    // SINPE (gasto desde cuenta): canal + destinatario/teléfono opcionales.
+    channel: z
+      .enum(["sinpe"])
+      .optional()
+      .or(z.literal(""))
+      .transform((v) => (v ? v : null)),
+    counterparty_name: z
+      .string()
+      .trim()
+      .max(80)
+      .optional()
+      .transform((v) => (v ? v : null)),
+    counterparty_phone: z
+      .string()
+      .trim()
+      .max(20)
+      .optional()
+      .transform((v) => (v ? v : null)),
     // Presente solo para card_payment (hidden input con la tarjeta de la ruta).
     card_id: z
       .string()
@@ -153,6 +196,13 @@ export const transactionSchema = z
         });
       }
     }
+    if (val.channel === "sinpe" && (val.type !== "expense" || kind !== "account")) {
+      ctx.addIssue({
+        path: ["origin"],
+        code: "custom",
+        message: "El SINPE sale de una cuenta de débito",
+      });
+    }
     if (val.type !== "card_payment" && !val.category) {
       ctx.addIssue({
         path: ["category"],
@@ -163,6 +213,25 @@ export const transactionSchema = z
   });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
+
+const accountId = z.string().regex(/^[0-9a-fA-F-]{36}$/, "Elegí una cuenta");
+
+/** Transferencia entre cuentas propias (M2). */
+export const transferSchema = z
+  .object({
+    from_account_id: accountId,
+    to_account_id: accountId,
+    amount: z.coerce
+      .number()
+      .finite("Monto inválido")
+      .positive("El monto debe ser mayor que cero"),
+    occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+    note: optionalNote,
+  })
+  .refine((v) => v.from_account_id !== v.to_account_id, {
+    path: ["to_account_id"],
+    message: "Elegí una cuenta distinta a la de origen",
+  });
 
 export const categorySchema = z.object({
   kind: z.enum(CATEGORY_KINDS),

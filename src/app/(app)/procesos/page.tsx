@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import Link from "next/link";
-import { Banknote, CreditCard, Inbox, Landmark, Receipt } from "lucide-react";
+import { ArrowLeftRight, Banknote, CreditCard, Inbox, Landmark, Receipt } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,12 @@ const ITEMS: Item[] = [
     label: "Ingresos",
     description: "Depósitos y entradas a tus cuentas.",
     icon: Banknote,
+  },
+  {
+    href: "/procesos/transferencias",
+    label: "Transferencias",
+    description: "Entre tus cuentas; no cuentan como gasto.",
+    icon: ArrowLeftRight,
   },
 ];
 

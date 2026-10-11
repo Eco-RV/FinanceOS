@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { accountSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
+import { saveAccount as saveAccountUseCase } from "@/application";
+import { repositories } from "@/infrastructure/container";
 
 function revalidate() {
   revalidatePath("/procesos/cuentas");
@@ -24,14 +26,13 @@ export async function saveAccount(
     return { ok: false, errors: fieldErrors(parsed.error) };
   }
 
-  const supabase = await createClient();
-  const values = parsed.data;
-
-  const { error } = id
-    ? await supabase.from("accounts").update(values).eq("id", id)
-    : await supabase.from("accounts").insert(values);
-
-  if (error) return { ok: false, message: error.message };
+  const { opening_amount, opening_date, ...fields } = parsed.data;
+  const result = await saveAccountUseCase(await repositories(), {
+    id,
+    fields,
+    opening: { amount: opening_amount, occurred_on: opening_date },
+  });
+  if (!result.ok) return { ok: false, message: result.message };
 
   revalidate();
   return { ok: true };

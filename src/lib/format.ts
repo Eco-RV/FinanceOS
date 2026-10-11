@@ -1,5 +1,3 @@
-import { crToday } from "@/lib/dates";
-
 const LOCALE = "es-CR";
 
 export function formatCurrency(amount: number, currency = "CRC") {
@@ -26,12 +24,6 @@ export function formatDate(date: Date | string) {
     month: "short",
     year: "numeric",
   }).format(value);
-}
-
-export function daysUntil(date: Date, from = crToday()) {
-  const a = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
-  const b = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
-  return Math.round((a - b) / 86_400_000);
 }
 
 /** "hace 2 días" / "hoy" / "mañana" / "en 5 días". */
