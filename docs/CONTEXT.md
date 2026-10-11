@@ -26,6 +26,17 @@ saldos de cuentas de débito y ahorros.
   duda sobre un término o una regla, manda `docs/dominio/`. La 2.0.0 es un
   rediseño por dominio (DDD pragmático) en fases; ver `arquitectura.md`.
 
+## Flujo de trabajo con agentes (instrucción del usuario)
+
+- **Avisar siempre dónde se trabaja.** Si la sesión corre en la nube (contenedor
+  remoto, no la máquina del usuario), decirlo al empezar y recordar que los cambios
+  solo llegan a su VS Code con `git fetch` + `git checkout <rama>` (o `git pull`).
+- **El nombre de la rama lo define el usuario.** Antes del primer commit, preguntar
+  qué nombre quiere para la rama de trabajo y crearla con ese nombre exacto. No
+  usar nombres generados automáticamente; si la sesión ya trae una rama asignada,
+  avisarle y preguntarle si la renombra.
+- Nunca trabajar directo sobre `main`.
+
 ## Stack
 
 Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind v4 ·
