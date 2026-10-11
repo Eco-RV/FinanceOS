@@ -13,6 +13,15 @@ sin tocar las reglas.
   `docs/historias-usuario/tarjetas.md`.
 - Se descarta la sincronización automática de correo (v1.3.1): siempre manual.
 
+### Fase 1 — dominio puro
+- `src/domain/`: dinero en céntimos, calendario, libro de movimientos (signos y
+  saldos derivados), estado de cuenta de tarjetas, cuotas tasa 0, tabla de
+  amortización (sistema francés) y cobertura del débito. 42 tests con
+  `node --test`, sin base de datos.
+- ESLint impide que `src/domain/` importe Next, React, Supabase, Zod o `@/`.
+- El dashboard, el registro de movimientos y la aprobación de pendientes usan
+  las reglas del dominio; se eliminan `src/lib/cards.ts` y `src/lib/dates.ts`.
+
 ## 1.3.0 — 2026-10-08
 
 Compras con tarjeta importadas automáticamente desde los correos del banco,

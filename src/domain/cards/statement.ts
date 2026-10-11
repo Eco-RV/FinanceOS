@@ -1,18 +1,23 @@
-/** Helpers to project the next cutoff ("corte") and payment due date of a card. */
+/**
+ * Ciclo de la tarjeta de crédito: corte, fecha límite de pago y estado de
+ * cuenta del corte vigente (reglas T3–T7 de `docs/dominio/reglas.md`).
+ */
 
-import { crToday, toISODate } from "@/lib/dates";
-import { daysUntil } from "@/lib/format";
-import type { CreditCard, Transaction } from "@/lib/types";
+import {
+  clampDay,
+  crToday,
+  daysUntil,
+  startOfDay,
+  toISODate,
+  type ISODate,
+} from "../shared/calendar.ts";
+import type { MovementType } from "../ledger/movement.ts";
 
-function startOfDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-/** Clamps `day` to the last valid day of the given year/month. */
-function clampDay(year: number, month: number, day: number) {
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  return Math.min(day, lastDay);
-}
+/** Lo que el ciclo necesita de una tarjeta. */
+export type CardCycle = {
+  cutoff_day: number;
+  payment_due_day: number;
+};
 
 /** Next occurrence of `cutoffDay` on or after today. */
 export function nextCutoffDate(cutoffDay: number, from = crToday()): Date {
@@ -99,11 +104,15 @@ export type CardStatement = {
   daysToDue: number;
 };
 
-type StatementTxn = Pick<Transaction, "type" | "amount" | "occurred_on">;
+export type StatementTxn = {
+  type: MovementType;
+  amount: number;
+  occurred_on: ISODate;
+};
 
 /** `txns` = movimientos NO archivados de ESA tarjeta (expense + card_payment). */
 export function cardStatement(
-  card: Pick<CreditCard, "cutoff_day" | "payment_due_day">,
+  card: CardCycle,
   txns: StatementTxn[],
   from = crToday(),
 ): CardStatement {

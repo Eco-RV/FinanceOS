@@ -3,8 +3,12 @@ import { Eye } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { cardStatement, nextCutoffDate, type CardStatement } from "@/lib/cards";
-import { crToday } from "@/lib/dates";
+import {
+  cardStatement,
+  crToday,
+  nextCutoffDate,
+  type CardStatement,
+} from "@/domain";
 import type { Bank, CreditCard, Transaction } from "@/lib/types";
 import {
   Table,

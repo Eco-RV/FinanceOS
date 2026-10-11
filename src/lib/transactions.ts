@@ -6,11 +6,6 @@ export const TRANSACTION_TYPE_LABELS = {
   card_payment: "Pago de tarjeta",
 } as const;
 
-/** Efecto con signo sobre el saldo mostrado, para historiales. */
-export function signedAmount(t: Pick<Transaction, "type" | "amount">): number {
-  return t.type === "income" ? Number(t.amount) : -Number(t.amount);
-}
-
 /** "account:<id>" | "card:<id>" -> partes. */
 export function parseOrigin(token: string): {
   kind: "account" | "card";

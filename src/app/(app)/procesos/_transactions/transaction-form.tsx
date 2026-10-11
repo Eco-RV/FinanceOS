@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import { crToday, toISODate } from "@/lib/dates";
+import { crToday, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
 import type { Account, CreditCard, Transaction, TransactionType } from "@/lib/types";
 import { saveTransaction } from "./actions";

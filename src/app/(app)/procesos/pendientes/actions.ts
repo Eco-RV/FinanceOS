@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { merchantKey } from "@/lib/mail/merchants";
 import { syncConnection } from "@/lib/mail/sync";
 import type { PendingTransaction } from "@/lib/types";
+import { assertSameCurrency, isCurrency } from "@/domain";
 
 const uuid = z.string().regex(/^[0-9a-fA-F-]{36}$/);
 
@@ -45,13 +46,18 @@ export async function approvePending(formData: FormData) {
   const pending = pendingData as PendingTransaction | null;
   if (!pending) return;
 
-  // Sin conversión de moneda: la compra debe ser en la moneda de la tarjeta.
+  // I5: sin conversión de moneda, la compra debe ser en la moneda de la tarjeta.
   const { data: card } = await supabase
     .from("credit_cards")
     .select("currency")
     .eq("id", card_id)
     .maybeSingle();
-  if (!card || card.currency !== pending.currency) return;
+  if (!card || !isCurrency(card.currency) || !isCurrency(pending.currency)) return;
+  try {
+    assertSameCurrency(pending.currency, card.currency, "I5");
+  } catch {
+    return;
+  }
 
   const { data: tx, error } = await supabase
     .from("transactions")

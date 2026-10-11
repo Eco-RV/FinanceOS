@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { transactionSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 import { parseOrigin } from "@/lib/transactions";
+import { DomainError, isCurrency, validateMovement, type Currency } from "@/domain";
 
 function revalidateTx(cardIds: (string | null | undefined)[] = []) {
   revalidatePath("/dashboard");
@@ -41,37 +42,26 @@ export async function saveTransaction(
 
   const supabase = await createClient();
 
-  // La moneda del movimiento se copia de la cuenta/tarjeta elegida.
-  let currency = "CRC";
-  if (account_id) {
-    const { data } = await supabase
-      .from("accounts")
-      .select("currency")
-      .eq("id", account_id)
-      .single();
-    currency = data?.currency ?? "CRC";
-  } else if (resolvedCardId) {
-    const { data } = await supabase
-      .from("credit_cards")
-      .select("currency")
-      .eq("id", resolvedCardId)
-      .single();
-    currency = data?.currency ?? "CRC";
-  }
+  const currencyOf = async (table: "accounts" | "credit_cards", rowId: string | null) => {
+    if (!rowId) return null;
+    const { data } = await supabase.from(table).select("currency").eq("id", rowId).single();
+    return data && isCurrency(data.currency) ? data.currency : null;
+  };
 
-  // card_payment: cuenta y tarjeta deben coincidir en moneda (no hay conversión).
-  if (type === "card_payment" && account_id && resolvedCardId) {
-    const { data: card } = await supabase
-      .from("credit_cards")
-      .select("currency")
-      .eq("id", resolvedCardId)
-      .single();
-    if (card && card.currency !== currency) {
-      return {
-        ok: false,
-        message: "La cuenta y la tarjeta deben usar la misma moneda",
-      };
-    }
+  // Reglas de dominio: categoría obligatoria, abono cuenta→tarjeta en la misma
+  // moneda (M1/M3/M5). La moneda del movimiento es la del origen.
+  let currency: Currency;
+  try {
+    currency = validateMovement({
+      type,
+      amount,
+      category,
+      accountCurrency: await currencyOf("accounts", account_id),
+      cardCurrency: await currencyOf("credit_cards", resolvedCardId),
+    });
+  } catch (e) {
+    if (e instanceof DomainError) return { ok: false, message: e.message };
+    throw e;
   }
 
   const values = {

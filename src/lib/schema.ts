@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { PARSER_KEYS } from "./mail/parsers/index.ts";
+import { CURRENCIES } from "../domain/shared/money.ts";
+import { MOVEMENT_TYPES } from "../domain/ledger/movement.ts";
 
+export { CURRENCIES };
 export const ACCOUNT_TYPES = ["checking", "savings", "cash"] as const;
-export const CURRENCIES = ["CRC", "USD"] as const;
 
 const optionalText = z
   .string()
@@ -61,7 +63,7 @@ export type CreditCardInput = z.infer<typeof creditCardSchema>;
 
 // ─────────────────────────────  movimientos  ─────────────────────────────
 
-export const TRANSACTION_TYPES = ["expense", "income", "card_payment"] as const;
+export const TRANSACTION_TYPES = MOVEMENT_TYPES;
 
 export const CATEGORY_KINDS = ["expense", "income"] as const;
 

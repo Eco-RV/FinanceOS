@@ -9,7 +9,7 @@ import {
 import { DeleteButton } from "@/components/delete-button";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { toISODate } from "@/lib/dates";
+import { toISODate } from "@/domain";
 import type { Financing, Transaction } from "@/lib/types";
 import { deleteFinancing } from "./actions";
 

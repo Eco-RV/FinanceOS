@@ -37,10 +37,25 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 ## Fases
 
 0. **Lenguaje y reglas** (esta carpeta). ✅
-1. `src/domain/` puro con tests.
+1. `src/domain/` puro con tests. ✅ (ver detalle abajo)
 2. Casos de uso + puertos; Server Actions delgadas; Supabase como adaptador.
 3. Saldos: el dominio decide; el saldo guardado (o el trigger) queda como
    proyección para rendimiento, verificable contra los movimientos.
+
+## Fase 1 — qué quedó en `src/domain/`
+
+| Módulo | Reglas | Antes vivía en |
+|---|---|---|
+| `shared/money.ts` | G3, reparto exacto en céntimos, conversión explícita | — (nuevo) |
+| `shared/calendar.ts` | G6 (hoy en CR), T5 (meses cortos) | `src/lib/dates.ts`, `daysUntil` de `src/lib/format.ts` |
+| `ledger/movement.ts` | G1 (saldos derivados), signos del trigger, G2, M1, M3, M5 | trigger SQL + `saveTransaction` |
+| `cards/statement.ts` | T3–T7, M7 | `src/lib/cards.ts` |
+| `financing/installments.ts` | F1, F2, M7 | SP `create_financing` (el SP sigue insertando; ahora la regla también está en TS) |
+| `financing/amortization.ts` | F5 | — (nuevo, base para 2.0.0) |
+| `coverage/coverage.ts` | Cobertura del débito vs. pagos de contado | `dashboard/page.tsx` |
+
+Siguen fuera (Fase 2/3): el trigger de saldos y el SP de cuotas como
+implementación en Postgres, y el acceso a datos dentro de las Server Actions.
 
 ## Decisiones de infraestructura
 

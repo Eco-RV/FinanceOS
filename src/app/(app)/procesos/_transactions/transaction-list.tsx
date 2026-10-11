@@ -9,7 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { originLabel, signedAmount } from "@/lib/transactions";
+import { signedAmount } from "@/domain";
+import { originLabel } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 import type { Account, CreditCard, Transaction } from "@/lib/types";
 import { TransactionRowActions } from "./transaction-row-actions";
