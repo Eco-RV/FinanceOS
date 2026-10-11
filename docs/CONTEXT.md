@@ -148,7 +148,8 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 |------|---------|--------|
 | 1 | Base desplegable + auth + **cuentas de débito** + **tarjetas de crédito** (saldo, corte, pago) + dashboard resumen | ✅ v1.0.0 (tag + release) |
 | 2 | Movimientos / gastos e ingresos, actualización de saldos por trigger, detalle de tarjeta con pagos/abonos | ✅ v1.2.0 · estado de cuenta + alerta de atraso + categorías configurables en v1.2.1 |
-| 3 | Financiamientos y préstamos (amortización) | 🔶 financiamientos de tarjeta a tasa 0 en v1.2.2 · préstamos con interés/amortización pendientes |
+| 3 | Financiamientos y préstamos (amortización) | 🔶 financiamientos de tarjeta a tasa 0 en v1.2.2 · cancelar conservando cuotas cobradas en v2.0.0 · tabla de amortización francesa en el dominio (v2.0.0, sin UI) · préstamos con interés pendientes |
+| 2.0 | Rediseño por dominio (DDD) + saldo inicial como movimiento + saldos verificables + transferencias + SINPE + tarjeta bimoneda con tipo de cambio manual | ✅ v2.0.0 |
 | 4 | Ahorros y metas | ⏳ |
 
 ## Gotchas

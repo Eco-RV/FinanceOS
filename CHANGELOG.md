@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0 — en desarrollo
+## 2.0.0 — 2026-10-12
 
 Rediseño por dominio (DDD pragmático): la lógica de negocio se separa de la
 base de datos, el login y el correo para que pueda cambiar la infraestructura
