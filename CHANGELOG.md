@@ -31,6 +31,22 @@ sin tocar las reglas.
 - Las Server Actions de esos flujos ya no consultan Supabase directamente.
 - Una cuenta o tarjeta archivada ya no se acepta como origen de un movimiento.
 
+### Fase 3 — saldos como proyección verificable
+- **Saldo inicial como movimiento** (`opening_balance`): el formulario de cuenta y
+  tarjeta pide "Saldo inicial" (con signo) y su fecha; el saldo actual ya no se
+  edita a mano. En la tarjeta aparece como "Saldo inicial" y cuenta como cargo en
+  su fecha.
+- **Ajustes → Verificar saldos**: compara cada saldo guardado con sus movimientos y
+  permite recalcular.
+- Las cuotas de un financiamiento las calcula el dominio y la base las guarda tal
+  cual (`create_financing_v2`, valida cantidad y suma).
+
+### Base de datos (correr a mano, en orden, ANTES de desplegar)
+- `supabase/Versionamiento/2.0.0/00_opening_balance.sql`
+- `supabase/Versionamiento/2.0.0/01_balance_projection.sql`
+- `supabase/Versionamiento/2.0.0/02_migrate_opening_balances.sql`
+- `supabase/Versionamiento/2.0.0/03_create_financing_v2.sql`
+
 ## 1.3.0 — 2026-10-08
 
 Compras con tarjeta importadas automáticamente desde los correos del banco,

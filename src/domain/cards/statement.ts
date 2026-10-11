@@ -110,7 +110,7 @@ export type StatementTxn = {
   occurred_on: ISODate;
 };
 
-/** `txns` = movimientos NO archivados de ESA tarjeta (expense + card_payment). */
+/** `txns` = movimientos NO archivados de ESA tarjeta (expense, opening_balance y card_payment). */
 export function cardStatement(
   card: CardCycle,
   txns: StatementTxn[],
@@ -140,7 +140,9 @@ export function cardStatement(
 
   for (const t of txns) {
     const amount = Number(t.amount) || 0;
-    const isExpense = t.type === "expense";
+    // Un saldo inicial se trata como cargo en su fecha (con signo: negativo =
+    // saldo a favor).
+    const isExpense = t.type === "expense" || t.type === "opening_balance";
     const isPayment = t.type === "card_payment";
     if (!isExpense && !isPayment) continue;
 

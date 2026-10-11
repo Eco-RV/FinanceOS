@@ -1,9 +1,10 @@
-import type { Transaction, Account, CreditCard } from "@/lib/types";
+import type { Transaction, Account, CreditCard, OpeningBalance } from "@/lib/types";
 
 export const TRANSACTION_TYPE_LABELS = {
   expense: "Gasto",
   income: "Ingreso",
   card_payment: "Pago de tarjeta",
+  opening_balance: "Saldo inicial",
 } as const;
 
 /** "account:<id>" | "card:<id>" -> partes. */
@@ -37,4 +38,21 @@ export function originLabel(
     if (c) return c.name;
   }
   return "—";
+}
+
+type OpeningRow = {
+  account_id: string | null;
+  card_id: string | null;
+  amount: number;
+  occurred_on: string;
+};
+
+/** Saldos iniciales indexados por id de cuenta o tarjeta. */
+export function openingsById(rows: OpeningRow[] | null | undefined): Map<string, OpeningBalance> {
+  const map = new Map<string, OpeningBalance>();
+  for (const r of rows ?? []) {
+    const id = r.account_id ?? r.card_id;
+    if (id) map.set(id, { amount: Number(r.amount), occurred_on: r.occurred_on });
+  }
+  return map;
 }

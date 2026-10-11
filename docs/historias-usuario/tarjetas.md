@@ -20,12 +20,15 @@ para llevar su control en la app.
 - Campos: `name` (obligatorio), `institution` (opcional), `last_four`
   (opcional, exactamente 4 dígitos), `credit_limit` (opcional, ≥ 0),
   `cutoff_day` y `payment_due_day` (obligatorios, 1-31 cada uno),
-  `current_balance`, `currency` (`CRC`/`USD`).
+  `currency` (`CRC`/`USD`), **saldo inicial** (con signo) y su **fecha**.
 - `bank_id` (opcional): banco de la tarjeta, usado para identificarla al importar
   compras desde el correo (ver [`bancos.md`](./bancos.md)). `last_four` es lo que
   se casa contra el aviso del banco.
-- `current_balance` al crear es el saldo de apertura, igual que en cuentas:
-  los movimientos posteriores lo ajustan por delta.
+- El saldo inicial se guarda como un movimiento `opening_balance` (C1), igual
+  que en cuentas, y aparece en el historial de la tarjeta como "Saldo inicial".
+  Cuenta como **cargo en su fecha**: si es anterior al último corte, entra en
+  el saldo al corte y el pago de contado. Se edita desde "Editar tarjeta", no
+  desde la lista de movimientos.
 
 ### 2. Editar o eliminar una tarjeta
 Como usuario quiero editar los datos de una tarjeta o eliminarla si ya no la
@@ -109,9 +112,12 @@ eliminar uno completo si ya no aplica.
 
 - El estado de cuenta (`cardStatement`) se calcula **solo desde los
   movimientos con fecha**, nunca desde `current_balance` directamente. El
-  flujo esperado es: registrar el saldo inicial de la tarjeta como un
-  `expense` con fecha **anterior** al corte, y cada consumo nuevo con su
-  fecha real.
+  saldo inicial de la tarjeta es un movimiento "Saldo inicial" con fecha
+  (antes se registraba como un `expense` anterior al corte, que sigue
+  funcionando), y cada consumo nuevo va con su fecha real.
+- Las cuotas de un financiamiento las calcula el dominio
+  (`installmentSchedule`) y la base las guarda tal cual
+  (`create_financing_v2`), validando cantidad y suma.
 - Un pago de tarjeta exige la misma moneda entre cuenta origen y tarjeta.
 - Un financiamiento no tiene interés (tasa 0); préstamos con interés son un
   concepto distinto, todavía no implementado (ver *Pendiente*).
@@ -179,3 +185,6 @@ sistema francés (cuota fija).
   módulo (tarjeta bimoneda con límite en colones, borrar financiamiento solo
   borra cuotas futuras, abonos a cuota y reembolsos de familia) se
   implementarán en 2.0.0.
+- **2026-10-11 (v2.0.0, en desarrollo)** — Saldo inicial como movimiento
+  `opening_balance` con fecha (editable desde "Editar tarjeta"); cuotas de
+  financiamiento calculadas por el dominio y guardadas con `create_financing_v2`.

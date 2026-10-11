@@ -7,7 +7,7 @@
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| G1 | Los movimientos son la fuente de verdad. Todo saldo se deriva de ellos; un saldo guardado es una copia que debe coincidir. | — | Decidido |
+| G1 | Los movimientos son la fuente de verdad. Todo saldo se deriva de ellos; un saldo guardado es una copia que debe coincidir (Ajustes → Verificar saldos). | — | Decidido · Implementado 2.0.0 |
 | G2 | Todo monto es mayor que 0; el sentido (entra/sale) lo da el tipo de movimiento. | Rechaza | Propuesta |
 | G3 | No se suman ni comparan montos de distinta moneda sin tipo de cambio explícito. | Rechaza | Decidido |
 | G4 | No se registra nada sobre algo desactivado (cuenta, tarjeta, categoría, banco). | Rechaza | Decidido |
@@ -18,7 +18,7 @@
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| C1 | Cada cuenta y tarjeta arranca con un **saldo inicial** oficial, que es un movimiento visible. | — | Decidido |
+| C1 | Cada cuenta y tarjeta arranca con un **saldo inicial** oficial, que es un movimiento visible (`opening_balance`, monto con signo ≠ 0, máximo uno activo por cuenta/tarjeta). | Rechaza 0 o duplicado | Decidido · Implementado 2.0.0 |
 | C2 | Un gasto puede dejar una cuenta en negativo. | Advierte | Decidido |
 | C3 | Una cuenta bancaria de débito tiene como máximo **una** tarjeta de débito. | Rechaza | Decidido |
 | C4 | Una cuenta tiene una sola moneda. | — | Decidido |

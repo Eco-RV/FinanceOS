@@ -28,7 +28,10 @@ export type CreditCard = {
   created_at: string;
 };
 
-export type TransactionType = "expense" | "income" | "card_payment";
+export type TransactionType = "expense" | "income" | "card_payment" | "opening_balance";
+
+/** Saldo inicial de una cuenta o tarjeta (movimiento `opening_balance`, C1). */
+export type OpeningBalance = { amount: number; occurred_on: string };
 
 export type Transaction = {
   id: string;

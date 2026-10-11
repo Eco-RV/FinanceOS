@@ -28,6 +28,7 @@ import type {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink } from "@/components/back-link";
 import { CardFormDialog } from "../card-form";
+import { openingsById } from "@/lib/transactions";
 import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
 import { TransactionList } from "../../_transactions/transaction-list";
@@ -125,6 +126,7 @@ export default async function CardDetailPage({
           </div>
           <CardFormDialog
             card={card}
+            opening={openingsById(transactions.filter((t) => t.type === "opening_balance")).get(card.id)}
             banks={(bankData ?? []) as Pick<Bank, "id" | "name">[]}
           />
         </div>

@@ -54,7 +54,7 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
 | Financiamientos (tasa 0) | `src/app/(app)/procesos/tarjetas/_financiamientos/` + tabla `financings` + SP `create_financing` | Compra a cuotas sin interés sobre una tarjeta: `FinancingForm` (descripción, categoría, monto total, meses, fecha de primera cuota) llama `createFinancing` → `supabase.rpc('create_financing', ...)`, que crea la fila en `financings` y de una vez las N cuotas como `transactions` tipo `expense` (`financing_id`, `installment_no`, `note` con "cuota i/N"), fechadas mes a mes con el mismo día de la compra (clamp en meses cortos, igual que `clampDay` de `cards.ts`). El trigger de saldo ya existente suma el total al `current_balance` de inmediato. `FinancingList` muestra los planes activos y los borra completos (`deleteFinancing`, cascade). Solo crear/borrar — no hay edición ni cancelación parcial. |
 | Importación desde correo | `src/lib/mail/` (`gmail.ts`, `crypto.ts`, `sync.ts`, `html.ts`, `parsers/`; la clave de comercio vive en `src/domain/importing/merchant.ts`) + `src/app/api/{sync-mail,gmail/connect,gmail/callback}/route.ts` + `src/lib/supabase/admin.ts` | Lee avisos de compra de los bancos (tabla `banks`: remitentes + `parser_key`) por Gmail API readonly, **sin IA**: un parser determinístico por banco (`parsers/index.ts` = registro; contrato `MailParser` en `types.ts`). `syncConnection` es idempotente (`unique (user_id, source_message_id)`), casa la tarjeta por `credit_cards.last_four` (+ `bank_id` si hay choque) y deja el resultado en `pending_transactions`. El refresh token se guarda cifrado (AES-256-GCM, `MAIL_TOKEN_KEY`). `/api/sync-mail` es pública en `proxy.ts` pero exige `Authorization: Bearer CRON_SECRET`, corre con service role y está pensada para que la llame un cron externo; la sincronización es **siempre manual** (botón "Sincronizar"); el workflow cada 2 h planeado para v1.3.1 se descartó (decisión de negocio, ver `docs/dominio/arquitectura.md`). Los imports dentro de `src/lib/mail/` llevan extensión `.ts` para que `node --test` los corra sin dependencias (`allowImportingTsExtensions`). |
 | Bancos / Por confirmar | `src/app/(app)/ajustes/bancos/` + `src/app/(app)/procesos/pendientes/` | `/ajustes/bancos`: CRUD de bancos + conectar/desconectar Gmail. `/procesos/pendientes`: aprobar (crea `expense` en la tarjeta + aprende `merchant_rules`) o descartar; `syncNow` = misma sincronización con la sesión del usuario. |
-| Rutas | `src/app/login/` (auth), grupo `src/app/(app)/` (protegido: `layout.tsx` llama `requireUser()`): `/dashboard`, `/procesos` (índice + `cuentas`, `tarjetas`, `tarjetas/[id]`, `gastos`, `ingresos`, `pendientes`), `/ajustes` (+ `/ajustes/categorias`, `/ajustes/bancos`) | `src/app/(app)/loading.tsx` = esqueleto de carga entre vistas. `/cuentas` y `/tarjetas` redirigen 308 a `/procesos/*` desde `next.config.ts`. |
+| Rutas | `src/app/login/` (auth), grupo `src/app/(app)/` (protegido: `layout.tsx` llama `requireUser()`): `/dashboard`, `/procesos` (índice + `cuentas`, `tarjetas`, `tarjetas/[id]`, `gastos`, `ingresos`, `pendientes`), `/ajustes` (+ `/ajustes/categorias`, `/ajustes/bancos`, `/ajustes/saldos`) | `src/app/(app)/loading.tsx` = esqueleto de carga entre vistas. `/cuentas` y `/tarjetas` redirigen 308 a `/procesos/*` desde `next.config.ts`. |
 | Navegación | `src/components/app-nav.tsx` (`"use client"`) + `src/components/back-link.tsx` | 3 pestañas: **Resumen** (`/dashboard`) · **Procesos** (`/procesos`) · **Ajustes** (`/ajustes`); `useIsActive` hace prefix-match, así que `/procesos/*` ilumina Procesos. `AppTopBar` (marca + pestañas en `sm+` + `UserMenu`) y `AppBottomNav` (tabs inferiores en móvil). `<BackLink href label />` = enlace "← <índice>" arriba a la izquierda en cada sub-página (`/procesos/*`, `/ajustes/categorias`). `UserMenu` (`src/components/user-menu.tsx`): avatar + dropdown con correo y cerrar sesión. `src/app/(app)/layout.tsx` también trae cuentas/tarjetas/categorías una vez y renderiza el FAB global (ver fila siguiente). |
 | Acceso rápido / responsive | `src/components/mobile-list.tsx` (`MobileList`/`MobileCard`/`MobileField`) + `TransactionForm` prop `fab` | El layout de `(app)` muestra un botón flotante "Nuevo gasto" (`TransactionForm type="expense" fab`) en todas las páginas. Las listas con muchas columnas (Cuentas, Tarjetas, Movimientos, Financiamientos) renderizan **dos vistas**: la `<Table>` de siempre envuelta en `hidden sm:block`, y un bloque `sm:hidden` con `MobileList`/`MobileCard` que muestra la misma fila como tarjeta apilada (mismos componentes de acción, sin lógica nueva) — así en mobile no hace falta scroll horizontal para editar/borrar. |
 | Instalable (PWA-lite) | `src/app/manifest.ts`, `public/icon.svg`, `viewport`/`metadata` en `src/app/layout.tsx` | `display: standalone`, `theme-color` claro/oscuro, `apple-touch-icon`. Sin service worker. |
@@ -82,7 +82,7 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
   seguir el mismo patrón de 4 policies (select/insert/update/delete own) + índice parcial
   `where not archived`.
 - Columna `currency`: `text not null default 'CRC' check (currency in ('CRC', 'USD'))`.
-- `transactions` (`20260906120000_transactions.sql`): `type in ('expense','income','card_payment')`,
+- `transactions` (`20260906120000_transactions.sql`): `type in ('expense','income','card_payment')` — desde 2.0.0 también `'opening_balance'` (saldo inicial, monto con signo ≠ 0, una de las dos FK, único activo por cuenta/tarjeta; `supabase/Versionamiento/2.0.0/`),
   `amount > 0`, `occurred_on date`, `category text` (catálogo fijo en `schema.ts`;
   configurable = pendiente), `note`, `account_id` / `card_id` nullable (`on delete cascade`)
   con CHECK `transactions_fk_by_type` que exige la FK correcta según el tipo.
@@ -90,9 +90,13 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
   `apply_transaction_balance`): en INSERT/UPDATE/DELETE ajusta `current_balance`.
   Convención de signo: gasto/cuenta **−**, gasto/tarjeta **+** (más deuda), ingreso/cuenta
   **+**, `card_payment` **−** en ambos. Las filas `archived` no afectan saldos (archivar
-  revierte, desarchivar reaplica). Por eso el "Saldo actual" de los formularios de
-  cuenta/tarjeta es ahora **saldo de apertura / ajuste manual**: los movimientos lo
-  modifican por deltas.
+  revierte, desarchivar reaplica). **Desde 2.0.0** `current_balance` es solo una
+  proyección: nunca se escribe desde la app. El saldo de apertura es un movimiento
+  `opening_balance` que se edita desde el formulario de cuenta/tarjeta ("Saldo
+  inicial" + fecha). `balance_derived` / `balance_drift` (vistas `security_invoker`)
+  y `recompute_balances()` verifican y reparan la proyección (UI: `/ajustes/saldos`).
+  Cuotas de financiamiento: `create_financing_v2(…, p_installments jsonb)` guarda el
+  plan que calcula el dominio.
 - `categories` (`20260906130000_categories.sql`): `kind in ('expense','income')`,
   `name` (1–40 chars). RLS + 4 policies + índice parcial + **índice único parcial**
   `(user_id, kind, lower(name)) where not archived` (choque → `error.code === '23505'`).
@@ -143,9 +147,9 @@ Variables de entorno de la importación de correo (ver `.env.example`):
   listan pero **no** entran en la matemática de cobertura. `Patrimonio neto` sí
   suma todo de forma naïve — pendiente multi-moneda de verdad.
 - El **saldo al corte** (`cardStatement`) se calcula **solo desde los movimientos con
-  fecha**, no desde `current_balance`. Flujo esperado del usuario: registrar el saldo
-  inicial de cada tarjeta como un `expense` con fecha **anterior** al corte, y los
-  consumos siguientes como `expense` con su fecha real. Los cargos con fecha **posterior**
+  fecha**, no desde `current_balance`. El saldo inicial (`opening_balance`) cuenta como
+  cargo en su fecha; antes de 2.0.0 se registraba como un `expense` anterior al corte
+  (sigue valiendo). Los consumos siguientes van como `expense` con su fecha real. Los cargos con fecha **posterior**
   al último corte no cuentan para el pago de contado (entran al siguiente).
 - Un `card_payment` resta el mismo monto de la cuenta y de la tarjeta sin conversión:
   la action exige que ambas usen la misma moneda.

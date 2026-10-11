@@ -40,7 +40,7 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 1. `src/domain/` puro con tests. ✅ (ver detalle abajo)
 2. Casos de uso + puertos; Server Actions delgadas; Supabase como adaptador. ✅ para los flujos con reglas (ver detalle abajo)
 3. Saldos: el dominio decide; el saldo guardado (o el trigger) queda como
-   proyección para rendimiento, verificable contra los movimientos.
+   proyección para rendimiento, verificable contra los movimientos. ✅ (ver detalle abajo)
 
 ## Fase 1 — qué quedó en `src/domain/`
 
@@ -54,8 +54,8 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 | `financing/amortization.ts` | F5 | — (nuevo, base para 2.0.0) |
 | `coverage/coverage.ts` | Cobertura del débito vs. pagos de contado | `dashboard/page.tsx` |
 
-Siguen fuera (Fase 3): el trigger de saldos y el SP de cuotas como
-implementación en Postgres.
+En la Fase 3 el trigger de saldos quedó como proyección verificable y el SP
+de cuotas dejó de calcular (ver abajo).
 
 ## Fase 2 — casos de uso y adaptadores
 
@@ -80,6 +80,22 @@ Decisiones de esta fase:
   tarjeta de débito por cuenta).
 - `G4` empieza a aplicarse: una cuenta o tarjeta archivada ya no se ofrece
   como origen al registrar (el adaptador no la encuentra).
+
+## Fase 3 — saldos como proyección verificable
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Saldo inicial | `opening_balance` en `domain/ledger/movement.ts` + `00_opening_balance.sql` | C1: el saldo de apertura es un movimiento con signo; un solo activo por cuenta/tarjeta (índice único parcial). |
+| Casos de uso | `application/products.ts` (`saveAccount`, `saveCard`, `setOpeningBalance`) | Guardan la cuenta/tarjeta y su saldo inicial; nunca escriben `current_balance`. |
+| Proyección | `01_balance_projection.sql` (`balance_derived`, `balance_drift`, `recompute_balances()`) | El trigger sigue manteniendo `current_balance` por rendimiento; estas piezas lo comparan y lo reparan. |
+| Verificación | `findBalanceDrift` (dominio) + `application/balances.ts` + `/ajustes/saldos` | Compara guardado vs. derivado con la regla del dominio y ofrece recalcular. |
+| Migración | `02_migrate_opening_balances.sql` | Convierte los saldos de apertura digitados en movimientos; los saldos quedan iguales. |
+| Cuotas | `03_create_financing_v2.sql` + adaptador | El dominio calcula el plan (`installmentSchedule`); la base solo lo guarda y valida cantidad y suma. |
+
+Probado contra Postgres (PGlite) con datos de 1.3.0: saldos idénticos antes y
+después, `balance_drift` vacío e idempotente.
+
+El SP `create_financing` (1.2.2) queda sin uso; se puede borrar en 2.1.
 
 ## Decisiones de infraestructura
 

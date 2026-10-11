@@ -8,7 +8,7 @@
 import { DomainError } from "../shared/errors.ts";
 import { assertSameCurrency, fromCents, toCents, type Currency } from "../shared/money.ts";
 
-export const MOVEMENT_TYPES = ["expense", "income", "card_payment"] as const;
+export const MOVEMENT_TYPES = ["expense", "income", "card_payment", "opening_balance"] as const;
 export type MovementType = (typeof MOVEMENT_TYPES)[number];
 
 export type Movement = {
@@ -34,6 +34,8 @@ export type BalanceEffect = {
  * - gasto con tarjeta: deuda **+**
  * - ingreso: cuenta **+**
  * - abono (`card_payment`): cuenta **−** y deuda **−**
+ * - saldo inicial (`opening_balance`, C1): cuenta **+monto** / deuda **+monto**;
+ *   es el único tipo con monto **con signo** (sobregiro inicial o saldo a favor)
  * Un movimiento archivado no tiene efecto.
  */
 export function balanceEffects(m: Movement): BalanceEffect[] {
@@ -47,6 +49,10 @@ export function balanceEffects(m: Movement): BalanceEffect[] {
       return [];
     case "income":
       return m.account_id ? [{ target: "account", id: m.account_id, delta: amount }] : [];
+    case "opening_balance":
+      if (m.account_id) return [{ target: "account", id: m.account_id, delta: amount }];
+      if (m.card_id) return [{ target: "card", id: m.card_id, delta: amount }];
+      return [];
     case "card_payment": {
       const effects: BalanceEffect[] = [];
       if (m.account_id) effects.push({ target: "account", id: m.account_id, delta: -amount });
@@ -75,9 +81,45 @@ export function deriveBalances(movements: Movement[]): DerivedBalances {
   return { accounts: toAmounts(cents.account), cards: toAmounts(cents.card) };
 }
 
-/** Efecto con signo para historiales: ingreso +, todo lo demás −. */
+export type StoredBalance = {
+  target: BalanceTarget;
+  id: string;
+  /** Saldo guardado (proyección, p. ej. `current_balance`). */
+  stored: number;
+};
+
+export type BalanceDrift = StoredBalance & {
+  /** Saldo según los movimientos (la verdad, G1). */
+  derived: number;
+  /** stored − derived. */
+  difference: number;
+};
+
+/**
+ * G1: compara los saldos guardados con los derivados de los movimientos y
+ * devuelve solo los que no coinciden (al céntimo).
+ */
+export function findBalanceDrift(stored: StoredBalance[], movements: Movement[]): BalanceDrift[] {
+  const derived = deriveBalances(movements);
+  const drift: BalanceDrift[] = [];
+  for (const row of stored) {
+    const map = row.target === "account" ? derived.accounts : derived.cards;
+    const d = map.get(row.id) ?? 0;
+    const diffCents = toCents(row.stored) - toCents(d);
+    if (diffCents !== 0) {
+      drift.push({ ...row, derived: d, difference: fromCents(diffCents) });
+    }
+  }
+  return drift;
+}
+
+/**
+ * Efecto con signo para historiales: ingreso +, gasto y abono −. Un saldo
+ * inicial se muestra con su propio signo (en una tarjeta, + es deuda).
+ */
 export function signedAmount(m: Pick<Movement, "type" | "amount">): number {
-  return m.type === "income" ? Number(m.amount) : -Number(m.amount);
+  if (m.type === "income" || m.type === "opening_balance") return Number(m.amount);
+  return -Number(m.amount);
 }
 
 export type MovementDraft = {
@@ -95,6 +137,17 @@ export type MovementDraft = {
  * origen). Lanza `DomainError` si rompe una regla.
  */
 export function validateMovement(d: MovementDraft): Currency {
+  if (d.type === "opening_balance") {
+    // C1: monto con signo, distinto de 0, en exactamente una cuenta o tarjeta.
+    if (!Number.isFinite(Number(d.amount)) || Number(d.amount) === 0) {
+      throw new DomainError("C1", "El saldo inicial no puede ser 0");
+    }
+    if (Boolean(d.accountCurrency) === Boolean(d.cardCurrency)) {
+      throw new DomainError("C1", "El saldo inicial es de una cuenta o de una tarjeta");
+    }
+    return (d.accountCurrency ?? d.cardCurrency)!;
+  }
+
   if (!(Number(d.amount) > 0)) {
     throw new DomainError("G2", "El monto debe ser mayor que 0");
   }

@@ -15,14 +15,17 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { CURRENCIES } from "@/lib/schema";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import type { Bank, CreditCard } from "@/lib/types";
+import type { Bank, CreditCard, OpeningBalance } from "@/lib/types";
+import { OpeningBalanceFields } from "@/components/opening-balance-fields";
 import { saveCard } from "./actions";
 
 export function CardFormDialog({
   card,
+  opening,
   banks = [],
 }: {
   card?: CreditCard;
+  opening?: OpeningBalance;
   banks?: Pick<Bank, "id" | "name">[];
 }) {
   const editing = Boolean(card);
@@ -138,21 +141,6 @@ export function CardFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <FormField
-              label="Saldo actual"
-              htmlFor="current_balance"
-              error={errors?.current_balance}
-            >
-              <Input
-                id="current_balance"
-                name="current_balance"
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                defaultValue={card?.current_balance ?? 0}
-                required
-              />
-            </FormField>
-            <FormField
               label="Límite de crédito"
               htmlFor="credit_limit"
               error={errors?.credit_limit}
@@ -166,21 +154,26 @@ export function CardFormDialog({
                 defaultValue={card?.credit_limit ?? ""}
               />
             </FormField>
+            <FormField label="Moneda" htmlFor="currency">
+              <Select
+                id="currency"
+                name="currency"
+                defaultValue={card?.currency ?? "CRC"}
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
           </div>
 
-          <FormField label="Moneda" htmlFor="currency">
-            <Select
-              id="currency"
-              name="currency"
-              defaultValue={card?.currency ?? "CRC"}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-          </FormField>
+          <OpeningBalanceFields
+            opening={opening}
+            errors={errors}
+            hint="Deuda con la que arranca la tarjeta. Cuenta como cargo en su fecha: si es anterior al último corte, entra en el pago de contado."
+          />
 
           {banks.length > 0 ? (
             <FormField

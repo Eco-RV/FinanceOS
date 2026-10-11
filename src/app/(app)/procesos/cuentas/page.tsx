@@ -13,6 +13,7 @@ import {
 import { BackLink } from "@/components/back-link";
 import { DeleteButton } from "@/components/delete-button";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
+import { openingsById } from "@/lib/transactions";
 import { AccountFormDialog } from "./account-form";
 import { deleteAccount } from "./actions";
 
@@ -26,13 +27,22 @@ export default async function CuentasPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("accounts")
-    .select("*")
-    .eq("archived", false)
-    .order("created_at", { ascending: true });
+  const [{ data }, { data: openingData }] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("*")
+      .eq("archived", false)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("transactions")
+      .select("account_id, card_id, amount, occurred_on")
+      .eq("type", "opening_balance")
+      .eq("archived", false)
+      .not("account_id", "is", null),
+  ]);
 
   const accounts = (data ?? []) as Account[];
+  const openings = openingsById(openingData);
   const totalCrc = accounts
     .filter((a) => a.currency === "CRC")
     .reduce((sum, a) => sum + Number(a.current_balance), 0);
@@ -91,7 +101,7 @@ export default async function CuentasPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        <AccountFormDialog account={account} />
+                        <AccountFormDialog account={account} opening={openings.get(account.id)} />
                         <DeleteButton
                           id={account.id}
                           action={deleteAccount}
@@ -113,7 +123,7 @@ export default async function CuentasPage() {
                 meta={account.institution ?? undefined}
                 actions={
                   <>
-                    <AccountFormDialog account={account} />
+                    <AccountFormDialog account={account} opening={openings.get(account.id)} />
                     <DeleteButton
                       id={account.id}
                       action={deleteAccount}

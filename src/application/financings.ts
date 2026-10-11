@@ -21,8 +21,9 @@ export type CreateFinancingInput = {
 export type CreateFinancingOutput = { id: string; installments: Installment[] };
 
 /**
- * Crea un financiamiento y sus N cuotas (F1, F2). El plan de cuotas se calcula
- * en el dominio; la persistencia lo guarda de forma atómica.
+ * Crea un financiamiento y sus N cuotas (F1, F2). El plan de cuotas lo calcula
+ * el dominio (`installmentSchedule`); la persistencia guarda exactamente ese
+ * plan, de forma atómica.
  */
 export function createFinancing(
   deps: FinancingDeps,
@@ -40,7 +41,7 @@ export function createFinancing(
       currency,
     });
 
-    const { id } = await deps.financings.createWithInstallments(input);
+    const { id } = await deps.financings.createWithInstallments(input, installments);
     return ok({ id, installments });
   });
 }

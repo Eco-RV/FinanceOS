@@ -15,7 +15,8 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { ACCOUNT_TYPES, CURRENCIES } from "@/lib/schema";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import type { Account } from "@/lib/types";
+import type { Account, OpeningBalance } from "@/lib/types";
+import { OpeningBalanceFields } from "@/components/opening-balance-fields";
 import { saveAccount } from "./actions";
 
 const TYPE_LABELS: Record<(typeof ACCOUNT_TYPES)[number], string> = {
@@ -24,7 +25,13 @@ const TYPE_LABELS: Record<(typeof ACCOUNT_TYPES)[number], string> = {
   cash: "Efectivo",
 };
 
-export function AccountFormDialog({ account }: { account?: Account }) {
+export function AccountFormDialog({
+  account,
+  opening,
+}: {
+  account?: Account;
+  opening?: OpeningBalance;
+}) {
   const editing = Boolean(account);
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveAccount,
@@ -57,7 +64,7 @@ export function AccountFormDialog({ account }: { account?: Account }) {
             {editing ? "Editar cuenta" : "Nueva cuenta"}
           </DialogTitle>
           <DialogDescription>
-            Registra el saldo actual de la cuenta.
+            Datos de la cuenta y su saldo inicial.
           </DialogDescription>
         </DialogHeader>
 
@@ -117,21 +124,11 @@ export function AccountFormDialog({ account }: { account?: Account }) {
             />
           </FormField>
 
-          <FormField
-            label="Saldo actual"
-            htmlFor="current_balance"
-            error={errors?.current_balance}
-          >
-            <Input
-              id="current_balance"
-              name="current_balance"
-              type="number"
-              step="0.01"
-              inputMode="decimal"
-              defaultValue={account?.current_balance ?? 0}
-              required
-            />
-          </FormField>
+          <OpeningBalanceFields
+            opening={opening}
+            errors={errors}
+            hint="El saldo actual se calcula a partir de este saldo inicial y los movimientos. Puede ser negativo (sobregiro)."
+          />
 
           {message ? (
             <p className="text-sm text-destructive">{message}</p>

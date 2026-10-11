@@ -20,8 +20,11 @@ import { originValue } from "@/lib/transactions";
 import type { Account, CreditCard, Transaction, TransactionType } from "@/lib/types";
 import { saveTransaction } from "./actions";
 
+/** Tipos que se registran con este formulario (el saldo inicial va en el de cuenta/tarjeta). */
+export type FormTransactionType = Exclude<TransactionType, "opening_balance">;
+
 type Props = {
-  type: TransactionType;
+  type: FormTransactionType;
   accounts: Account[];
   cards?: CreditCard[];
   /** Categorías configuradas para gastos/ingresos (no aplica a card_payment). */
@@ -34,19 +37,19 @@ type Props = {
   fab?: boolean;
 };
 
-const NEW_LABEL: Record<TransactionType, string> = {
+const NEW_LABEL: Record<FormTransactionType, string> = {
   expense: "Nuevo gasto",
   income: "Nuevo ingreso",
   card_payment: "Registrar pago / abono",
 };
 
-const SUCCESS: Record<TransactionType, string> = {
+const SUCCESS: Record<FormTransactionType, string> = {
   expense: "Gasto registrado",
   income: "Ingreso registrado",
   card_payment: "Pago registrado",
 };
 
-const DIALOG_TITLE: Record<TransactionType, string> = {
+const DIALOG_TITLE: Record<FormTransactionType, string> = {
   expense: "gasto",
   income: "ingreso",
   card_payment: "pago",

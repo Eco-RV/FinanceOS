@@ -79,3 +79,14 @@ test("T7: estados", () => {
     "al-dia",
   );
 });
+
+test("C1: el saldo inicial de la tarjeta cuenta como cargo en su fecha", () => {
+  const st = cardStatement(
+    card,
+    [tx("opening_balance", 80_000, "2026-09-01"), tx("card_payment", 30_000, "2026-09-20")],
+    d("2026-09-25"),
+  );
+  assert.equal(st.statementBalance, 80_000);
+  assert.equal(st.dueAmount, 50_000);
+  assert.equal(st.status, "pendiente");
+});

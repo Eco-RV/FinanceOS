@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { creditCardSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
+import { saveCard as saveCardUseCase } from "@/application";
+import { repositories } from "@/infrastructure/container";
 
 function revalidate(id?: string) {
   revalidatePath("/procesos/tarjetas");
@@ -25,19 +27,19 @@ export async function saveCard(
     return { ok: false, errors: fieldErrors(parsed.error) };
   }
 
-  const supabase = await createClient();
   // Sin selector de banco en el formulario (aún no hay bancos) no se toca la
   // columna: así guardar una tarjeta sigue funcionando antes de la migración 1.3.0.
-  const { bank_id, ...rest } = parsed.data;
-  const values = formData.has("bank_id") ? { ...rest, bank_id } : rest;
+  const { bank_id, opening_amount, opening_date, ...rest } = parsed.data;
+  const fields = formData.has("bank_id") ? { ...rest, bank_id } : rest;
 
-  const { error } = id
-    ? await supabase.from("credit_cards").update(values).eq("id", id)
-    : await supabase.from("credit_cards").insert(values);
+  const result = await saveCardUseCase(await repositories(), {
+    id,
+    fields,
+    opening: { amount: opening_amount, occurred_on: opening_date },
+  });
+  if (!result.ok) return { ok: false, message: result.message };
 
-  if (error) return { ok: false, message: error.message };
-
-  revalidate(id ?? undefined);
+  revalidate(result.value.id);
   return { ok: true };
 }
 

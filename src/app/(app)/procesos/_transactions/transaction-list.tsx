@@ -63,22 +63,33 @@ export function TransactionList({
   const rows = transactions.map((t) => {
     const amount = displayAmount(t, context);
     const isInstallment = Boolean(t.financing_id);
-    const detail = isCard
-      ? t.type === "card_payment"
-        ? `Desde ${originLabel(t, accounts, cards)}`
-        : (t.category ?? "Cargo")
-      : originLabel(t, accounts, cards);
+    const isOpening = t.type === "opening_balance";
+    const detail = isOpening
+      ? "Saldo inicial"
+      : isCard
+        ? t.type === "card_payment"
+          ? `Desde ${originLabel(t, accounts, cards)}`
+          : (t.category ?? "Cargo")
+        : originLabel(t, accounts, cards);
     const typeBadge = isCard ? (
       <Badge
         variant={
-          t.type === "card_payment" ? "secondary" : isInstallment ? "secondary" : "outline"
+          t.type === "card_payment" || isInstallment || isOpening ? "secondary" : "outline"
         }
       >
-        {t.type === "card_payment" ? "Pago" : isInstallment ? "Cuota" : "Cargo"}
+        {t.type === "card_payment"
+          ? "Pago"
+          : isOpening
+            ? "Saldo inicial"
+            : isInstallment
+              ? "Cuota"
+              : "Cargo"}
       </Badge>
     ) : null;
     const actions = isInstallment ? (
       <span className="text-xs text-muted-foreground">Ver en Financiamientos</span>
+    ) : isOpening ? (
+      <span className="text-xs text-muted-foreground">Se edita en la tarjeta</span>
     ) : (
       <TransactionRowActions
         transaction={t}

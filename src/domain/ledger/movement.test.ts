@@ -4,6 +4,7 @@ import { DomainError } from "../shared/errors.ts";
 import {
   balanceEffects,
   deriveBalances,
+  findBalanceDrift,
   signedAmount,
   validateMovement,
   type Movement,
@@ -103,4 +104,54 @@ test("M3/M5: un abono va de cuenta a tarjeta en la misma moneda", () => {
     }),
     "USD",
   );
+});
+
+test("C1: el saldo inicial suma con signo a cuenta o tarjeta", () => {
+  const { accounts, cards } = deriveBalances([
+    mv({ type: "opening_balance", amount: -2_000, account_id: "a" }), // sobregiro inicial
+    mv({ type: "income", amount: 5_000, account_id: "a" }),
+    mv({ type: "opening_balance", amount: 150_000, card_id: "c" }), // deuda inicial
+  ]);
+  assert.equal(accounts.get("a"), 3_000);
+  assert.equal(cards.get("c"), 150_000);
+  assert.equal(signedAmount({ type: "opening_balance", amount: -2_000 }), -2_000);
+});
+
+test("C1: validación del saldo inicial", () => {
+  assert.equal(
+    validateMovement({ type: "opening_balance", amount: -10, accountCurrency: "USD" }),
+    "USD",
+  );
+  assert.throws(
+    () => validateMovement({ type: "opening_balance", amount: 0, accountCurrency: "CRC" }),
+    fails("C1"),
+  );
+  assert.throws(
+    () =>
+      validateMovement({
+        type: "opening_balance",
+        amount: 10,
+        accountCurrency: "CRC",
+        cardCurrency: "CRC",
+      }),
+    fails("C1"),
+  );
+});
+
+test("G1: findBalanceDrift reporta solo los saldos que no cuadran", () => {
+  const movements = [
+    mv({ type: "opening_balance", amount: 100, account_id: "a" }),
+    mv({ type: "expense", amount: 30, card_id: "c" }),
+  ];
+  const drift = findBalanceDrift(
+    [
+      { target: "account", id: "a", stored: 100 },
+      { target: "card", id: "c", stored: 45.5 },
+      { target: "account", id: "vacía", stored: 0 },
+    ],
+    movements,
+  );
+  assert.deepEqual(drift, [
+    { target: "card", id: "c", stored: 45.5, derived: 30, difference: 15.5 },
+  ]);
 });

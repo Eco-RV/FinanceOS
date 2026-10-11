@@ -4,6 +4,8 @@ import { fakeStore } from "./fakes.test-helpers.ts";
 import { deleteMovement, saveMovement } from "./movements.ts";
 import { createFinancing, deleteFinancing } from "./financings.ts";
 import { approvePending, rejectPending } from "./pending.ts";
+import { saveAccount, saveCard } from "./products.ts";
+import { checkBalances, recomputeBalances } from "./balances.ts";
 
 const base = {
   id: null,
@@ -136,4 +138,68 @@ test("rejectPending descarta sin crear movimientos", async () => {
   await rejectPending(s.deps, "p1");
   assert.equal(s.state.pending.get("p1")!.status, "rejected");
   assert.equal(s.state.movements.size, 0);
+});
+
+const accountFields = { name: "BAC", type: "checking", institution: null, currency: "CRC" as const };
+
+test("C1: crear una cuenta con saldo inicial crea el movimiento", async () => {
+  const s = fakeStore();
+  const r = await saveAccount(s.deps, {
+    id: null,
+    fields: accountFields,
+    opening: { amount: 250_000, occurred_on: "2026-10-01" },
+  });
+  assert.ok(r.ok);
+  const id = r.value.id;
+  assert.equal(s.balanceOf("account", id), 250_000);
+  const opening = await s.deps.movements.openingOf("account", id);
+  assert.deepEqual(opening && [opening.amount, opening.occurred_on], [250_000, "2026-10-01"]);
+
+  // Editar cambia el mismo movimiento (no crea otro).
+  await saveAccount(s.deps, {
+    id,
+    fields: accountFields,
+    opening: { amount: -5_000, occurred_on: "2026-09-30" },
+  });
+  assert.equal(s.state.movements.size, 1);
+  assert.equal(s.balanceOf("account", id), -5_000);
+
+  // En 0 se elimina.
+  await saveAccount(s.deps, { id, fields: accountFields, opening: { amount: 0, occurred_on: "2026-09-30" } });
+  assert.equal(s.state.movements.size, 0);
+});
+
+test("saveCard: el saldo inicial de una tarjeta es deuda", async () => {
+  const s = fakeStore();
+  const r = await saveCard(s.deps, {
+    id: null,
+    fields: {
+      name: "Visa",
+      institution: null,
+      last_four: "1234",
+      credit_limit: 1_000_000,
+      cutoff_day: 15,
+      payment_due_day: 5,
+      currency: "USD",
+    },
+    opening: { amount: 300, occurred_on: "2026-09-01" },
+  });
+  assert.ok(r.ok);
+  assert.equal(s.balanceOf("card", r.value.id), 300);
+  assert.equal([...s.state.movements.values()][0].currency, "USD");
+});
+
+test("G1: checkBalances detecta y recomputeBalances corrige el saldo guardado", async () => {
+  const s = fakeStore({ accounts: { bac: "CRC" } });
+  await saveMovement(s.deps, { ...base, type: "income", amount: 100, category: "x", account_id: "bac" });
+  s.state.stored.set("bac", 90);
+
+  const before = await checkBalances(s.deps);
+  assert.ok(before.ok);
+  assert.deepEqual(before.value.drift.map((d) => [d.id, d.difference]), [["bac", -10]]);
+
+  const fixed = await recomputeBalances(s.deps);
+  assert.deepEqual(fixed, { ok: true, value: { changed: 1 } });
+  const after = await checkBalances(s.deps);
+  assert.ok(after.ok && after.value.drift.length === 0);
 });

@@ -16,6 +16,9 @@ export function TransactionRowActions({
   cards: CreditCard[];
   categories?: string[];
 }) {
+  // El saldo inicial se edita desde el formulario de la cuenta o tarjeta.
+  if (transaction.type === "opening_balance") return null;
+
   return (
     <div className="flex justify-end gap-1">
       <TransactionForm

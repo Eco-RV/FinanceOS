@@ -23,6 +23,7 @@ import { BackLink } from "@/components/back-link";
 import { DeleteButton } from "@/components/delete-button";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { CardFormDialog } from "./card-form";
+import { openingsById } from "@/lib/transactions";
 import { CardStatusBadge } from "./card-status";
 import { deleteCard } from "./actions";
 
@@ -54,6 +55,11 @@ export default async function TarjetasPage() {
   const cards = (cardData ?? []) as CreditCard[];
   const banks = (bankData ?? []) as Pick<Bank, "id" | "name">[];
   const txns = (txData ?? []) as CardTxn[];
+  const openings = openingsById(
+    txns
+      .filter((t) => t.type === "opening_balance")
+      .map((t) => ({ ...t, account_id: null })),
+  );
   const today = crToday();
 
   const byCard = new Map<string, CardTxn[]>();
@@ -168,7 +174,7 @@ export default async function TarjetasPage() {
                         >
                           <Eye className="size-4" />
                         </Link>
-                        <CardFormDialog card={card} banks={banks} />
+                        <CardFormDialog card={card} opening={openings.get(card.id)} banks={banks} />
                         <DeleteButton
                           id={card.id}
                           action={deleteCard}
@@ -205,7 +211,7 @@ export default async function TarjetasPage() {
                     >
                       <Eye className="size-4" />
                     </Link>
-                    <CardFormDialog card={card} banks={banks} />
+                    <CardFormDialog card={card} opening={openings.get(card.id)} banks={banks} />
                     <DeleteButton
                       id={card.id}
                       action={deleteCard}
