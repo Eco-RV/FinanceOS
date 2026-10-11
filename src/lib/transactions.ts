@@ -57,3 +57,17 @@ export function openingsById(rows: OpeningRow[] | null | undefined): Map<string,
   }
   return map;
 }
+
+/** Saldos iniciales de tarjetas por moneda (T1: puede haber uno en CRC y otro en USD). */
+export function cardOpeningsById(
+  rows: (OpeningRow & { currency: string })[] | null | undefined,
+): Map<string, Partial<Record<string, OpeningBalance>>> {
+  const map = new Map<string, Partial<Record<string, OpeningBalance>>>();
+  for (const r of rows ?? []) {
+    if (!r.card_id) continue;
+    const byCurrency = map.get(r.card_id) ?? {};
+    byCurrency[r.currency] = { amount: Number(r.amount), occurred_on: r.occurred_on };
+    map.set(r.card_id, byCurrency);
+  }
+  return map;
+}

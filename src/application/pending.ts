@@ -1,6 +1,6 @@
 /** Casos de uso de la bandeja "Por confirmar" (importación desde correo). */
 
-import { assertSameCurrency, isCurrency, merchantKey } from "../domain/index.ts";
+import { isCurrency, merchantKey } from "../domain/index.ts";
 import type {
   CardRepository,
   MerchantRuleRepository,
@@ -23,7 +23,8 @@ export type ApprovePendingInput = {
 };
 
 /**
- * Aprueba un pendiente (I4, I5): crea el gasto en la tarjeta elegida, marca el
+ * Aprueba un pendiente (I4, I5): crea el gasto en la tarjeta elegida (en la
+ * moneda de la compra, T1), marca el
  * pendiente como aprobado y aprende comercio → categoría.
  */
 export function approvePending(
@@ -36,8 +37,8 @@ export function approvePending(
 
     const cardCurrency = await deps.cards.currencyOf(input.card_id);
     if (!cardCurrency) return fail("Tarjeta no encontrada");
-    if (!isCurrency(pending.currency)) return fail(`Moneda no soportada: ${pending.currency}`);
-    assertSameCurrency(pending.currency, cardCurrency, "I5");
+    // I5 (2.0.0): la tarjeta es bimoneda (T1); la compra va al saldo de su moneda.
+    if (!isCurrency(pending.currency)) return fail(`Moneda no soportada: ${pending.currency}`, "I5");
 
     const category = input.category.trim();
     if (!category) return fail("La categoría es obligatoria", "M1");

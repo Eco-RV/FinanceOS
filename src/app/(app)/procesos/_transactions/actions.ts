@@ -44,6 +44,7 @@ export async function saveTransaction(
     channel,
     counterparty_name,
     counterparty_phone,
+    currency,
   } = parsed.data;
   const { kind, id: originId } = parseOrigin(origin);
 
@@ -56,6 +57,7 @@ export async function saveTransaction(
     note,
     account_id: kind === "account" ? originId : null,
     card_id: type === "card_payment" ? card_id : kind === "card" ? originId : null,
+    currency,
     channel,
     counterparty_name,
     counterparty_phone,

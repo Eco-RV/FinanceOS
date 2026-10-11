@@ -17,6 +17,7 @@ import { FormField, Select } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
+import { CURRENCIES } from "@/lib/schema";
 import type { Account, CreditCard, Transaction, TransactionType } from "@/lib/types";
 import { saveTransaction } from "./actions";
 
@@ -95,6 +96,13 @@ export function TransactionForm({
     : type === "card_payment" && accounts.length === 1
       ? `account:${accounts[0].id}`
       : "";
+
+  // T1: un cargo con tarjeta puede ser en CRC o USD; en una cuenta manda su moneda.
+  const [origin, setOrigin] = useState(defaultOrigin);
+  const originIsCard = type === "expense" && !sinpe && origin.startsWith("card:");
+  const originCard = originIsCard
+    ? cards.find((c) => `card:${c.id}` === origin)
+    : undefined;
 
   const canPayTotal =
     type === "card_payment" &&
@@ -229,7 +237,12 @@ export function TransactionForm({
               htmlFor="origin"
               error={errors?.origin}
             >
-              <Select id="origin" name="origin" defaultValue={defaultOrigin}>
+              <Select
+                id="origin"
+                name="origin"
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+              >
                 <option value="">Elegí…</option>
                 {type === "expense" && !sinpe ? (
                   <>
@@ -290,6 +303,27 @@ export function TransactionForm({
                 />
               </FormField>
             </div>
+          ) : null}
+
+          {originIsCard ? (
+            <FormField label="Moneda del cargo" htmlFor="currency" error={errors?.currency}>
+              <Select
+                key={origin}
+                id="currency"
+                name="currency"
+                defaultValue={
+                  transaction?.card_id && `card:${transaction.card_id}` === origin
+                    ? transaction.currency
+                    : (originCard?.currency ?? "CRC")
+                }
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
           ) : null}
 
           <FormField label="Nota (opcional)" htmlFor="note" error={errors?.note}>

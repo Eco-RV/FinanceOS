@@ -10,3 +10,4 @@ export * from "./financings.ts";
 export * from "./pending.ts";
 export * from "./products.ts";
 export * from "./balances.ts";
+export * from "./exchange-rates.ts";

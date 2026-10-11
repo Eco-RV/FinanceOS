@@ -22,7 +22,11 @@ export type CreditCard = {
   credit_limit: number | null;
   cutoff_day: number;
   payment_due_day: number;
+  /** Saldo en CRC (proyección). */
   current_balance: number;
+  /** Saldo en USD (proyección, 2.0.0 — tarjeta bimoneda). */
+  usd_balance?: number;
+  /** Moneda del límite de crédito (2.0.0). */
   currency: string;
   archived: boolean;
   created_at: string;

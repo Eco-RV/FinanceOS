@@ -67,8 +67,15 @@ contado y antes de qué fecha.
   intereses).
 - Si está `al-dia` o `sin-saldo`, se muestra una confirmación en vez de
   alerta.
-- También se muestran los datos del plástico: saldo actual total, límite,
-  disponible (límite − saldo), próximo corte y fecha límite de pago.
+- Si la tarjeta tiene movimientos en las dos monedas, hay un estado de cuenta
+  **por moneda** (colones y dólares), cada uno con su saldo al corte, pagos,
+  falta pagar y consumo sin cortar. El estado de la tarjeta es el más grave de
+  los dos (T1).
+- También se muestran los datos del plástico: saldo actual por moneda, límite
+  (en la moneda del límite), disponible, próximo corte y fecha límite de pago.
+- **Disponible** = límite − saldo en la moneda del límite − saldo en la otra
+  moneda convertido con el último tipo de cambio de Ajustes (T2). Si hay saldo
+  en otra moneda y no hay tipo de cambio, se muestra "—" con un aviso.
 
 ### 5. Registrar un pago o abono de tarjeta
 Como usuario quiero registrar un pago desde una cuenta de débito hacia una
@@ -78,9 +85,10 @@ calcularlo a mano.
 **Criterios de aceptación**
 - El monto sugerido al abrir el formulario es `dueAmount` (lo que falta pagar
   del corte) si es mayor que cero; si no, el saldo total de la tarjeta.
-- La cuenta de origen y la tarjeta deben estar en la misma moneda — la action
-  rechaza el pago si no coinciden (no hay conversión).
-- El pago resta el mismo monto de la cuenta y de la tarjeta.
+- El abono baja el saldo de la tarjeta **en la moneda de la cuenta origen**
+  (T1/M5): desde una cuenta en dólares se abona el saldo en dólares; no hay
+  conversión.
+- El pago resta el mismo monto de la cuenta y del saldo de esa moneda.
 
 ### 6. Crear un financiamiento (compra a cuotas sin interés)
 Como usuario quiero registrar una compra a cuotas sobre una tarjeta
@@ -122,7 +130,9 @@ eliminar uno completo si ya no aplica.
 - Las cuotas de un financiamiento las calcula el dominio
   (`installmentSchedule`) y la base las guarda tal cual
   (`create_financing_v2`), validando cantidad y suma.
-- Un pago de tarjeta exige la misma moneda entre cuenta origen y tarjeta.
+- Tarjeta bimoneda (T1): cada cargo, abono y saldo inicial va al saldo de su
+  moneda; `credit_cards.currency` es la **moneda del límite**.
+- Un cargo con tarjeta se registra en CRC o USD (selector "Moneda del cargo").
 - Un financiamiento no tiene interés (tasa 0); préstamos con interés son un
   concepto distinto, todavía no implementado (ver *Pendiente*).
 
@@ -132,8 +142,9 @@ eliminar uno completo si ya no aplica.
 - No hay "archivar" tarjeta desde la interfaz, igual que en cuentas.
 - Préstamos con interés y tabla de amortización — roadmap paso 3, no
   implementado.
-- Tarjetas en `USD` no entran en los cálculos de cobertura del dashboard
-  (se listan, pero no suman).
+- Los saldos en `USD` de las tarjetas no entran en los cálculos de cobertura
+  del dashboard (se listan, pero no suman).
+- El tipo de cambio es manual; no se consulta el BCCR todavía.
 
 ### Propuesta (2.0.0): financiamiento con interés
 
@@ -193,3 +204,6 @@ sistema francés (cuota fija).
   financiamiento calculadas por el dominio y guardadas con `create_financing_v2`.
 - **2026-10-11 (v2.0.0, en desarrollo)** — Eliminar un financiamiento conserva
   las cuotas ya ocurridas (F4, `04_cancel_financing.sql`).
+- **2026-10-11 (v2.0.0, en desarrollo)** — Tarjeta bimoneda: saldo y estado de
+  cuenta por moneda, límite en su moneda, disponible con tipo de cambio manual,
+  saldo inicial en ₡ y $ (`06_multicurrency_cards.sql`).

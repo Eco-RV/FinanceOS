@@ -12,6 +12,7 @@ import {
   type AccountRepository,
   type BalanceRepository,
   type CardRepository,
+  type ExchangeRateRepository,
   type FinancingRepository,
   type MerchantRuleRepository,
   type MovementRepository,
@@ -86,12 +87,13 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .maybeSingle();
       return data?.card_id ?? null;
     },
-    async openingOf(target, id) {
+    async openingOf(target, id, currency) {
       const { data } = await supabase
         .from("transactions")
         .select("id, amount, occurred_on")
         .eq("type", "opening_balance")
         .eq(target === "account" ? "account_id" : "card_id", id)
+        .eq("currency", currency)
         .eq("archived", false)
         .maybeSingle();
       return data ? { id: data.id, amount: Number(data.amount), occurred_on: data.occurred_on } : null;
@@ -200,7 +202,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     async stored() {
       const [{ data: acc, error: e1 }, { data: crd, error: e2 }] = await Promise.all([
         supabase.from("accounts").select("id, current_balance"),
-        supabase.from("credit_cards").select("id, current_balance"),
+        supabase.from("credit_cards").select("id, current_balance, usd_balance"),
       ]);
       check(e1 ?? e2, "No se pudieron leer los saldos");
       return [
@@ -209,11 +211,21 @@ export function supabaseRepositories(supabase: SupabaseClient) {
           id: r.id as string,
           stored: Number(r.current_balance),
         })),
-        ...(crd ?? []).map((r) => ({
-          target: "card" as const,
-          id: r.id as string,
-          stored: Number(r.current_balance),
-        })),
+        // T1: una fila por moneda (current_balance = CRC, usd_balance = USD).
+        ...(crd ?? []).flatMap((r) => [
+          {
+            target: "card" as const,
+            id: r.id as string,
+            currency: "CRC" as const,
+            stored: Number(r.current_balance),
+          },
+          {
+            target: "card" as const,
+            id: r.id as string,
+            currency: "USD" as const,
+            stored: Number(r.usd_balance ?? 0),
+          },
+        ]),
       ];
     },
     async movements() {
@@ -223,7 +235,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from("transactions")
-          .select("type, amount, account_id, card_id, to_account_id, archived")
+          .select("type, amount, currency, account_id, card_id, to_account_id, archived")
           .order("id")
           .range(from, from + PAGE - 1);
         check(error, "No se pudieron leer los movimientos");
@@ -238,7 +250,35 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     },
   };
 
-  return { accounts, cards, movements, financings, pending, merchantRules, balances };
+  const exchangeRates: ExchangeRateRepository = {
+    async latest() {
+      const { data } = await supabase
+        .from("exchange_rates")
+        .select("rate_on, usd_crc")
+        .eq("archived", false)
+        .order("rate_on", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data ? { rate_on: data.rate_on, usd_crc: Number(data.usd_crc) } : null;
+    },
+    async save(rate) {
+      const { error } = await supabase
+        .from("exchange_rates")
+        .upsert(rate, { onConflict: "user_id,rate_on" });
+      check(error, "No se pudo guardar el tipo de cambio");
+    },
+  };
+
+  return {
+    accounts,
+    cards,
+    movements,
+    financings,
+    pending,
+    merchantRules,
+    balances,
+    exchangeRates,
+  };
 }
 
 export type Repositories = ReturnType<typeof supabaseRepositories>;

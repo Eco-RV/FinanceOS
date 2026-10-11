@@ -18,21 +18,41 @@ const mv = (m: Partial<Movement> & Pick<Movement, "type" | "amount">): Movement 
 });
 
 test("convención de signo (igual al trigger de Postgres)", () => {
+  const C = "CRC" as const;
   assert.deepEqual(balanceEffects(mv({ type: "expense", amount: 10, account_id: "a" })), [
-    { target: "account", id: "a", delta: -10 },
+    { target: "account", id: "a", delta: -10, currency: C },
   ]);
   assert.deepEqual(balanceEffects(mv({ type: "expense", amount: 10, card_id: "c" })), [
-    { target: "card", id: "c", delta: 10 },
+    { target: "card", id: "c", delta: 10, currency: C },
   ]);
   assert.deepEqual(balanceEffects(mv({ type: "income", amount: 10, account_id: "a" })), [
-    { target: "account", id: "a", delta: 10 },
+    { target: "account", id: "a", delta: 10, currency: C },
   ]);
   assert.deepEqual(
     balanceEffects(mv({ type: "card_payment", amount: 10, account_id: "a", card_id: "c" })),
     [
-      { target: "account", id: "a", delta: -10 },
-      { target: "card", id: "c", delta: -10 },
+      { target: "account", id: "a", delta: -10, currency: C },
+      { target: "card", id: "c", delta: -10, currency: C },
     ],
+  );
+});
+
+test("T1: una tarjeta lleva un saldo por moneda", () => {
+  const movements = [
+    mv({ type: "expense", amount: 50_000, card_id: "c", currency: "CRC" }),
+    mv({ type: "expense", amount: 120, card_id: "c", currency: "USD" }),
+    mv({ type: "card_payment", amount: 20, account_id: "usd", card_id: "c", currency: "USD" }),
+  ];
+  assert.deepEqual(deriveBalances(movements).cards.get("c"), { CRC: 50_000, USD: 100 });
+  assert.deepEqual(
+    findBalanceDrift(
+      [
+        { target: "card", id: "c", currency: "CRC", stored: 50_000 },
+        { target: "card", id: "c", currency: "USD", stored: 90 },
+      ],
+      movements,
+    ).map((d) => [d.currency, d.difference]),
+    [["USD", -10]],
   );
 });
 
@@ -52,7 +72,7 @@ test("G1: los saldos se derivan de los movimientos", () => {
     mv({ type: "card_payment", amount: 600, account_id: "a", card_id: "c" }), // M4: supera la deuda
   ]);
   assert.equal(accounts.get("a"), 399.7);
-  assert.equal(cards.get("c"), -100);
+  assert.deepEqual(cards.get("c"), { CRC: -100 });
 });
 
 test("signedAmount: ingreso +, lo demás −", () => {
@@ -81,20 +101,20 @@ test("M1: gasto e ingreso exigen categoría", () => {
   );
 });
 
-test("M3/M5: un abono va de cuenta a tarjeta en la misma moneda", () => {
+test("M3/M5: un abono va de cuenta a tarjeta, en la moneda de la cuenta", () => {
   assert.throws(
     () => validateMovement({ type: "card_payment", amount: 1, cardCurrency: "CRC" }),
     fails("M3"),
   );
-  assert.throws(
-    () =>
-      validateMovement({
-        type: "card_payment",
-        amount: 1,
-        accountCurrency: "CRC",
-        cardCurrency: "USD",
-      }),
-    fails("M5"),
+  // T1/M5: la tarjeta acepta ambas monedas; el abono va al saldo de la moneda de la cuenta.
+  assert.equal(
+    validateMovement({
+      type: "card_payment",
+      amount: 1,
+      accountCurrency: "CRC",
+      cardCurrency: "USD",
+    }),
+    "CRC",
   );
   assert.equal(
     validateMovement({
@@ -114,7 +134,7 @@ test("C1: el saldo inicial suma con signo a cuenta o tarjeta", () => {
     mv({ type: "opening_balance", amount: 150_000, card_id: "c" }), // deuda inicial
   ]);
   assert.equal(accounts.get("a"), 3_000);
-  assert.equal(cards.get("c"), 150_000);
+  assert.deepEqual(cards.get("c"), { CRC: 150_000 });
   assert.equal(signedAmount({ type: "opening_balance", amount: -2_000 }), -2_000);
 });
 
@@ -197,4 +217,15 @@ test("S1: normalizeSinpePhone", () => {
   assert.equal(normalizeSinpePhone("  "), null);
   assert.equal(normalizeSinpePhone(null), null);
   assert.throws(() => normalizeSinpePhone("8888"), fails("S1"));
+});
+
+test("T1: un cargo de tarjeta puede ser en otra moneda que la del límite", () => {
+  const charge = { type: "expense" as const, amount: 30, category: "Viaje", cardCurrency: "CRC" as const };
+  assert.equal(validateMovement(charge), "CRC");
+  assert.equal(validateMovement({ ...charge, currency: "USD" }), "USD");
+  // En una cuenta manda la moneda de la cuenta.
+  assert.equal(
+    validateMovement({ ...charge, cardCurrency: null, accountCurrency: "CRC", currency: "USD" }),
+    "CRC",
+  );
 });

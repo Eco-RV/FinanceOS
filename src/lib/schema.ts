@@ -65,8 +65,12 @@ export const creditCardSchema = z.object({
     .int()
     .min(1, "Día 1-31")
     .max(31, "Día 1-31"),
+  /** Moneda del límite de crédito (T2). La tarjeta acepta cargos en CRC y USD (T1). */
   currency: z.enum(CURRENCIES),
-  ...openingFields,
+  /** Saldo inicial por moneda (T1); vacío = 0. */
+  opening_crc: openingFields.opening_amount,
+  opening_usd: openingFields.opening_amount,
+  opening_date: openingFields.opening_date,
 });
 
 export type AccountInput = z.infer<typeof accountSchema>;
@@ -134,6 +138,12 @@ export const transactionSchema = z
       .transform((v) => (v ? v : null)),
     note: optionalNote,
     origin: originToken,
+    // Moneda de un cargo con tarjeta (T1). En cuentas manda la de la cuenta.
+    currency: z
+      .enum(CURRENCIES)
+      .optional()
+      .or(z.literal(""))
+      .transform((v) => (v ? v : null)),
     // SINPE (gasto desde cuenta): canal + destinatario/teléfono opcionales.
     channel: z
       .enum(["sinpe"])

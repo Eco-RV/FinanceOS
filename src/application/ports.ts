@@ -9,6 +9,7 @@
 
 import type {
   Currency,
+  ExchangeRate,
   Installment,
   ISODate,
   Movement,
@@ -72,8 +73,15 @@ export type OpeningBalance = { id: string; amount: number; occurred_on: ISODate 
 export interface MovementRepository {
   /** Tarjeta a la que pertenece un movimiento (para refrescar su vista). */
   cardIdOf(movementId: string): Promise<string | null>;
-  /** Saldo inicial activo de una cuenta o tarjeta (C1: como máximo uno). */
-  openingOf(target: "account" | "card", id: string): Promise<OpeningBalance | null>;
+  /**
+   * Saldo inicial activo de una cuenta o tarjeta en una moneda (C1: como
+   * máximo uno por moneda; una cuenta tiene una sola).
+   */
+  openingOf(
+    target: "account" | "card",
+    id: string,
+    currency: Currency,
+  ): Promise<OpeningBalance | null>;
   create(movement: NewMovement): Promise<{ id: string }>;
   update(movementId: string, movement: NewMovement): Promise<void>;
   delete(movementId: string): Promise<void>;
@@ -126,6 +134,13 @@ export interface BalanceRepository {
   movements(): Promise<Movement[]>;
   /** Reescribe los saldos guardados desde los movimientos. Devuelve filas cambiadas. */
   recompute(): Promise<number>;
+}
+
+export interface ExchangeRateRepository {
+  /** Último tipo de cambio digitado (T2), o `null` si no hay ninguno. */
+  latest(): Promise<ExchangeRate | null>;
+  /** Guarda (o reemplaza) el tipo de cambio de una fecha. */
+  save(rate: ExchangeRate): Promise<void>;
 }
 
 /** Error de un adaptador que se puede mostrar al usuario. */

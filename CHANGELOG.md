@@ -49,6 +49,11 @@ sin tocar las reglas.
   moneda, cuentas distintas; no cuentan como gasto ni ingreso.
 - **SINPE**: botón "Nuevo SINPE" en Gastos; gasto desde cuenta con destinatario y
   teléfono opcionales.
+- **Tarjeta bimoneda**: cada tarjeta lleva saldo y estado de cuenta en colones y en
+  dólares; la moneda de la tarjeta pasa a ser la del límite. Cargos con selector de
+  moneda, abonos al saldo de la moneda de la cuenta, saldo inicial en ₡ y $, y
+  **disponible** con el tipo de cambio manual (**Ajustes → Tipo de cambio**). Los
+  pendientes del correo se aprueban contra cualquier tarjeta.
 
 ### Base de datos (correr a mano, en orden, ANTES de desplegar)
 - `supabase/Versionamiento/2.0.0/00_opening_balance.sql`
@@ -57,6 +62,7 @@ sin tocar las reglas.
 - `supabase/Versionamiento/2.0.0/03_create_financing_v2.sql`
 - `supabase/Versionamiento/2.0.0/04_cancel_financing.sql`
 - `supabase/Versionamiento/2.0.0/05_transfers_and_sinpe.sql`
+- `supabase/Versionamiento/2.0.0/06_multicurrency_cards.sql`
 
 ## 1.3.0 — 2026-10-08
 

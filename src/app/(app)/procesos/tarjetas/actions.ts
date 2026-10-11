@@ -29,13 +29,16 @@ export async function saveCard(
 
   // Sin selector de banco en el formulario (aún no hay bancos) no se toca la
   // columna: así guardar una tarjeta sigue funcionando antes de la migración 1.3.0.
-  const { bank_id, opening_amount, opening_date, ...rest } = parsed.data;
+  const { bank_id, opening_crc, opening_usd, opening_date, ...rest } = parsed.data;
   const fields = formData.has("bank_id") ? { ...rest, bank_id } : rest;
 
   const result = await saveCardUseCase(await repositories(), {
     id,
     fields,
-    opening: { amount: opening_amount, occurred_on: opening_date },
+    openings: [
+      { currency: "CRC", amount: opening_crc, occurred_on: opening_date },
+      { currency: "USD", amount: opening_usd, occurred_on: opening_date },
+    ],
   });
   if (!result.ok) return { ok: false, message: result.message };
 

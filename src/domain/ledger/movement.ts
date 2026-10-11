@@ -24,6 +24,11 @@ export type Movement = {
   card_id: string | null;
   /** Cuenta destino, solo en transferencias. */
   to_account_id?: string | null;
+  /**
+   * Moneda del movimiento. En una tarjeta decide a qué saldo va (T1: tarjeta
+   * bimoneda). Si falta se asume CRC.
+   */
+  currency?: Currency;
   archived?: boolean;
 };
 
@@ -38,6 +43,8 @@ export type BalanceEffect = {
   id: string;
   /** Cambio en el saldo guardado (cuenta: disponible; tarjeta: deuda). */
   delta: number;
+  /** Moneda del saldo afectado (en tarjetas, cada moneda es un saldo aparte). */
+  currency: Currency;
 };
 
 /**
@@ -54,51 +61,80 @@ export type BalanceEffect = {
 export function balanceEffects(m: Movement): BalanceEffect[] {
   if (m.archived) return [];
   const amount = Number(m.amount) || 0;
+  const currency: Currency = m.currency ?? "CRC";
+  const account = (id: string, delta: number): BalanceEffect => ({
+    target: "account",
+    id,
+    delta,
+    currency,
+  });
+  const card = (id: string, delta: number): BalanceEffect => ({
+    target: "card",
+    id,
+    delta,
+    currency,
+  });
 
   switch (m.type) {
     case "expense":
-      if (m.account_id) return [{ target: "account", id: m.account_id, delta: -amount }];
-      if (m.card_id) return [{ target: "card", id: m.card_id, delta: amount }];
+      if (m.account_id) return [account(m.account_id, -amount)];
+      if (m.card_id) return [card(m.card_id, amount)];
       return [];
     case "income":
-      return m.account_id ? [{ target: "account", id: m.account_id, delta: amount }] : [];
+      return m.account_id ? [account(m.account_id, amount)] : [];
     case "opening_balance":
-      if (m.account_id) return [{ target: "account", id: m.account_id, delta: amount }];
-      if (m.card_id) return [{ target: "card", id: m.card_id, delta: amount }];
+      if (m.account_id) return [account(m.account_id, amount)];
+      if (m.card_id) return [card(m.card_id, amount)];
       return [];
-    case "transfer": {
+    case "transfer":
       if (!m.account_id || !m.to_account_id) return [];
-      return [
-        { target: "account", id: m.account_id, delta: -amount },
-        { target: "account", id: m.to_account_id, delta: amount },
-      ];
-    }
+      return [account(m.account_id, -amount), account(m.to_account_id, amount)];
     case "card_payment": {
       const effects: BalanceEffect[] = [];
-      if (m.account_id) effects.push({ target: "account", id: m.account_id, delta: -amount });
-      if (m.card_id) effects.push({ target: "card", id: m.card_id, delta: -amount });
+      if (m.account_id) effects.push(account(m.account_id, -amount));
+      if (m.card_id) effects.push(card(m.card_id, -amount));
       return effects;
     }
   }
 }
 
+/** Saldo de una tarjeta por moneda (T1). */
+export type CurrencyBalances = Partial<Record<Currency, number>>;
+
 export type DerivedBalances = {
+  /** Una cuenta tiene una sola moneda (C4). */
   accounts: Map<string, number>;
-  cards: Map<string, number>;
+  /** Una tarjeta tiene un saldo por moneda (T1). */
+  cards: Map<string, CurrencyBalances>;
 };
 
 /** Saldos por cuenta/tarjeta calculados solo desde los movimientos (G1). */
 export function deriveBalances(movements: Movement[]): DerivedBalances {
-  const cents = { account: new Map<string, number>(), card: new Map<string, number>() };
+  const accountCents = new Map<string, number>();
+  const cardCents = new Map<string, Partial<Record<Currency, number>>>();
   for (const m of movements) {
     for (const e of balanceEffects(m)) {
-      const map = cents[e.target];
-      map.set(e.id, (map.get(e.id) ?? 0) + toCents(e.delta));
+      const delta = toCents(e.delta);
+      if (e.target === "account") {
+        accountCents.set(e.id, (accountCents.get(e.id) ?? 0) + delta);
+      } else {
+        const byCurrency = cardCents.get(e.id) ?? {};
+        byCurrency[e.currency] = (byCurrency[e.currency] ?? 0) + delta;
+        cardCents.set(e.id, byCurrency);
+      }
     }
   }
-  const toAmounts = (map: Map<string, number>) =>
-    new Map([...map].map(([id, c]) => [id, fromCents(c)]));
-  return { accounts: toAmounts(cents.account), cards: toAmounts(cents.card) };
+  return {
+    accounts: new Map([...accountCents].map(([id, c]) => [id, fromCents(c)])),
+    cards: new Map(
+      [...cardCents].map(([id, byCurrency]) => [
+        id,
+        Object.fromEntries(
+          Object.entries(byCurrency).map(([cur, c]) => [cur, fromCents(c as number)]),
+        ) as CurrencyBalances,
+      ]),
+    ),
+  };
 }
 
 export type StoredBalance = {
@@ -106,6 +142,8 @@ export type StoredBalance = {
   id: string;
   /** Saldo guardado (proyección, p. ej. `current_balance`). */
   stored: number;
+  /** En tarjetas: de qué moneda es este saldo (default CRC). */
+  currency?: Currency;
 };
 
 export type BalanceDrift = StoredBalance & {
@@ -123,8 +161,10 @@ export function findBalanceDrift(stored: StoredBalance[], movements: Movement[])
   const derived = deriveBalances(movements);
   const drift: BalanceDrift[] = [];
   for (const row of stored) {
-    const map = row.target === "account" ? derived.accounts : derived.cards;
-    const d = map.get(row.id) ?? 0;
+    const d =
+      row.target === "account"
+        ? (derived.accounts.get(row.id) ?? 0)
+        : (derived.cards.get(row.id)?.[row.currency ?? "CRC"] ?? 0);
     const diffCents = toCents(row.stored) - toCents(d);
     if (diffCents !== 0) {
       drift.push({ ...row, derived: d, difference: fromCents(diffCents) });
@@ -149,8 +189,13 @@ export type MovementDraft = {
   category?: string | null;
   /** Moneda de la cuenta involucrada (origen), si la hay. */
   accountCurrency?: Currency | null;
-  /** Moneda de la tarjeta involucrada, si la hay. */
+  /** Moneda del límite de la tarjeta involucrada, si la hay. */
   cardCurrency?: Currency | null;
+  /**
+   * Moneda elegida para un cargo o saldo inicial de tarjeta (T1: la tarjeta
+   * acepta CRC y USD). Si falta, la del límite.
+   */
+  currency?: Currency | null;
   /** Transferencia: ids de origen y destino, y moneda del destino. */
   accountId?: string | null;
   toAccountId?: string | null;
@@ -190,7 +235,7 @@ export function validateMovement(d: MovementDraft): Currency {
     if (Boolean(d.accountCurrency) === Boolean(d.cardCurrency)) {
       throw new DomainError("C1", "El saldo inicial es de una cuenta o de una tarjeta");
     }
-    return (d.accountCurrency ?? d.cardCurrency)!;
+    return d.accountCurrency ?? d.currency ?? d.cardCurrency!;
   }
 
   if (!(Number(d.amount) > 0)) {
@@ -222,8 +267,8 @@ export function validateMovement(d: MovementDraft): Currency {
     if (!d.accountCurrency || !d.cardCurrency) {
       throw new DomainError("M3", "Un abono necesita una cuenta de origen y una tarjeta");
     }
-    // M5: sin conversión de moneda en un abono.
-    assertSameCurrency(d.accountCurrency, d.cardCurrency, "M5");
+    // M5: el abono baja el saldo de la tarjeta en la moneda de la cuenta (T1),
+    // sin conversión.
     return d.accountCurrency;
   }
 
@@ -239,7 +284,8 @@ export function validateMovement(d: MovementDraft): Currency {
     return d.accountCurrency;
   }
 
-  const currency = d.accountCurrency ?? d.cardCurrency;
+  // En una cuenta, su moneda; en una tarjeta, la elegida (T1) o la del límite.
+  const currency = d.accountCurrency ?? (d.cardCurrency ? (d.currency ?? d.cardCurrency) : null);
   if (!currency) {
     throw new DomainError("M1", "Un gasto necesita una cuenta o una tarjeta");
   }

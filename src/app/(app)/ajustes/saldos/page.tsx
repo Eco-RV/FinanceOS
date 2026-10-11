@@ -77,13 +77,14 @@ export default async function SaldosPage() {
               <TableBody>
                 {result.value.drift.map((d) => {
                   const row = names.get(d.id);
-                  const currency = row?.currency ?? "CRC";
+                  // En tarjetas cada moneda es un saldo aparte (T1).
+                  const currency = d.currency ?? row?.currency ?? "CRC";
                   return (
                     <TableRow key={`${d.target}:${d.id}`}>
                       <TableCell>
                         {row?.name ?? d.id}{" "}
                         <span className="text-xs text-muted-foreground">
-                          {d.target === "account" ? "cuenta" : "tarjeta"}
+                          {d.target === "account" ? "cuenta" : `tarjeta · ${currency}`}
                         </span>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">

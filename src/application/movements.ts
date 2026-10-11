@@ -3,6 +3,7 @@
 import {
   normalizeSinpePhone,
   validateMovement,
+  type Currency,
   type ISODate,
   type MovementChannel,
   type MovementType,
@@ -28,6 +29,8 @@ export type SaveMovementInput = {
   card_id: string | null;
   /** Cuenta destino (solo transferencias). */
   to_account_id?: string | null;
+  /** Moneda de un cargo con tarjeta (T1); en cuentas manda la de la cuenta. */
+  currency?: Currency | null;
   /** Gasto por SINPE, con destinatario y teléfono opcionales. */
   channel?: MovementChannel | null;
   counterparty_name?: string | null;
@@ -60,6 +63,7 @@ export function saveMovement(
       category: input.category,
       accountCurrency,
       cardCurrency,
+      currency: input.currency ?? null,
       accountId: input.account_id,
       toAccountId: input.to_account_id ?? null,
       toAccountCurrency,

@@ -6,6 +6,7 @@ import { createFinancing, deleteFinancing } from "./financings.ts";
 import { approvePending, rejectPending } from "./pending.ts";
 import { saveAccount, saveCard } from "./products.ts";
 import { checkBalances, recomputeBalances } from "./balances.ts";
+import { setExchangeRate } from "./exchange-rates.ts";
 
 const base = {
   id: null,
@@ -29,19 +30,28 @@ test("saveMovement: un gasto copia la moneda del origen y ajusta el saldo", asyn
   assert.equal(s.balanceOf("card", "visa"), 25);
 });
 
-test("saveMovement: un abono en monedas distintas se rechaza con la regla M5", async () => {
-  const s = fakeStore({ accounts: { bac: "CRC" }, cards: { visa: "USD" } });
+test("T1/M5: un abono en dólares baja el saldo en dólares de una tarjeta en colones", async () => {
+  const s = fakeStore({ accounts: { usd: "USD" }, cards: { visa: "CRC" } });
+  await saveMovement(s.deps, {
+    ...base,
+    type: "expense",
+    amount: 80,
+    category: "Viaje",
+    card_id: "visa",
+    currency: "USD",
+  });
   const r = await saveMovement(s.deps, {
     ...base,
     type: "card_payment",
-    amount: 10,
+    amount: 30,
     category: null,
-    account_id: "bac",
+    account_id: "usd",
     card_id: "visa",
   });
-  assert.equal(r.ok, false);
-  assert.equal(!r.ok && r.rule, "M5");
-  assert.equal(s.state.movements.size, 0);
+  assert.ok(r.ok);
+  assert.equal(s.balanceOf("card", "visa", "USD"), 50);
+  assert.equal(s.balanceOf("card", "visa", "CRC"), 0);
+  assert.equal(s.balanceOf("account", "usd"), -30);
 });
 
 test("saveMovement: un origen inexistente se rechaza", async () => {
@@ -147,11 +157,11 @@ test("approvePending crea el gasto y aprende la categoría del comercio", async 
   assert.equal(s.state.movements.size, 1);
 });
 
-test("approvePending rechaza una tarjeta de otra moneda (I5)", async () => {
+test("T1/I5: un pendiente en colones se aprueba en una tarjeta con límite en dólares", async () => {
   const s = fakeStore({ cards: { amex: "USD" }, pending: [purchase] });
   const r = await approvePending(s.deps, { id: "p1", card_id: "amex", category: "Súper" });
-  assert.equal(!r.ok && r.rule, "I5");
-  assert.equal(s.state.movements.size, 0);
+  assert.ok(r.ok);
+  assert.equal(s.balanceOf("card", "amex", "CRC"), 12_500);
 });
 
 test("rejectPending descarta sin crear movimientos", async () => {
@@ -173,7 +183,7 @@ test("C1: crear una cuenta con saldo inicial crea el movimiento", async () => {
   assert.ok(r.ok);
   const id = r.value.id;
   assert.equal(s.balanceOf("account", id), 250_000);
-  const opening = await s.deps.movements.openingOf("account", id);
+  const opening = await s.deps.movements.openingOf("account", id, "CRC");
   assert.deepEqual(opening && [opening.amount, opening.occurred_on], [250_000, "2026-10-01"]);
 
   // Editar cambia el mismo movimiento (no crea otro).
@@ -203,11 +213,23 @@ test("saveCard: el saldo inicial de una tarjeta es deuda", async () => {
       payment_due_day: 5,
       currency: "USD",
     },
-    opening: { amount: 300, occurred_on: "2026-09-01" },
+    openings: [
+      { currency: "USD", amount: 300, occurred_on: "2026-09-01" },
+      { currency: "CRC", amount: 50_000, occurred_on: "2026-09-01" },
+    ],
   });
   assert.ok(r.ok);
-  assert.equal(s.balanceOf("card", r.value.id), 300);
-  assert.equal([...s.state.movements.values()][0].currency, "USD");
+  assert.equal(s.balanceOf("card", r.value.id, "USD"), 300);
+  assert.equal(s.balanceOf("card", r.value.id, "CRC"), 50_000);
+  assert.equal(s.state.movements.size, 2);
+});
+
+test("T2: setExchangeRate guarda el tipo de cambio y rechaza valores inválidos", async () => {
+  const s = fakeStore();
+  assert.ok((await setExchangeRate(s.deps, { usd_crc: 505.25, rate_on: "2026-10-11" })).ok);
+  const bad = await setExchangeRate(s.deps, { usd_crc: 0, rate_on: "2026-10-12" });
+  assert.equal(!bad.ok && bad.rule, "T2");
+  assert.deepEqual(await s.deps.exchangeRates.latest(), { usd_crc: 505.25, rate_on: "2026-10-11" });
 });
 
 test("G1: checkBalances detecta y recomputeBalances corrige el saldo guardado", async () => {

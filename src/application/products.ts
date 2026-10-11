@@ -31,7 +31,7 @@ export async function setOpeningBalance(
   currency: Currency,
   opening: OpeningInput,
 ): Promise<void> {
-  const existing = await movements.openingOf(target, id);
+  const existing = await movements.openingOf(target, id, currency);
   const amount = Number(opening.amount) || 0;
 
   if (amount === 0) {
@@ -82,14 +82,19 @@ export function saveAccount(
 
 export type CardDeps = { cards: CardRepository; movements: MovementRepository };
 
+/** Saldo inicial de una tarjeta en una moneda (T1: puede tener en CRC y USD). */
+export type CardOpening = OpeningInput & { currency: Currency };
+
 export function saveCard(
   deps: CardDeps,
-  input: { id: string | null; fields: CardFields; opening: OpeningInput },
+  input: { id: string | null; fields: CardFields; openings: CardOpening[] },
 ): Promise<UseCaseResult<{ id: string }>> {
   return run(async () => {
     const { id } = await deps.cards.save(input.id, input.fields);
     try {
-      await setOpeningBalance(deps.movements, "card", id, input.fields.currency, input.opening);
+      for (const o of input.openings) {
+        await setOpeningBalance(deps.movements, "card", id, o.currency, o);
+      }
     } catch (e) {
       if (!input.id) await deps.cards.delete(id);
       throw e;

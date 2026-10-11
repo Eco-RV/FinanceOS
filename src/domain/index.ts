@@ -11,6 +11,7 @@ export * from "./shared/money.ts";
 export * from "./shared/calendar.ts";
 export * from "./ledger/movement.ts";
 export * from "./cards/statement.ts";
+export * from "./cards/multicurrency.ts";
 export * from "./financing/installments.ts";
 export * from "./financing/amortization.ts";
 export * from "./coverage/coverage.ts";

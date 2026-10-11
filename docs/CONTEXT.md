@@ -58,14 +58,14 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
 | Movimientos | `src/lib/transactions.ts` + `src/domain/ledger/movement.ts` (`signedAmount`, `balanceEffects`, `deriveBalances`, `validateMovement`) + `src/app/(app)/procesos/_transactions/` | Helpers de formulario/UI: `parseOrigin`, `originValue`, `originLabel`. `_transactions/` (carpeta privada `_`): `actions.ts`, `transaction-form.tsx`, `transaction-list.tsx` (tabla reutilizable, `context` `"list"`/`"card"`), `transaction-row-actions.tsx`. |
 | Categorías | `src/lib/categories.ts` + tabla `categories` + `src/app/(app)/ajustes/categorias/` | `categoryNames(rows, fallback)` → nombres del usuario o la lista sugerida si no tiene ninguna. Sub-página con CRUD por diálogo + botón "cargar sugeridas" (`seedCategories`). `gastos`/`ingresos`/`tarjetas/[id]` hacen el fetch y lo pasan a `TransactionForm`/`TransactionList`. |
 | Fecha "hoy" | `src/domain/shared/calendar.ts` | `crToday()` → día calendario actual en `America/Costa_Rica` (UTC-6, sin DST) como Date a medianoche local. Es el default de `from` en `domain/cards/statement.ts` y `daysUntil`, para no depender de la zona del servidor (Vercel = UTC). `toISODate(Date)` → `"YYYY-MM-DD"` con componentes locales (default del `<input type="date">` de los movimientos). |
-| Lógica de tarjetas | `src/domain/cards/statement.ts` | `nextCutoffDate`, `nextPaymentDate`, `lastCutoffDate`, `paymentDueForCutoff` (clamp de día en meses cortos). `cardStatement(card, txns, from)` → estado de cuenta del corte vigente: `statementBalance` (saldo de contado = cargos − pagos **con fecha <= último corte**), `paidAfterCutoff`, `dueAmount` (falta pagar antes de `dueDate` para no generar intereses), `newCharges` (consumo posterior al corte), `status` (`sin-movimientos`/`sin-saldo`/`al-dia`/`pendiente`/`atrasada`), `daysToDue`. |
+| Lógica de tarjetas | `src/domain/cards/statement.ts` + `multicurrency.ts` (bimoneda: `cardStatementsByCurrency`, `cardAvailability`, `rateBetween`) | `nextCutoffDate`, `nextPaymentDate`, `lastCutoffDate`, `paymentDueForCutoff` (clamp de día en meses cortos). `cardStatement(card, txns, from)` → estado de cuenta del corte vigente: `statementBalance` (saldo de contado = cargos − pagos **con fecha <= último corte**), `paidAfterCutoff`, `dueAmount` (falta pagar antes de `dueDate` para no generar intereses), `newCharges` (consumo posterior al corte), `status` (`sin-movimientos`/`sin-saldo`/`al-dia`/`pendiente`/`atrasada`), `daysToDue`. |
 | Formato es-CR | `src/lib/format.ts` | `formatCurrency` (default `CRC`, símbolo ₡ forzado con `narrowSymbol`), `formatDate` (una string `"YYYY-MM-DD"` se lee como día local, no UTC), `relativeDayLabel` ("hoy" / "mañana" / "en 5 días" / "hace 2 días"). Monedas soportadas: `CRC` (default) y `USD` — ver `CURRENCIES` en `src/lib/schema.ts`. |
 | Resumen / dashboard | `src/app/(app)/dashboard/page.tsx` | Server component; calcula contra `crToday()`. La cobertura (débito disponible, pagos acumulados, atrasos, próximos) la calcula `computeCoverage` de `src/domain/coverage/`. Trae cuentas + tarjetas + movimientos de tarjeta y arma un `cardStatement` por tarjeta. Los montos "a pagar" son **de contado** (`dueAmount`), no `current_balance`. Secciones: banner de atraso (si hay tarjetas `atrasada`), stats (disponible débito · a pagar de contado · consumo sin cortar), callout de cobertura vs. débito, "Pagos de contado" agrupados (**Atrasadas** / **Por vencer**) y "Próximos cortes". |
 | Tipos de dominio | `src/lib/types.ts` | `Account`, `CreditCard`, `Transaction` (`TransactionType`), `Category` (`CategoryKind`), `Financing`. |
 | Financiamientos (tasa 0) | `src/app/(app)/procesos/tarjetas/_financiamientos/` + tabla `financings` + SP `create_financing` | Compra a cuotas sin interés sobre una tarjeta: `FinancingForm` (descripción, categoría, monto total, meses, fecha de primera cuota) llama `createFinancing` → `supabase.rpc('create_financing', ...)`, que crea la fila en `financings` y de una vez las N cuotas como `transactions` tipo `expense` (`financing_id`, `installment_no`, `note` con "cuota i/N"), fechadas mes a mes con el mismo día de la compra (clamp en meses cortos, igual que `clampDay` de `cards.ts`). El trigger de saldo ya existente suma el total al `current_balance` de inmediato. `FinancingList` muestra los planes activos y los borra completos (`deleteFinancing`, cascade). Solo crear/borrar — no hay edición ni cancelación parcial. |
 | Importación desde correo | `src/lib/mail/` (`gmail.ts`, `crypto.ts`, `sync.ts`, `html.ts`, `parsers/`; la clave de comercio vive en `src/domain/importing/merchant.ts`) + `src/app/api/{sync-mail,gmail/connect,gmail/callback}/route.ts` + `src/lib/supabase/admin.ts` | Lee avisos de compra de los bancos (tabla `banks`: remitentes + `parser_key`) por Gmail API readonly, **sin IA**: un parser determinístico por banco (`parsers/index.ts` = registro; contrato `MailParser` en `types.ts`). `syncConnection` es idempotente (`unique (user_id, source_message_id)`), casa la tarjeta por `credit_cards.last_four` (+ `bank_id` si hay choque) y deja el resultado en `pending_transactions`. El refresh token se guarda cifrado (AES-256-GCM, `MAIL_TOKEN_KEY`). `/api/sync-mail` es pública en `proxy.ts` pero exige `Authorization: Bearer CRON_SECRET`, corre con service role y está pensada para que la llame un cron externo; la sincronización es **siempre manual** (botón "Sincronizar"); el workflow cada 2 h planeado para v1.3.1 se descartó (decisión de negocio, ver `docs/dominio/arquitectura.md`). Los imports dentro de `src/lib/mail/` llevan extensión `.ts` para que `node --test` los corra sin dependencias (`allowImportingTsExtensions`). |
 | Bancos / Por confirmar | `src/app/(app)/ajustes/bancos/` + `src/app/(app)/procesos/pendientes/` | `/ajustes/bancos`: CRUD de bancos + conectar/desconectar Gmail. `/procesos/pendientes`: aprobar (crea `expense` en la tarjeta + aprende `merchant_rules`) o descartar; `syncNow` = misma sincronización con la sesión del usuario. |
-| Rutas | `src/app/login/` (auth), grupo `src/app/(app)/` (protegido: `layout.tsx` llama `requireUser()`): `/dashboard`, `/procesos` (índice + `cuentas`, `tarjetas`, `tarjetas/[id]`, `gastos`, `ingresos`, `transferencias`, `pendientes`), `/ajustes` (+ `/ajustes/categorias`, `/ajustes/bancos`, `/ajustes/saldos`) | `src/app/(app)/loading.tsx` = esqueleto de carga entre vistas. `/cuentas` y `/tarjetas` redirigen 308 a `/procesos/*` desde `next.config.ts`. |
+| Rutas | `src/app/login/` (auth), grupo `src/app/(app)/` (protegido: `layout.tsx` llama `requireUser()`): `/dashboard`, `/procesos` (índice + `cuentas`, `tarjetas`, `tarjetas/[id]`, `gastos`, `ingresos`, `transferencias`, `pendientes`), `/ajustes` (+ `/ajustes/categorias`, `/ajustes/bancos`, `/ajustes/saldos`, `/ajustes/tipo-cambio`) | `src/app/(app)/loading.tsx` = esqueleto de carga entre vistas. `/cuentas` y `/tarjetas` redirigen 308 a `/procesos/*` desde `next.config.ts`. |
 | Navegación | `src/components/app-nav.tsx` (`"use client"`) + `src/components/back-link.tsx` | 3 pestañas: **Resumen** (`/dashboard`) · **Procesos** (`/procesos`) · **Ajustes** (`/ajustes`); `useIsActive` hace prefix-match, así que `/procesos/*` ilumina Procesos. `AppTopBar` (marca + pestañas en `sm+` + `UserMenu`) y `AppBottomNav` (tabs inferiores en móvil). `<BackLink href label />` = enlace "← <índice>" arriba a la izquierda en cada sub-página (`/procesos/*`, `/ajustes/categorias`). `UserMenu` (`src/components/user-menu.tsx`): avatar + dropdown con correo y cerrar sesión. `src/app/(app)/layout.tsx` también trae cuentas/tarjetas/categorías una vez y renderiza el FAB global (ver fila siguiente). |
 | Acceso rápido / responsive | `src/components/mobile-list.tsx` (`MobileList`/`MobileCard`/`MobileField`) + `TransactionForm` prop `fab` | El layout de `(app)` muestra un botón flotante "Nuevo gasto" (`TransactionForm type="expense" fab`) en todas las páginas. Las listas con muchas columnas (Cuentas, Tarjetas, Movimientos, Financiamientos) renderizan **dos vistas**: la `<Table>` de siempre envuelta en `hidden sm:block`, y un bloque `sm:hidden` con `MobileList`/`MobileCard` que muestra la misma fila como tarjeta apilada (mismos componentes de acción, sin lógica nueva) — así en mobile no hace falta scroll horizontal para editar/borrar. |
 | Instalable (PWA-lite) | `src/app/manifest.ts`, `public/icon.svg`, `viewport`/`metadata` en `src/app/layout.tsx` | `display: standalone`, `theme-color` claro/oscuro, `apple-touch-icon`. Sin service worker. |
@@ -125,6 +125,9 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
   4 policies. `credit_cards` suma `bank_id` (FK nullable, `on delete set null`).
   `pending_transactions` es solo staging: **no toca saldos** hasta que se aprueba y
   se crea el `expense`.
+- `exchange_rates` (`supabase/Versionamiento/2.0.0/06_multicurrency_cards.sql`):
+  colones por dólar por fecha (`unique (user_id, rate_on)`), RLS + 4 policies. Las
+  vistas `balance_derived`/`balance_drift` traen una fila por tarjeta **y moneda**.
 
 ## Comandos
 
@@ -154,16 +157,21 @@ Variables de entorno de la importación de correo (ver `.env.example`):
   junto con tu trabajo para mantener el árbol limpio.
 - Antes de tocar APIs de framework, leer la guía correspondiente en
   `node_modules/next/dist/docs/` — esta versión de Next tiene breaking changes.
-- El dashboard acota sus totales y la cobertura a `CRC`; las tarjetas en `USD` se
-  listan pero **no** entran en la matemática de cobertura. `Patrimonio neto` sí
+- El dashboard acota sus totales y la cobertura a `CRC`; los saldos en `USD` de las
+  tarjetas (bimoneda) se listan como pagos aparte pero **no** entran en la matemática
+  de cobertura. `Patrimonio neto` sí
   suma todo de forma naïve — pendiente multi-moneda de verdad.
 - El **saldo al corte** (`cardStatement`) se calcula **solo desde los movimientos con
   fecha**, no desde `current_balance`. El saldo inicial (`opening_balance`) cuenta como
   cargo en su fecha; antes de 2.0.0 se registraba como un `expense` anterior al corte
   (sigue valiendo). Los consumos siguientes van como `expense` con su fecha real. Los cargos con fecha **posterior**
   al último corte no cuentan para el pago de contado (entran al siguiente).
-- Un `card_payment` resta el mismo monto de la cuenta y de la tarjeta sin conversión:
-  la action exige que ambas usen la misma moneda.
+- **Tarjeta bimoneda (2.0.0)**: `credit_cards.current_balance` = saldo en **CRC** y
+  `usd_balance` = saldo en **USD** (el trigger elige por `transactions.currency`);
+  `credit_cards.currency` = moneda del **límite**. Un `card_payment` resta el mismo monto
+  de la cuenta y del saldo de la tarjeta en la moneda de la cuenta (sin conversión).
+  Estado de cuenta por moneda: `cardStatementsByCurrency`; disponible:
+  `cardAvailability` con el último `exchange_rates` (manual, `/ajustes/tipo-cambio`).
 - Borrar una cuenta/tarjeta (`on delete cascade`) borra sus movimientos y el trigger
   revierte cada efecto; el otro lado de un `card_payment` (la tarjeta, al borrar la
   cuenta origen) se re-ajusta — revisá saldos después de borrar.
@@ -178,7 +186,7 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 - Un aviso del banco solo se importa si el remitente está en un banco **activo** y
   el parser lo reconoce; si el banco cambia la plantilla del correo, los avisos se
   ignoran en silencio hasta ajustar el parser (agregar un fixture real + test).
-- Un pendiente solo se aprueba contra una tarjeta de **su misma moneda**.
+- Un pendiente se aprueba contra cualquier tarjeta y va al saldo de su moneda.
 - `SUPABASE_SERVICE_ROLE_KEY` salta RLS: solo se usa en `createAdminClient()` para
   el cron; nunca con prefijo `NEXT_PUBLIC_` ni en código de cliente.
 - **Desde 2.0.0** eliminar un financiamiento llama `cancel_financing(id, hoy)`

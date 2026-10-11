@@ -32,7 +32,7 @@
 | S1 | Un SINPE es un gasto desde una cuenta de débito (no tarjeta), con categoría; destinatario y teléfono (8 dígitos) opcionales. | Rechaza | Decidido · Implementado 2.0.0 |
 | M3 | Un abono sale siempre de una cuenta de débito hacia una tarjeta de crédito. | Rechaza | Decidido |
 | M4 | Un abono puede superar la deuda. | Advierte | Decidido |
-| M5 | Un abono afecta el saldo de la tarjeta **en la moneda de la cuenta origen**; cuenta y saldo de la tarjeta deben coincidir en moneda (no hay conversión en un abono). | Rechaza | Decidido |
+| M5 | Un abono afecta el saldo de la tarjeta **en la moneda de la cuenta origen** (no hay conversión en un abono). | — | Decidido · Implementado 2.0.0 |
 | M6 | Un ingreso puede tener fecha futura. | — | Decidido |
 | M7 | Un movimiento con fecha futura es **programado**: no cuenta en saldos "de hoy" ni en el pago de contado hasta que llega su fecha. Sí cuenta en el disponible de la tarjeta si es cuota de un financiamiento. | — | Propuesta (amplía la regla actual de cuotas) |
 | M8 | El Arranque de 0 pide confirmación explícita, archiva todos los movimientos y exige un saldo inicial nuevo por cuenta y tarjeta. | Rechaza sin confirmación | Decidido (qué conserva) · Propuesta (archivar) |
@@ -41,8 +41,8 @@
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| T1 | La tarjeta lleva saldos separados por moneda (CRC y USD). | — | Decidido |
-| T2 | El límite está en colones. Disponible = límite − (saldo real CRC + saldo real USD × tipo de cambio + capital pendiente de financiamientos). | — | Decidido |
+| T1 | La tarjeta lleva saldos y estados de cuenta separados por moneda (CRC y USD); el estado de la tarjeta es el más grave. | — | Decidido · Implementado 2.0.0 |
+| T2 | El límite está en la moneda del límite de la tarjeta (normalmente colones). Disponible = límite − (saldo CRC + saldo USD convertido con el último tipo de cambio manual). El capital de financiamientos ya está dentro del saldo. Sin tipo de cambio y con saldo en otra moneda, el disponible no se calcula. | — | Decidido · Implementado 2.0.0 |
 | T3 | Saldo al corte (por moneda) = cargos − abonos con fecha ≤ último corte. Pago de contado = saldo al corte − abonos posteriores al corte (mínimo 0). | — | Decidido |
 | T4 | Los cargos posteriores al corte entran al siguiente estado de cuenta. | — | Decidido |
 | T5 | Si el día de corte o de pago no existe en el mes, se usa el último día del mes. | — | Decidido |
@@ -81,4 +81,4 @@
 | I2 | Sincronizar es siempre manual. | — | Decidido |
 | I3 | Un aviso se importa una sola vez (idempotente). | — | Decidido |
 | I4 | Un pendiente no toca saldos hasta aprobarse. | — | Decidido |
-| I5 | Un pendiente solo se aprueba contra una tarjeta de su misma moneda. | Rechaza | Decidido |
+| I5 | Un pendiente se aprueba contra cualquier tarjeta (bimoneda, T1) y va al saldo de su moneda; se rechaza una moneda no soportada. | Rechaza | Decidido · Cambiado 2.0.0 |

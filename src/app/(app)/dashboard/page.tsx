@@ -13,8 +13,9 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import {
-  cardStatement,
+  cardStatementsByCurrency,
   computeCoverage,
+  isCurrency,
   crToday,
   daysUntil,
   nextCutoffDate,
@@ -60,7 +61,7 @@ type Payment = CoveragePayment<CreditCardType>;
 
 type CardTxn = Pick<
   Transaction,
-  "card_id" | "type" | "amount" | "occurred_on" | "financing_id"
+  "card_id" | "type" | "amount" | "occurred_on" | "financing_id" | "currency"
 >;
 
 export default async function DashboardPage() {
@@ -82,7 +83,7 @@ export default async function DashboardPage() {
     supabase.from("credit_cards").select("*").eq("archived", false),
     supabase
       .from("transactions")
-      .select("card_id, type, amount, occurred_on, financing_id")
+      .select("card_id, type, amount, occurred_on, financing_id, currency")
       .eq("archived", false)
       .not("card_id", "is", null),
     supabase
@@ -116,9 +117,33 @@ export default async function DashboardPage() {
     else txByCard.set(t.card_id, [t]);
   }
 
-  const statements = new Map<string, CardStatement>(
-    cards.map((c) => [c.id, cardStatement(c, txByCard.get(c.id) ?? [], today)]),
+  // T1: un estado de cuenta por moneda de cada tarjeta.
+  const multiByCard = new Map(
+    cards.map((c) => [
+      c.id,
+      cardStatementsByCurrency(
+        { ...c, currency: isCurrency(c.currency) ? c.currency : "CRC" },
+        (txByCard.get(c.id) ?? []).map((t) => ({
+          ...t,
+          currency: isCurrency(t.currency) ? t.currency : "CRC",
+        })),
+        today,
+      ),
+    ]),
   );
+  // Cada moneda de cada tarjeta entra como un "pago" aparte, con el saldo de
+  // esa moneda: la cobertura solo suma los de CRC (ver computeCoverage).
+  const cardEntries = cards.flatMap((card) => {
+    const multi = multiByCard.get(card.id)!;
+    return multi.currencies.map((cur) => ({
+      card: {
+        ...card,
+        currency: cur,
+        current_balance: cur === "USD" ? Number(card.usd_balance ?? 0) : Number(card.current_balance),
+      },
+      st: multi.byCurrency[cur]!,
+    }));
+  });
 
   // Cobertura del débito contra los pagos de contado: regla de dominio.
   const {
@@ -133,16 +158,15 @@ export default async function DashboardPage() {
     coversSoon,
     coverageRatio,
     firstUncovered,
-  } = computeCoverage(
-    accounts,
-    cards.map((card) => ({ card, st: statements.get(card.id)! })),
-  );
+  } = computeCoverage(accounts, cardEntries);
 
   const cutoffs = cards
     .map((card) => {
-      const st = statements.get(card.id)!;
+      const multi = multiByCard.get(card.id)!;
+      const cur = multi.currencies[0];
+      const st = multi.byCurrency[cur]!;
       const cutoff = nextCutoffDate(card.cutoff_day, today);
-      return { card, st, cutoff, days: daysUntil(cutoff, today) };
+      return { card: { ...card, currency: cur }, st, cutoff, days: daysUntil(cutoff, today) };
     })
     .sort((a, b) => a.days - b.days);
 

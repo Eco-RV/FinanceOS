@@ -1,10 +1,16 @@
 /** Repositorios en memoria para probar casos de uso sin base de datos. */
 
-import { balanceEffects, deriveBalances, type Currency } from "../domain/index.ts";
+import {
+  balanceEffects,
+  deriveBalances,
+  type Currency,
+  type ExchangeRate,
+} from "../domain/index.ts";
 import type {
   AccountRepository,
   BalanceRepository,
   CardRepository,
+  ExchangeRateRepository,
   FinancingRepository,
   MerchantRuleRepository,
   MovementRepository,
@@ -56,10 +62,10 @@ export function fakeStore(seed: {
   };
   const movementRepo: MovementRepository = {
     cardIdOf: async (id) => movements.get(id)?.card_id ?? null,
-    openingOf: async (target, id) => {
+    openingOf: async (target, id, currency) => {
       for (const [movementId, m] of movements) {
         const owner = target === "account" ? m.account_id : m.card_id;
-        if (m.type === "opening_balance" && owner === id) {
+        if (m.type === "opening_balance" && owner === id && m.currency === currency) {
           return { id: movementId, amount: m.amount, occurred_on: m.occurred_on };
         }
       }
@@ -131,6 +137,7 @@ export function fakeStore(seed: {
     },
   };
 
+  const cardKey = (id: string, currency: Currency) => `${id}:${currency}`;
   const balances: BalanceRepository = {
     stored: async () => [
       ...[...accountCurrencies.keys()].map((id) => ({
@@ -138,31 +145,47 @@ export function fakeStore(seed: {
         id,
         stored: stored.get(id) ?? 0,
       })),
-      ...[...cardCurrencies.keys()].map((id) => ({
-        target: "card" as const,
-        id,
-        stored: stored.get(id) ?? 0,
-      })),
+      ...[...cardCurrencies.keys()].flatMap((id) =>
+        (["CRC", "USD"] as const).map((currency) => ({
+          target: "card" as const,
+          id,
+          currency,
+          stored: stored.get(cardKey(id, currency)) ?? 0,
+        })),
+      ),
     ],
     movements: async () => [...movements.values()],
     recompute: async () => {
       const derived = deriveBalances([...movements.values()]);
       let changed = 0;
-      for (const map of [derived.accounts, derived.cards]) {
-        for (const [id, value] of map) {
-          if (stored.get(id) !== value) changed++;
-          stored.set(id, value);
-        }
+      const set = (key: string, value: number) => {
+        if ((stored.get(key) ?? 0) !== value) changed++;
+        stored.set(key, value);
+      };
+      for (const [id, value] of derived.accounts) set(id, value);
+      for (const [id, byCurrency] of derived.cards) {
+        for (const [cur, value] of Object.entries(byCurrency)) set(cardKey(id, cur as Currency), value!);
       }
       return changed;
     },
   };
 
+  const rates: ExchangeRate[] = [];
+  const exchangeRates: ExchangeRateRepository = {
+    latest: async () =>
+      [...rates].sort((a, b) => (a.rate_on < b.rate_on ? 1 : -1))[0] ?? null,
+    save: async (rate) => {
+      const i = rates.findIndex((r) => r.rate_on === rate.rate_on);
+      if (i >= 0) rates[i] = rate;
+      else rates.push(rate);
+    },
+  };
+
   /** Saldo de una cuenta/tarjeta según los movimientos guardados (G1). */
-  const balanceOf = (target: "account" | "card", id: string) =>
+  const balanceOf = (target: "account" | "card", id: string, currency?: Currency) =>
     [...movements.values()]
       .flatMap((m) => balanceEffects(m))
-      .filter((e) => e.target === target && e.id === id)
+      .filter((e) => e.target === target && e.id === id && (!currency || e.currency === currency))
       .reduce((s, e) => s + e.delta, 0);
 
   return {
@@ -174,8 +197,9 @@ export function fakeStore(seed: {
       pending: pendingRepo,
       merchantRules,
       balances,
+      exchangeRates,
     },
-    state: { movements, financings, cancelled, pending, rules, stored, accountCurrencies, cardCurrencies },
+    state: { movements, financings, cancelled, rates, pending, rules, stored, accountCurrencies, cardCurrencies },
     balanceOf,
   };
 }

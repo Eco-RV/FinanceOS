@@ -16,16 +16,16 @@ import { FormField, Select } from "@/components/form-field";
 import { CURRENCIES } from "@/lib/schema";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import type { Bank, CreditCard, OpeningBalance } from "@/lib/types";
-import { OpeningBalanceFields } from "@/components/opening-balance-fields";
+import { crToday, toISODate } from "@/domain";
 import { saveCard } from "./actions";
 
 export function CardFormDialog({
   card,
-  opening,
+  openings,
   banks = [],
 }: {
   card?: CreditCard;
-  opening?: OpeningBalance;
+  openings?: Partial<Record<string, OpeningBalance>>;
   banks?: Pick<Bank, "id" | "name">[];
 }) {
   const editing = Boolean(card);
@@ -154,7 +154,7 @@ export function CardFormDialog({
                 defaultValue={card?.credit_limit ?? ""}
               />
             </FormField>
-            <FormField label="Moneda" htmlFor="currency">
+            <FormField label="Moneda del límite" htmlFor="currency">
               <Select
                 id="currency"
                 name="currency"
@@ -169,11 +169,45 @@ export function CardFormDialog({
             </FormField>
           </div>
 
-          <OpeningBalanceFields
-            opening={opening}
-            errors={errors}
-            hint="Deuda con la que arranca la tarjeta. Cuenta como cargo en su fecha: si es anterior al último corte, entra en el pago de contado."
-          />
+          <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-3 gap-3">
+              <FormField label="Saldo inicial ₡" htmlFor="opening_crc" error={errors?.opening_crc}>
+                <Input
+                  id="opening_crc"
+                  name="opening_crc"
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  defaultValue={openings?.CRC?.amount ?? 0}
+                />
+              </FormField>
+              <FormField label="Saldo inicial $" htmlFor="opening_usd" error={errors?.opening_usd}>
+                <Input
+                  id="opening_usd"
+                  name="opening_usd"
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  defaultValue={openings?.USD?.amount ?? 0}
+                />
+              </FormField>
+              <FormField label="Fecha del saldo" htmlFor="opening_date" error={errors?.opening_date}>
+                <Input
+                  id="opening_date"
+                  name="opening_date"
+                  type="date"
+                  defaultValue={
+                    openings?.CRC?.occurred_on ?? openings?.USD?.occurred_on ?? toISODate(crToday())
+                  }
+                  required
+                />
+              </FormField>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Deuda con la que arranca la tarjeta en cada moneda. Cuenta como cargo en su
+              fecha: si es anterior al último corte, entra en el pago de contado.
+            </p>
+          </div>
 
           {banks.length > 0 ? (
             <FormField
