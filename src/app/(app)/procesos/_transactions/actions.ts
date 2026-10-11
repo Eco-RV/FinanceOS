@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { transactionSchema } from "@/lib/schema";
+import { transactionSchema, transferSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 import { parseOrigin } from "@/lib/transactions";
 import { deleteMovement, saveMovement } from "@/application";
@@ -13,6 +13,7 @@ function revalidateTx(cardIds: string[] = []) {
   revalidatePath("/procesos");
   revalidatePath("/procesos/gastos");
   revalidatePath("/procesos/ingresos");
+  revalidatePath("/procesos/transferencias");
   revalidatePath("/procesos/cuentas");
   revalidatePath("/procesos/tarjetas");
   for (const id of cardIds) {
@@ -32,8 +33,18 @@ export async function saveTransaction(
     return { ok: false, errors: fieldErrors(parsed.error) };
   }
 
-  const { origin, card_id, type, amount, occurred_on, category, note } =
-    parsed.data;
+  const {
+    origin,
+    card_id,
+    type,
+    amount,
+    occurred_on,
+    category,
+    note,
+    channel,
+    counterparty_name,
+    counterparty_phone,
+  } = parsed.data;
   const { kind, id: originId } = parseOrigin(origin);
 
   const result = await saveMovement(await repositories(), {
@@ -45,6 +56,9 @@ export async function saveTransaction(
     note,
     account_id: kind === "account" ? originId : null,
     card_id: type === "card_payment" ? card_id : kind === "card" ? originId : null,
+    channel,
+    counterparty_name,
+    counterparty_phone,
   });
   if (!result.ok) return { ok: false, message: result.message };
 
@@ -59,4 +73,35 @@ export async function deleteTransaction(formData: FormData) {
 
   const result = await deleteMovement(await repositories(), id);
   if (result.ok) revalidateTx(result.value.affectedCardIds);
+}
+
+/** Transferencia entre cuentas propias (M2): no es gasto ni ingreso. */
+export async function saveTransfer(
+  _prev: FormResult,
+  formData: FormData,
+): Promise<FormResult> {
+  await requireUser();
+
+  const id = (formData.get("id") as string) || null;
+  const parsed = transferSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, errors: fieldErrors(parsed.error) };
+  }
+
+  const { from_account_id, to_account_id, amount, occurred_on, note } = parsed.data;
+  const result = await saveMovement(await repositories(), {
+    id,
+    type: "transfer",
+    amount,
+    occurred_on,
+    category: null,
+    note,
+    account_id: from_account_id,
+    card_id: null,
+    to_account_id,
+  });
+  if (!result.ok) return { ok: false, message: result.message };
+
+  revalidateTx();
+  return { ok: true };
 }

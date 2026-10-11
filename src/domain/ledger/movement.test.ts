@@ -5,6 +5,7 @@ import {
   balanceEffects,
   deriveBalances,
   findBalanceDrift,
+  normalizeSinpePhone,
   signedAmount,
   validateMovement,
   type Movement,
@@ -154,4 +155,46 @@ test("G1: findBalanceDrift reporta solo los saldos que no cuadran", () => {
   assert.deepEqual(drift, [
     { target: "card", id: "c", stored: 45.5, derived: 30, difference: 15.5 },
   ]);
+});
+
+test("M2: una transferencia baja el origen, sube el destino y no es gasto", () => {
+  const { accounts } = deriveBalances([
+    mv({ type: "opening_balance", amount: 100_000, account_id: "bac" }),
+    mv({ type: "transfer", amount: 40_000, account_id: "bac", to_account_id: "bn" }),
+  ]);
+  assert.equal(accounts.get("bac"), 60_000);
+  assert.equal(accounts.get("bn"), 40_000);
+});
+
+test("M2: validación de transferencias", () => {
+  const ok = { type: "transfer" as const, amount: 1, accountId: "a", toAccountId: "b" };
+  assert.equal(validateMovement({ ...ok, accountCurrency: "USD", toAccountCurrency: "USD" }), "USD");
+  assert.throws(
+    () => validateMovement({ ...ok, accountCurrency: "CRC", toAccountCurrency: "USD" }),
+    fails("M2"),
+  );
+  assert.throws(
+    () => validateMovement({ ...ok, toAccountId: "a", accountCurrency: "CRC", toAccountCurrency: "CRC" }),
+    fails("M2"),
+  );
+  assert.throws(() => validateMovement({ ...ok, accountCurrency: "CRC" }), fails("M2"));
+});
+
+test("S1: un SINPE es un gasto desde cuenta, con categoría y teléfono válido", () => {
+  const sinpe = { type: "expense" as const, amount: 5_000, category: "Comida", channel: "sinpe" as const };
+  assert.equal(validateMovement({ ...sinpe, accountCurrency: "CRC", counterpartyPhone: "8888-1234" }), "CRC");
+  assert.throws(() => validateMovement({ ...sinpe, cardCurrency: "CRC" }), fails("S1"));
+  assert.throws(
+    () => validateMovement({ ...sinpe, accountCurrency: "CRC", counterpartyPhone: "123" }),
+    fails("S1"),
+  );
+  assert.throws(() => validateMovement({ ...sinpe, category: "", accountCurrency: "CRC" }), fails("M1"));
+});
+
+test("S1: normalizeSinpePhone", () => {
+  assert.equal(normalizeSinpePhone("+506 8888-1234"), "88881234");
+  assert.equal(normalizeSinpePhone("50601234"), "50601234");
+  assert.equal(normalizeSinpePhone("  "), null);
+  assert.equal(normalizeSinpePhone(null), null);
+  assert.throws(() => normalizeSinpePhone("8888"), fails("S1"));
 });

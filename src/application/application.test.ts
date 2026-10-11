@@ -224,3 +224,47 @@ test("G1: checkBalances detecta y recomputeBalances corrige el saldo guardado", 
   const after = await checkBalances(s.deps);
   assert.ok(after.ok && after.value.drift.length === 0);
 });
+
+test("transferencia: mueve plata entre cuentas propias sin ser gasto", async () => {
+  const s = fakeStore({ accounts: { bac: "CRC", bn: "CRC", usd: "USD" } });
+  const r = await saveMovement(s.deps, {
+    ...base,
+    type: "transfer",
+    amount: 50_000,
+    category: null,
+    account_id: "bac",
+    to_account_id: "bn",
+  });
+  assert.ok(r.ok);
+  assert.equal(s.balanceOf("account", "bac"), -50_000);
+  assert.equal(s.balanceOf("account", "bn"), 50_000);
+
+  const crossCurrency = await saveMovement(s.deps, {
+    ...base,
+    type: "transfer",
+    amount: 10,
+    category: null,
+    account_id: "bac",
+    to_account_id: "usd",
+  });
+  assert.equal(!crossCurrency.ok && crossCurrency.rule, "M2");
+});
+
+test("SINPE: gasto desde cuenta con destinatario y teléfono normalizado", async () => {
+  const s = fakeStore({ accounts: { bac: "CRC" } });
+  const r = await saveMovement(s.deps, {
+    ...base,
+    type: "expense",
+    amount: 7_500,
+    category: "Comida",
+    account_id: "bac",
+    channel: "sinpe",
+    counterparty_name: "  Doña Ana ",
+    counterparty_phone: "8888-1234",
+  });
+  assert.ok(r.ok);
+  const saved = [...s.state.movements.values()][0];
+  assert.equal(saved.counterparty_name, "Doña Ana");
+  assert.equal(saved.counterparty_phone, "88881234");
+  assert.equal(s.balanceOf("account", "bac"), -7_500);
+});

@@ -134,6 +134,24 @@ export const transactionSchema = z
       .transform((v) => (v ? v : null)),
     note: optionalNote,
     origin: originToken,
+    // SINPE (gasto desde cuenta): canal + destinatario/teléfono opcionales.
+    channel: z
+      .enum(["sinpe"])
+      .optional()
+      .or(z.literal(""))
+      .transform((v) => (v ? v : null)),
+    counterparty_name: z
+      .string()
+      .trim()
+      .max(80)
+      .optional()
+      .transform((v) => (v ? v : null)),
+    counterparty_phone: z
+      .string()
+      .trim()
+      .max(20)
+      .optional()
+      .transform((v) => (v ? v : null)),
     // Presente solo para card_payment (hidden input con la tarjeta de la ruta).
     card_id: z
       .string()
@@ -168,6 +186,13 @@ export const transactionSchema = z
         });
       }
     }
+    if (val.channel === "sinpe" && (val.type !== "expense" || kind !== "account")) {
+      ctx.addIssue({
+        path: ["origin"],
+        code: "custom",
+        message: "El SINPE sale de una cuenta de débito",
+      });
+    }
     if (val.type !== "card_payment" && !val.category) {
       ctx.addIssue({
         path: ["category"],
@@ -178,6 +203,25 @@ export const transactionSchema = z
   });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
+
+const accountId = z.string().regex(/^[0-9a-fA-F-]{36}$/, "Elegí una cuenta");
+
+/** Transferencia entre cuentas propias (M2). */
+export const transferSchema = z
+  .object({
+    from_account_id: accountId,
+    to_account_id: accountId,
+    amount: z.coerce
+      .number()
+      .finite("Monto inválido")
+      .positive("El monto debe ser mayor que cero"),
+    occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+    note: optionalNote,
+  })
+  .refine((v) => v.from_account_id !== v.to_account_id, {
+    path: ["to_account_id"],
+    message: "Elegí una cuenta distinta a la de origen",
+  });
 
 export const categorySchema = z.object({
   kind: z.enum(CATEGORY_KINDS),

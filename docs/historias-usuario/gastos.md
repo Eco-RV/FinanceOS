@@ -64,12 +64,27 @@ momento sin tener que navegar.
 - Existe un botón flotante (FAB) global de "Nuevo gasto" disponible en todo
   el grupo `(app)`.
 
+### 6. Registrar un SINPE
+Como usuario quiero registrar un pago por SINPE Móvil indicando a quién se lo
+hice y a qué teléfono, para saber después a quién le pagué y en qué.
+
+**Criterios de aceptación**
+- Botón "Nuevo SINPE" en Gastos. Es un **gasto** (regla S1): sale de una
+  **cuenta de débito** (no de tarjeta), con **categoría obligatoria**.
+- Campos extra opcionales: destinatario (hasta 80 caracteres) y teléfono (8
+  dígitos; se aceptan espacios, guiones y el prefijo +506, que se quitan).
+- En la lista de gastos aparece como "<cuenta> · SINPE a <nombre> · <teléfono>".
+- Se edita y elimina como cualquier gasto; el saldo de la cuenta se ajusta igual.
+
 ## Reglas de negocio
 
 - Un gasto puede tener como origen una cuenta **o** una tarjeta — no ambas ni
   ninguna.
 - `category` es texto libre guardado en el movimiento, no una referencia a
   `categories`.
+- Un SINPE es un gasto con `channel = 'sinpe'`; solo desde cuenta (S1).
+- Una transferencia entre cuentas propias **no** es gasto y no aparece aquí
+  (ver [`transferencias.md`](./transferencias.md)).
 
 ## Pendiente / fuera de alcance
 
@@ -83,3 +98,5 @@ momento sin tener que navegar.
 - **2026-10-08 (v1.2.3)** — Primera versión de este documento, redactada a
   partir de `src/app/(app)/procesos/gastos/page.tsx` y
   `src/app/(app)/procesos/_transactions/`.
+- **2026-10-11 (v2.0.0, en desarrollo)** — SINPE como gasto desde cuenta con
+  destinatario y teléfono (`05_transfers_and_sinpe.sql`).

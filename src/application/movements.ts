@@ -1,6 +1,12 @@
-/** Casos de uso del libro de movimientos: gasto, ingreso y abono. */
+/** Casos de uso del libro de movimientos: gasto (incl. SINPE), ingreso, abono y transferencia. */
 
-import { validateMovement, type ISODate, type MovementType } from "../domain/index.ts";
+import {
+  normalizeSinpePhone,
+  validateMovement,
+  type ISODate,
+  type MovementChannel,
+  type MovementType,
+} from "../domain/index.ts";
 import type { AccountRepository, CardRepository, MovementRepository } from "./ports.ts";
 import { ok, run, type UseCaseResult } from "./result.ts";
 
@@ -20,13 +26,19 @@ export type SaveMovementInput = {
   note: string | null;
   account_id: string | null;
   card_id: string | null;
+  /** Cuenta destino (solo transferencias). */
+  to_account_id?: string | null;
+  /** Gasto por SINPE, con destinatario y teléfono opcionales. */
+  channel?: MovementChannel | null;
+  counterparty_name?: string | null;
+  counterparty_phone?: string | null;
 };
 
 /** Tarjetas afectadas (la nueva y, al editar, la anterior), para refrescar vistas. */
 export type SaveMovementOutput = { affectedCardIds: string[] };
 
 /**
- * Registra o edita un movimiento. Aplica las reglas M1/M3/M5 del dominio y
+ * Registra o edita un movimiento. Aplica las reglas M1/M2/M3/M5/S1 del dominio y
  * copia la moneda del origen. El saldo lo ajusta la persistencia (hoy el
  * trigger de Postgres) con la misma convención de `balanceEffects`.
  */
@@ -35,18 +47,26 @@ export function saveMovement(
   input: SaveMovementInput,
 ): Promise<UseCaseResult<SaveMovementOutput>> {
   return run(async () => {
-    const [accountCurrency, cardCurrency] = await Promise.all([
+    const [accountCurrency, cardCurrency, toAccountCurrency] = await Promise.all([
       input.account_id ? deps.accounts.currencyOf(input.account_id) : null,
       input.card_id ? deps.cards.currencyOf(input.card_id) : null,
+      input.to_account_id ? deps.accounts.currencyOf(input.to_account_id) : null,
     ]);
 
+    const channel = input.channel ?? null;
     const currency = validateMovement({
       type: input.type,
       amount: input.amount,
       category: input.category,
       accountCurrency,
       cardCurrency,
+      accountId: input.account_id,
+      toAccountId: input.to_account_id ?? null,
+      toAccountCurrency,
+      channel,
+      counterpartyPhone: input.counterparty_phone ?? null,
     });
+    const isSinpe = channel === "sinpe";
 
     const values = {
       type: input.type,
@@ -57,6 +77,10 @@ export function saveMovement(
       note: input.note,
       account_id: input.account_id,
       card_id: input.card_id,
+      to_account_id: input.type === "transfer" ? (input.to_account_id ?? null) : null,
+      channel,
+      counterparty_name: isSinpe ? input.counterparty_name?.trim() || null : null,
+      counterparty_phone: isSinpe ? normalizeSinpePhone(input.counterparty_phone) : null,
     };
 
     const affected = new Set<string>();

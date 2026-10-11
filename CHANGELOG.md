@@ -45,6 +45,10 @@ sin tocar las reglas.
 - **Eliminar un financiamiento conserva las cuotas ya cobradas** (fecha ≤ hoy); se
   borran solo las futuras y el plan queda como "Cancelado". Las cuotas conservadas
   se pueden quitar a mano desde el historial de la tarjeta.
+- **Transferencias entre cuentas propias** (`/procesos/transferencias`): misma
+  moneda, cuentas distintas; no cuentan como gasto ni ingreso.
+- **SINPE**: botón "Nuevo SINPE" en Gastos; gasto desde cuenta con destinatario y
+  teléfono opcionales.
 
 ### Base de datos (correr a mano, en orden, ANTES de desplegar)
 - `supabase/Versionamiento/2.0.0/00_opening_balance.sql`
@@ -52,6 +56,7 @@ sin tocar las reglas.
 - `supabase/Versionamiento/2.0.0/02_migrate_opening_balances.sql`
 - `supabase/Versionamiento/2.0.0/03_create_financing_v2.sql`
 - `supabase/Versionamiento/2.0.0/04_cancel_financing.sql`
+- `supabase/Versionamiento/2.0.0/05_transfers_and_sinpe.sql`
 
 ## 1.3.0 — 2026-10-08
 

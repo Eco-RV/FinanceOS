@@ -8,7 +8,13 @@
 import { DomainError } from "../shared/errors.ts";
 import { assertSameCurrency, fromCents, toCents, type Currency } from "../shared/money.ts";
 
-export const MOVEMENT_TYPES = ["expense", "income", "card_payment", "opening_balance"] as const;
+export const MOVEMENT_TYPES = [
+  "expense",
+  "income",
+  "card_payment",
+  "opening_balance",
+  "transfer",
+] as const;
 export type MovementType = (typeof MOVEMENT_TYPES)[number];
 
 export type Movement = {
@@ -16,8 +22,14 @@ export type Movement = {
   amount: number;
   account_id: string | null;
   card_id: string | null;
+  /** Cuenta destino, solo en transferencias. */
+  to_account_id?: string | null;
   archived?: boolean;
 };
+
+/** Canal de un gasto desde cuenta. Hoy solo SINPE Móvil. */
+export const MOVEMENT_CHANNELS = ["sinpe"] as const;
+export type MovementChannel = (typeof MOVEMENT_CHANNELS)[number];
 
 export type BalanceTarget = "account" | "card";
 
@@ -34,6 +46,7 @@ export type BalanceEffect = {
  * - gasto con tarjeta: deuda **+**
  * - ingreso: cuenta **+**
  * - abono (`card_payment`): cuenta **−** y deuda **−**
+ * - transferencia (`transfer`, M2): origen **−**, destino **+** (no es gasto)
  * - saldo inicial (`opening_balance`, C1): cuenta **+monto** / deuda **+monto**;
  *   es el único tipo con monto **con signo** (sobregiro inicial o saldo a favor)
  * Un movimiento archivado no tiene efecto.
@@ -53,6 +66,13 @@ export function balanceEffects(m: Movement): BalanceEffect[] {
       if (m.account_id) return [{ target: "account", id: m.account_id, delta: amount }];
       if (m.card_id) return [{ target: "card", id: m.card_id, delta: amount }];
       return [];
+    case "transfer": {
+      if (!m.account_id || !m.to_account_id) return [];
+      return [
+        { target: "account", id: m.account_id, delta: -amount },
+        { target: "account", id: m.to_account_id, delta: amount },
+      ];
+    }
     case "card_payment": {
       const effects: BalanceEffect[] = [];
       if (m.account_id) effects.push({ target: "account", id: m.account_id, delta: -amount });
@@ -118,6 +138,7 @@ export function findBalanceDrift(stored: StoredBalance[], movements: Movement[])
  * inicial se muestra con su propio signo (en una tarjeta, + es deuda).
  */
 export function signedAmount(m: Pick<Movement, "type" | "amount">): number {
+  // Una transferencia se muestra desde la cuenta origen (sale dinero).
   if (m.type === "income" || m.type === "opening_balance") return Number(m.amount);
   return -Number(m.amount);
 }
@@ -126,11 +147,35 @@ export type MovementDraft = {
   type: MovementType;
   amount: number;
   category?: string | null;
-  /** Moneda de la cuenta involucrada, si la hay. */
+  /** Moneda de la cuenta involucrada (origen), si la hay. */
   accountCurrency?: Currency | null;
   /** Moneda de la tarjeta involucrada, si la hay. */
   cardCurrency?: Currency | null;
+  /** Transferencia: ids de origen y destino, y moneda del destino. */
+  accountId?: string | null;
+  toAccountId?: string | null;
+  toAccountCurrency?: Currency | null;
+  /** Gasto por SINPE. */
+  channel?: MovementChannel | null;
+  counterpartyPhone?: string | null;
 };
+
+/**
+ * Teléfono de SINPE Móvil: 8 dígitos (Costa Rica). Acepta espacios, guiones y
+ * el prefijo +506. Vacío → `null`. Inválido → `DomainError`.
+ */
+export function normalizeSinpePhone(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  let digits = raw.replace(/[\s-]/g, "");
+  if (!digits) return null;
+  digits = digits.replace(/^\+/, "");
+  // Prefijo de país 506 solo si sobra (un número local puede empezar con 506).
+  if (digits.length === 11 && digits.startsWith("506")) digits = digits.slice(3);
+  if (!/^\d{8}$/.test(digits)) {
+    throw new DomainError("S1", "El teléfono de SINPE debe tener 8 dígitos");
+  }
+  return digits;
+}
 
 /**
  * Valida un movimiento antes de registrarlo y devuelve su moneda (la del
@@ -150,6 +195,26 @@ export function validateMovement(d: MovementDraft): Currency {
 
   if (!(Number(d.amount) > 0)) {
     throw new DomainError("G2", "El monto debe ser mayor que 0");
+  }
+
+  if (d.type === "transfer") {
+    // M2: entre dos cuentas propias distintas, en la misma moneda.
+    if (!d.accountCurrency || !d.toAccountCurrency) {
+      throw new DomainError("M2", "Una transferencia necesita una cuenta origen y una destino");
+    }
+    if (d.accountId && d.accountId === d.toAccountId) {
+      throw new DomainError("M2", "La cuenta origen y la destino deben ser distintas");
+    }
+    assertSameCurrency(d.accountCurrency, d.toAccountCurrency, "M2");
+    return d.accountCurrency;
+  }
+
+  if (d.channel === "sinpe") {
+    // S1: un SINPE es un gasto desde una cuenta de débito.
+    if (d.type !== "expense" || !d.accountCurrency || d.cardCurrency) {
+      throw new DomainError("S1", "Un SINPE es un gasto desde una cuenta de débito");
+    }
+    normalizeSinpePhone(d.counterpartyPhone);
   }
 
   if (d.type === "card_payment") {

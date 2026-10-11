@@ -32,10 +32,17 @@ type Props = {
 
 /** Monto con signo según el contexto (flujo de caja vs. deuda de la tarjeta). */
 function displayAmount(t: Transaction, context: "list" | "card"): number {
+  // Una transferencia no es entrada ni salida neta: se muestra el monto movido.
+  if (t.type === "transfer") return Number(t.amount);
   if (context === "card") {
     return t.type === "card_payment" ? -Number(t.amount) : Number(t.amount);
   }
   return signedAmount(t);
+}
+
+function concept(t: Transaction): string {
+  if (t.type === "transfer") return "Transferencia";
+  return t.category ?? "—";
 }
 
 export function TransactionList({
@@ -69,9 +76,16 @@ export function TransactionList({
     const amount = displayAmount(t, context);
     const isInstallment = Boolean(t.financing_id);
     const isOpening = t.type === "opening_balance";
+    const sinpeTo = [t.counterparty_name, t.counterparty_phone].filter(Boolean).join(" · ");
     const detail = isOpening
       ? "Saldo inicial"
-      : isCard
+      : t.type === "transfer"
+        ? `${originLabel(t, accounts, cards)} → ${
+            accounts.find((a) => a.id === t.to_account_id)?.name ?? "—"
+          }`
+        : t.channel === "sinpe"
+          ? `${originLabel(t, accounts, cards)} · SINPE${sinpeTo ? ` a ${sinpeTo}` : ""}`
+          : isCard
         ? t.type === "card_payment"
           ? `Desde ${originLabel(t, accounts, cards)}`
           : (t.category ?? "Cargo")
@@ -140,7 +154,7 @@ export function TransactionList({
                   typeBadge
                 ) : (
                   <>
-                    <span className="font-medium">{t.category ?? "—"}</span>
+                    <span className="font-medium">{concept(t)}</span>
                     {t.note ? (
                       <span className="block text-xs text-muted-foreground">
                         {t.note}
@@ -179,7 +193,7 @@ export function TransactionList({
           >
             <MobileField
               label={isCard ? "Tipo" : "Concepto"}
-              value={isCard ? typeBadge : (t.category ?? "—")}
+              value={isCard ? typeBadge : concept(t)}
             />
             <MobileField label={isCard ? "Detalle" : "Origen"} value={detail} />
             {t.note ? <MobileField label="Nota" value={t.note} /> : null}

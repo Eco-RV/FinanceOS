@@ -5,6 +5,7 @@ export const TRANSACTION_TYPE_LABELS = {
   income: "Ingreso",
   card_payment: "Pago de tarjeta",
   opening_balance: "Saldo inicial",
+  transfer: "Transferencia",
 } as const;
 
 /** "account:<id>" | "card:<id>" -> partes. */

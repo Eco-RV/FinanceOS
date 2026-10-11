@@ -12,6 +12,7 @@ import type {
   Installment,
   ISODate,
   Movement,
+  MovementChannel,
   MovementType,
   StoredBalance,
 } from "../domain/index.ts";
@@ -25,6 +26,10 @@ export type NewMovement = {
   note: string | null;
   account_id: string | null;
   card_id: string | null;
+  to_account_id?: string | null;
+  channel?: MovementChannel | null;
+  counterparty_name?: string | null;
+  counterparty_phone?: string | null;
 };
 
 export type AccountFields = {

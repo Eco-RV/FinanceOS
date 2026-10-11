@@ -223,7 +223,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from("transactions")
-          .select("type, amount, account_id, card_id, archived")
+          .select("type, amount, account_id, card_id, to_account_id, archived")
           .order("id")
           .range(from, from + PAGE - 1);
         check(error, "No se pudieron leer los movimientos");

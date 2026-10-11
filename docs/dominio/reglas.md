@@ -28,7 +28,8 @@
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
 | M1 | Gasto, SINPE e ingreso exigen categoría del tipo correcto. | Rechaza | Decidido |
-| M2 | Una transferencia es entre dos cuentas propias **distintas**, y no cuenta como gasto ni como ingreso. | Rechaza si origen = destino | Decidido |
+| M2 | Una transferencia es entre dos cuentas propias **distintas** y de la **misma moneda**, y no cuenta como gasto ni como ingreso. | Rechaza si origen = destino o monedas distintas | Decidido · Implementado 2.0.0 |
+| S1 | Un SINPE es un gasto desde una cuenta de débito (no tarjeta), con categoría; destinatario y teléfono (8 dígitos) opcionales. | Rechaza | Decidido · Implementado 2.0.0 |
 | M3 | Un abono sale siempre de una cuenta de débito hacia una tarjeta de crédito. | Rechaza | Decidido |
 | M4 | Un abono puede superar la deuda. | Advierte | Decidido |
 | M5 | Un abono afecta el saldo de la tarjeta **en la moneda de la cuenta origen**; cuenta y saldo de la tarjeta deben coincidir en moneda (no hay conversión en un abono). | Rechaza | Decidido |
