@@ -126,6 +126,46 @@ eliminar uno completo si ya no aplica.
 - Tarjetas en `USD` no entran en los cálculos de cobertura del dashboard
   (se listan, pero no suman).
 
+### Propuesta (2.0.0): financiamiento con interés
+
+> Historia redactada para entender el comportamiento antes de implementarlo.
+> Reglas en [`../dominio/reglas.md`](../dominio/reglas.md) (F5) y términos en
+> [`../dominio/glosario.md`](../dominio/glosario.md).
+
+Como usuario quiero registrar una compra a cuotas **con interés** sobre una
+tarjeta, para saber cuánto me cuesta realmente y qué parte de cada cuota es
+interés.
+
+**Ejemplo**: compra de ₡600 000 a 12 meses, tasa 24 % anual (2 % mensual),
+sistema francés (cuota fija).
+
+- Cuota fija = capital × i / (1 − (1 + i)^−n) = **₡56 735,76**.
+- Total pagado ₡680 829,10 → **₡80 829,10 de interés**.
+
+| Cuota | Interés | Abono al capital | Capital restante |
+|---|---|---|---|
+| 1 | ₡12 000,00 | ₡44 735,76 | ₡555 264,24 |
+| 2 | ₡11 105,28 | ₡45 630,47 | ₡509 633,77 |
+| 3 | ₡10 192,68 | ₡46 543,08 | ₡463 090,69 |
+| … | baja | sube | … |
+| 12 | ₡1 112,47 | ₡55 623,29 | ₡0,00 |
+
+**Criterios de aceptación (propuestos)**
+- Al crear se piden tarjeta, monto (capital), meses, tasa anual y fecha de
+  la primera cuota.
+- El **capital** resta al disponible de la tarjeta desde el día 1, igual que
+  en tasa 0; a medida que se pagan cuotas, el disponible se libera por el
+  abono al capital.
+- Cada mes la cuota entra al estado de cuenta como cargo, separando
+  **interés** y **abono al capital** (dos líneas o una con desglose), en la
+  sección de cuotas de la tarjeta.
+- Se ve la tabla completa: cuotas pagadas, pendientes, interés pagado y por
+  pagar.
+- Eliminar el plan borra solo las cuotas futuras (regla F4).
+- Préstamos usan la misma tabla de amortización.
+- Cada banco puede tener particularidades (redondeos, cargos extra); antes de
+  implementar se valida contra un estado de cuenta real.
+
 ## Historial
 
 - **2026-10-08 (v1.2.3)** — Primera versión de este documento, redactada a
@@ -133,3 +173,9 @@ eliminar uno completo si ya no aplica.
   `_financiamientos/`.
 - **2026-10-08 (v1.3.0)** — `bank_id` opcional en la tarjeta y `last_four` como llave
   para importar compras desde el correo (ver `bancos.md`).
+- **2026-10-11 (v2.0.0, en desarrollo)** — Propuesta de financiamiento con
+  interés (historia de ejemplo con tabla de amortización). El glosario y las
+  reglas de dominio pasan a `docs/dominio/`; decisiones nuevas que cambian este
+  módulo (tarjeta bimoneda con límite en colones, borrar financiamiento solo
+  borra cuotas futuras, abonos a cuota y reembolsos de familia) se
+  implementarán en 2.0.0.

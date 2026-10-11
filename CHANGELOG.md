@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.0 — en desarrollo
+
+Rediseño por dominio (DDD pragmático): la lógica de negocio se separa de la
+base de datos, el login y el correo para que pueda cambiar la infraestructura
+sin tocar las reglas.
+
+### Fase 0 — lenguaje y reglas
+- `docs/dominio/`: glosario, mapa de contextos, reglas (rechaza vs. advierte)
+  y arquitectura objetivo, a partir del documento *BusinessLogic Finance OS*.
+- Historia propuesta de financiamiento con interés (tabla de amortización) en
+  `docs/historias-usuario/tarjetas.md`.
+- Se descarta la sincronización automática de correo (v1.3.1): siempre manual.
+
 ## 1.3.0 — 2026-10-08
 
 Compras con tarjeta importadas automáticamente desde los correos del banco,
