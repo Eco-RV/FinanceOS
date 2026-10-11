@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DomainError } from "../shared/errors.ts";
 import { frenchAmortization } from "./amortization.ts";
-import { installmentSchedule, splitByDate } from "./installments.ts";
+import { financingCancellation, installmentSchedule, splitByDate } from "./installments.ts";
 
 test("F1/F2: cuotas tasa 0 cierran al total y respetan meses cortos", () => {
   const plan = installmentSchedule({
@@ -72,4 +72,18 @@ test("F5: tasa 0 equivale a cuotas iguales", () => {
   });
   assert.equal(t.payment, 100);
   assert.equal(t.totalInterest, 0);
+});
+
+test("F4: cancelar conserva las cuotas con fecha ≤ hoy", () => {
+  const plan = installmentSchedule({
+    totalAmount: 90_000,
+    months: 3,
+    firstChargeOn: "2026-09-15",
+    currency: "CRC",
+  });
+  const r = financingCancellation(plan, "2026-10-15");
+  assert.deepEqual(r.keep.map((c) => c.no), [1, 2]);
+  assert.deepEqual(r.remove.map((c) => c.no), [3]);
+  assert.equal(r.deletePlan, false);
+  assert.equal(financingCancellation(plan, "2026-09-14").deletePlan, true);
 });

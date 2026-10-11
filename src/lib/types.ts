@@ -60,6 +60,8 @@ export type Financing = {
   months: number;
   currency: string;
   first_charge_on: string; // "YYYY-MM-DD"
+  /** Fecha en que se eliminó (F4): las cuotas posteriores ya no existen. */
+  cancelled_on?: string | null;
   archived: boolean;
   created_at: string;
 };

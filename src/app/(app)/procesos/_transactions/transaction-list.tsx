@@ -13,7 +13,9 @@ import { signedAmount } from "@/domain";
 import { originLabel } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 import type { Account, CreditCard, Transaction } from "@/lib/types";
+import { DeleteButton } from "@/components/delete-button";
 import { TransactionRowActions } from "./transaction-row-actions";
+import { deleteTransaction } from "./actions";
 
 type Props = {
   transactions: Transaction[];
@@ -24,6 +26,8 @@ type Props = {
   /** "list" = vista de gastos/ingresos · "card" = historial dentro de una tarjeta. */
   context?: "list" | "card";
   emptyLabel?: string;
+  /** Financiamientos cancelados: sus cuotas conservadas se pueden quitar a mano (F4). */
+  cancelledFinancingIds?: string[];
 };
 
 /** Monto con signo según el contexto (flujo de caja vs. deuda de la tarjeta). */
@@ -41,6 +45,7 @@ export function TransactionList({
   categories = [],
   context = "list",
   emptyLabel = "Aún no hay movimientos.",
+  cancelledFinancingIds = [],
 }: Props) {
   const isCard = context === "card";
 
@@ -86,7 +91,17 @@ export function TransactionList({
               : "Cargo"}
       </Badge>
     ) : null;
-    const actions = isInstallment ? (
+    const fromCancelledPlan =
+      isInstallment && cancelledFinancingIds.includes(t.financing_id!);
+    const actions = fromCancelledPlan ? (
+      <div className="flex justify-end">
+        <DeleteButton
+          id={t.id}
+          action={deleteTransaction}
+          confirmLabel="¿Quitar esta cuota de un financiamiento cancelado?"
+        />
+      </div>
+    ) : isInstallment ? (
       <span className="text-xs text-muted-foreground">Ver en Financiamientos</span>
     ) : isOpening ? (
       <span className="text-xs text-muted-foreground">Se edita en la tarjeta</span>

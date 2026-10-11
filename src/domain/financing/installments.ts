@@ -61,3 +61,15 @@ export function splitByDate<T extends { occurred_on: ISODate }>(
   for (const it of items) (it.occurred_on <= todayISO ? occurred : scheduled).push(it);
   return { occurred, scheduled };
 }
+
+/**
+ * F4: al eliminar un financiamiento se conservan las cuotas que ya ocurrieron
+ * (fecha ≤ hoy) y se borran las futuras. Si no queda ninguna, el plan se borra.
+ */
+export function financingCancellation<T extends { occurred_on: ISODate }>(
+  installments: T[],
+  todayISO: ISODate,
+): { keep: T[]; remove: T[]; deletePlan: boolean } {
+  const { occurred, scheduled } = splitByDate(installments, todayISO);
+  return { keep: occurred, remove: scheduled, deletePlan: occurred.length === 0 };
+}

@@ -21,8 +21,9 @@ export function fakeStore(seed: {
 } = {}) {
   const accountCurrencies = new Map(Object.entries(seed.accounts ?? {}));
   const cardCurrencies = new Map(Object.entries(seed.cards ?? {}));
-  const movements = new Map<string, NewMovement>();
+  const movements = new Map<string, NewMovement & { financing_id?: string }>();
   const financings = new Map<string, NewFinancing>();
+  const cancelled = new Map<string, string>();
   const pending = new Map((seed.pending ?? []).map((p) => [p.id, { ...p, status: "pending" }]));
   const rules = new Map<string, string>();
   let seq = 0;
@@ -81,11 +82,33 @@ export function fakeStore(seed: {
       if (installments.length !== plan.months) throw new Error("cuotas incompletas");
       const id = nextId("fin");
       financings.set(id, plan);
+      for (const c of installments) {
+        movements.set(nextId("mv"), {
+          type: "expense",
+          amount: c.amount,
+          currency: "CRC",
+          occurred_on: c.occurred_on,
+          category: plan.category,
+          note: `${plan.description} (cuota ${c.no}/${c.of})`,
+          account_id: null,
+          card_id: plan.card_id,
+          financing_id: id,
+        });
+      }
       return { id };
     },
     cardIdOf: async (id) => financings.get(id)?.card_id ?? null,
-    delete: async (id) => {
-      financings.delete(id);
+    cancel: async (id, todayISO) => {
+      for (const [mvId, m] of movements) {
+        if (m.financing_id === id && m.occurred_on > todayISO) movements.delete(mvId);
+      }
+      const kept = [...movements.values()].some((m) => m.financing_id === id);
+      if (!kept) {
+        financings.delete(id);
+        return "deleted";
+      }
+      cancelled.set(id, todayISO);
+      return "cancelled";
     },
   };
   const pendingRepo: PendingRepository = {
@@ -152,7 +175,7 @@ export function fakeStore(seed: {
       merchantRules,
       balances,
     },
-    state: { movements, financings, pending, rules, stored, accountCurrencies, cardCurrencies },
+    state: { movements, financings, cancelled, pending, rules, stored, accountCurrencies, cardCurrencies },
     balanceOf,
   };
 }

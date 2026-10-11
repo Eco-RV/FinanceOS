@@ -87,7 +87,11 @@ export interface FinancingRepository {
   /** Guarda el plan y exactamente estas cuotas, de forma atómica. */
   createWithInstallments(plan: NewFinancing, installments: Installment[]): Promise<{ id: string }>;
   cardIdOf(financingId: string): Promise<string | null>;
-  delete(financingId: string): Promise<void>;
+  /**
+   * F4: borra las cuotas con fecha posterior a `todayISO`, conserva las demás y
+   * marca el plan como cancelado (o lo borra si no quedó ninguna cuota).
+   */
+  cancel(financingId: string, todayISO: ISODate): Promise<"cancelled" | "deleted">;
 }
 
 export type PendingPurchase = {

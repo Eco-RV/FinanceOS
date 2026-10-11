@@ -1,6 +1,12 @@
 /** Casos de uso de financiamientos sin interés (tasa 0). */
 
-import { installmentSchedule, type Installment, type ISODate } from "../domain/index.ts";
+import {
+  crToday,
+  installmentSchedule,
+  toISODate,
+  type Installment,
+  type ISODate,
+} from "../domain/index.ts";
 import type { CardRepository, FinancingRepository } from "./ports.ts";
 import { fail, ok, run, type UseCaseResult } from "./result.ts";
 
@@ -46,14 +52,19 @@ export function createFinancing(
   });
 }
 
-/** Elimina un financiamiento completo. Devuelve la tarjeta para refrescar su vista. */
+/**
+ * Elimina un financiamiento (F4): las cuotas futuras desaparecen, las que ya
+ * ocurrieron (fecha ≤ hoy) se conservan. "Hoy" es el de Costa Rica (G6).
+ */
 export function deleteFinancing(
   deps: Pick<FinancingDeps, "financings">,
   id: string,
-): Promise<UseCaseResult<{ cardId: string | null }>> {
+  today: Date = crToday(),
+): Promise<UseCaseResult<{ cardId: string | null; outcome: "cancelled" | "deleted" }>> {
   return run(async () => {
     const cardId = await deps.financings.cardIdOf(id);
-    await deps.financings.delete(id);
-    return ok({ cardId });
+    if (!cardId) return fail("Financiamiento no encontrado");
+    const outcome = await deps.financings.cancel(id, toISODate(today));
+    return ok({ cardId, outcome });
   });
 }

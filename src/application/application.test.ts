@@ -101,8 +101,29 @@ test("createFinancing valida en el dominio y devuelve el plan de cuotas", async 
   assert.equal(!bad.ok && bad.rule, "F1");
   assert.equal(s.state.financings.size, 1);
 
-  const del = await deleteFinancing(s.deps, r.value.id);
-  assert.deepEqual(del, { ok: true, value: { cardId: "visa" } });
+  // F4: el 15 de nov ya ocurrió la cuota 1 (31 oct) y la 2 (30 nov) no.
+  const del = await deleteFinancing(s.deps, r.value.id, new Date(2026, 10, 15));
+  assert.deepEqual(del, { ok: true, value: { cardId: "visa", outcome: "cancelled" } });
+  assert.equal(s.state.movements.size, 1);
+  assert.equal(s.balanceOf("card", "visa"), 100_000);
+  assert.equal(s.state.cancelled.get(r.value.id), "2026-11-15");
+});
+
+test("F4: si ninguna cuota ocurrió, eliminar borra el plan completo", async () => {
+  const s = fakeStore({ cards: { visa: "CRC" } });
+  const r = await createFinancing(s.deps, {
+    card_id: "visa",
+    description: "Cel",
+    category: null,
+    total_amount: 1000,
+    months: 2,
+    first_charge_on: "2026-12-01",
+  });
+  assert.ok(r.ok);
+  const del = await deleteFinancing(s.deps, r.value.id, new Date(2026, 10, 15));
+  assert.ok(del.ok && del.value.outcome === "deleted");
+  assert.equal(s.state.movements.size, 0);
+  assert.equal(s.state.financings.size, 0);
 });
 
 const purchase = {

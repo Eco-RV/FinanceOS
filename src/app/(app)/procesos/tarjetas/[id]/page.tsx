@@ -255,6 +255,7 @@ export default async function CardDetailPage({
           categories={categories}
           context="card"
           emptyLabel="Sin movimientos registrados en esta tarjeta."
+          cancelledFinancingIds={financings.filter((f) => f.cancelled_on).map((f) => f.id)}
         />
       </div>
     </div>

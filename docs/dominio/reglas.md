@@ -57,7 +57,7 @@
 | F1 | Al crear un financiamiento se eligen tarjeta, monto, meses y fecha de primera cuota; el monto total resta al disponible desde el día 1. | — | Decidido |
 | F2 | Las cuotas caen el mismo día cada mes (ajustado al último día en meses cortos). | — | Decidido |
 | F3 | Las cuotas se consultan en una sección propia de la tarjeta, separadas de los gastos. | — | Decidido |
-| F4 | Al eliminar un financiamiento se borran solo sus cuotas **futuras**; las ya ocurridas y los abonos ya hechos quedan y se quitan a mano. | — | Decidido (cambia el comportamiento actual, que borra todo) |
+| F4 | Al eliminar un financiamiento se borran solo sus cuotas **futuras**; las ya ocurridas y los abonos ya hechos quedan y se quitan a mano. | — | Decidido · Implementado 2.0.0 (fecha ≤ hoy se conserva) |
 | F5 | Financiamiento con interés y préstamo usan la misma **tabla de amortización** (sistema francés: cuota fija). | — | Propuesta |
 | F6 | Las partes de una cuota entre miembros suman exactamente la cuota. | Rechaza | Propuesta |
 | F7 | Un reembolso de miembro no toca la tarjeta ni las cuentas. | — | Decidido |

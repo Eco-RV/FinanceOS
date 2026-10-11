@@ -103,10 +103,14 @@ Como usuario quiero ver los financiamientos activos de una tarjeta y
 eliminar uno completo si ya no aplica.
 
 **Criterios de aceptación**
-- Eliminar un financiamiento borra en cascada **todas** sus cuotas, pasadas y
-  futuras, y el trigger revierte el saldo completo que ese financiamiento
-  había sumado.
-- No existe edición ni cancelación parcial (ver *Pendiente*).
+- Eliminar un financiamiento (regla F4) borra solo las cuotas **futuras**
+  (fecha posterior a hoy) y el trigger revierte solo ese monto. Las cuotas que
+  ya ocurrieron se conservan y el plan queda como "Cancelado el <fecha> · N
+  cuota(s) conservada(s)". Si ninguna cuota había ocurrido, el plan se borra
+  completo.
+- Las cuotas conservadas de un plan cancelado se pueden quitar a mano desde el
+  historial de la tarjeta (botón eliminar en la fila).
+- No existe edición de un financiamiento (ver *Pendiente*).
 
 ## Reglas de negocio
 
@@ -124,8 +128,7 @@ eliminar uno completo si ya no aplica.
 
 ## Pendiente / fuera de alcance
 
-- No hay edición ni cancelación parcial de un financiamiento (solo
-  crear/borrar completo).
+- No hay edición de un financiamiento (solo crear y eliminar/cancelar).
 - No hay "archivar" tarjeta desde la interfaz, igual que en cuentas.
 - Préstamos con interés y tabla de amortización — roadmap paso 3, no
   implementado.
@@ -188,3 +191,5 @@ sistema francés (cuota fija).
 - **2026-10-11 (v2.0.0, en desarrollo)** — Saldo inicial como movimiento
   `opening_balance` con fecha (editable desde "Editar tarjeta"); cuotas de
   financiamiento calculadas por el dominio y guardadas con `create_financing_v2`.
+- **2026-10-11 (v2.0.0, en desarrollo)** — Eliminar un financiamiento conserva
+  las cuotas ya ocurridas (F4, `04_cancel_financing.sql`).

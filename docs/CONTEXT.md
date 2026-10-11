@@ -181,6 +181,7 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 - Un pendiente solo se aprueba contra una tarjeta de **su misma moneda**.
 - `SUPABASE_SERVICE_ROLE_KEY` salta RLS: solo se usa en `createAdminClient()` para
   el cron; nunca con prefijo `NEXT_PUBLIC_` ni en código de cliente.
-- Borrar un financiamiento borra (cascade) **todas** sus cuotas, pasadas y futuras, y
-  el trigger revierte el saldo completo — no hay forma de "cancelar a la mitad"
-  dejando las cuotas ya cortadas.
+- **Desde 2.0.0** eliminar un financiamiento llama `cancel_financing(id, hoy)`
+  (`04_cancel_financing.sql`): borra solo las cuotas con fecha > hoy, conserva las
+  demás y marca `financings.cancelled_on`; si no quedó ninguna, borra el plan. Borrar
+  la **tarjeta** sí sigue borrando todo en cascada.

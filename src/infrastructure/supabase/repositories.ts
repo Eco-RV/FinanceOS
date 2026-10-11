@@ -143,9 +143,14 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .maybeSingle();
       return data?.card_id ?? null;
     },
-    async delete(id) {
-      const { error } = await supabase.from("financings").delete().eq("id", id);
+    async cancel(id, todayISO) {
+      // supabase/Versionamiento/2.0.0/04_cancel_financing.sql
+      const { data, error } = await supabase.rpc("cancel_financing", {
+        p_financing_id: id,
+        p_today: todayISO,
+      });
       check(error, "No se pudo eliminar el financiamiento");
+      return data === "deleted" ? "deleted" : "cancelled";
     },
   };
 
