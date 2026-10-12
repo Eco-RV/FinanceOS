@@ -10,6 +10,8 @@
 import type {
   Currency,
   ExchangeRate,
+  FreshStartOpening,
+  FreshStartProduct,
   Installment,
   ISODate,
   Movement,
@@ -198,6 +200,17 @@ export interface LoanRepository extends LifecycleRepository<Loan> {
   paidInstallments(loanId: string): Promise<number[]>;
   /** Movimiento del pago de una cuota, o `null`. */
   paymentOf(loanId: string, installmentNo: number): Promise<string | null>;
+}
+
+export interface FreshStartRepository {
+  /** Cuentas y tarjetas activas, con las monedas que necesitan saldo inicial. */
+  activeProducts(): Promise<FreshStartProduct[]>;
+  /**
+   * M8, atómico: borra cuotas pendientes de financiamientos, archiva todos los
+   * movimientos, borra financiamientos y préstamos y crea estos saldos
+   * iniciales en `on`. Devuelve cuántos movimientos archivó.
+   */
+  run(todayISO: ISODate, on: ISODate, openings: FreshStartOpening[]): Promise<number>;
 }
 
 export interface BalanceRepository {

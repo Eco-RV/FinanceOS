@@ -126,6 +126,19 @@ Decisión: el calendario es un **cálculo**, no datos. Guardarlo duplicaría la
 regla (como pasó con `create_financing`) y podría desfasarse; se recalcula en
 cada lectura, que es barato (≤ 480 filas).
 
+## Arranque de 0 (2.2.0)
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Regla | `domain/ledger/fresh-start.ts` | `planFreshStart` (M8): confirmación escrita y un saldo por cuenta/tarjeta activa y moneda; devuelve los saldos ≠ 0. |
+| Puerto | `FreshStartRepository` | `activeProducts()` y `run(today, on, openings)`. |
+| Caso de uso | `application/fresh-start.ts` | `freshStart`: valida contra lo activo de ese momento y delega. |
+| Persistencia | `2.2.0/00_fresh_start.sql` | `fresh_start(p_today, p_on, p_openings)`: una sola función (atómica) y tabla `fresh_starts` como constancia. |
+
+Decisión: el arranque es **una** función de base de datos y no una serie de
+llamadas desde la app, porque deja cientos de filas en un estado coherente o
+en ninguno. La regla (qué se exige) sigue en el dominio.
+
 ## Decisiones de infraestructura
 
 | Tema | Decisión | Fecha |

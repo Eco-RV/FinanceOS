@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.2.0 — sin publicar
+
+### Arranque de 0 (M8)
+- `Ajustes → Arranque de 0`: con confirmación escrita (`ARRANCAR`) y un saldo
+  inicial nuevo por cada cuenta y tarjeta (precargado con el de hoy), archiva
+  todos los movimientos, borra las cuotas pendientes y elimina
+  financiamientos y préstamos (las cuotas cobradas quedan archivadas). Solo
+  los saldos iniciales nuevos quedan visibles. Todo en una operación atómica.
+
+### Base de datos (correr a mano, DESPUÉS de todo 2.1.0)
+1. `supabase/Versionamiento/2.2.0/00_fresh_start.sql`
+
 ## 2.1.0 — 2026-10-12
 
 Cierre de la Fase 2 del rediseño por dominio y limpieza.
