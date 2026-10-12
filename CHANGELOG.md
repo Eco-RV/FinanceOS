@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0 — sin publicar
+## 2.1.0 — 2026-10-12
 
 Cierre de la Fase 2 del rediseño por dominio y limpieza.
 
@@ -26,6 +26,10 @@ Cierre de la Fase 2 del rediseño por dominio y limpieza.
 - "Pagar cuota" registra un gasto desde una cuenta, en orden; "Deshacer"
   quita el último pago. El desembolso puede registrarse como ingreso.
 - Reglas L1–L5 y F5 en `src/domain/loans/`.
+- Resumen: las cuotas vencidas o próximas (31 días) de cada préstamo aparecen
+  en "Pagos próximos" junto a las tarjetas y suman en "A pagar" y en la
+  cobertura del débito (L6). Nueva tarjeta "Capital pendiente en préstamos";
+  el patrimonio neto lo resta.
 
 ### Limpieza
 - Se borra el SP `create_financing` (1.2.2), reemplazado por
