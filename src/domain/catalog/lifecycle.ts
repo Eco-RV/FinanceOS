@@ -12,6 +12,7 @@
  *   tarjeta   movimientos propios sin contar su saldo inicial, y financiamientos
  *   categoría movimientos del mismo tipo con ese nombre (sin distinguir mayúsculas)
  *   banco     avisos importados desde sus correos (pendientes, en cualquier estado)
+ *   préstamo  cuotas pagadas (el desembolso no cuenta: es parte del alta)
  *
  * El saldo inicial no cuenta como historia: es parte del alta (C1). Una cuenta
  * creada por error con su saldo inicial se puede eliminar.
@@ -19,13 +20,14 @@
 
 import { DomainError } from "../shared/errors.ts";
 
-export type CatalogKind = "account" | "card" | "category" | "bank";
+export type CatalogKind = "account" | "card" | "category" | "bank" | "loan";
 
 const SUBJECT: Record<CatalogKind, string> = {
   account: "La cuenta",
   card: "La tarjeta",
   category: "La categoría",
   bank: "El banco",
+  loan: "El préstamo",
 };
 
 const HISTORY: Record<CatalogKind, string> = {
@@ -33,6 +35,7 @@ const HISTORY: Record<CatalogKind, string> = {
   card: "movimientos o financiamientos",
   category: "movimientos",
   bank: "avisos importados",
+  loan: "cuotas pagadas",
 };
 
 /** Pronombre enclítico y terminación según el género del sustantivo. */
@@ -41,6 +44,7 @@ const LA: Record<CatalogKind, "la" | "lo"> = {
   card: "la",
   category: "la",
   bank: "lo",
+  loan: "lo",
 };
 
 /** G5: se puede eliminar solo si no tiene historia. */

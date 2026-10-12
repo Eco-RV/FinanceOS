@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -125,6 +126,13 @@ export function TransactionList({
       <span className="text-xs text-muted-foreground">Ver en Financiamientos</span>
     ) : isOpening ? (
       <span className="text-xs text-muted-foreground">Se edita en la tarjeta</span>
+    ) : t.loan_id ? (
+      <Link
+        href={`/procesos/prestamos/${t.loan_id}`}
+        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+      >
+        Ver en Préstamos
+      </Link>
     ) : touchesInactive(t, accounts, cards) ? (
       <span className="text-xs text-muted-foreground">Desactivada: actívala para editar</span>
     ) : (

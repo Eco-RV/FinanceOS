@@ -17,3 +17,4 @@ export * from "./financing/amortization.ts";
 export * from "./coverage/coverage.ts";
 export * from "./importing/merchant.ts";
 export * from "./catalog/lifecycle.ts";
+export * from "./loans/loan.ts";

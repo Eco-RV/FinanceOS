@@ -16,6 +16,8 @@ import type {
   CategoryRepository,
   ExchangeRateRepository,
   FinancingRepository,
+  Loan,
+  LoanRepository,
   MerchantRuleRepository,
   MovementRepository,
   NewFinancing,
@@ -170,6 +172,7 @@ export function fakeStore(seed: {
   const movementRepo: MovementRepository = {
     cardIdOf: async (id) => movements.get(id)?.card_id ?? null,
     categoryOf: async (id) => movements.get(id)?.category ?? null,
+    loanIdOf: async (id) => movements.get(id)?.loan_id ?? null,
     openingOf: async (target, id, currency) => {
       for (const [movementId, m] of movements) {
         const owner = target === "account" ? m.account_id : m.card_id;
@@ -245,6 +248,33 @@ export function fakeStore(seed: {
     },
   };
 
+  const loanRows = new Map<string, Omit<Loan, "id">>();
+  const loanPayments = (loanId: string) =>
+    [...movements].filter(([, m]) => m.loan_id === loanId && m.installment_no != null);
+  const loans: LoanRepository = {
+    ...lifecycle(loanRows, (id) => loanPayments(id).length),
+    find: async (id) => {
+      const r = loanRows.get(id);
+      return r ? { ...r, id } : null;
+    },
+    create: async (fields) => {
+      const id = nextId("loan");
+      loanRows.set(id, { ...fields, archived: false });
+      return { id };
+    },
+    rename: async (id, fields) => {
+      const r = loanRows.get(id);
+      if (r) Object.assign(r, fields);
+    },
+    paidInstallments: async (id) => loanPayments(id).map(([, m]) => m.installment_no!),
+    paymentOf: async (id, no) => loanPayments(id).find(([, m]) => m.installment_no === no)?.[0] ?? null,
+    delete: async (id) => {
+      loanRows.delete(id);
+      // on delete cascade: arrastra el desembolso.
+      for (const [mvId, m] of movements) if (m.loan_id === id) movements.delete(mvId);
+    },
+  };
+
   const cardKey = (id: string, currency: Currency) => `${id}:${currency}`;
   const balances: BalanceRepository = {
     stored: async () => [
@@ -302,6 +332,7 @@ export function fakeStore(seed: {
       cards,
       categories,
       banks,
+      loans,
       movements: movementRepo,
       financings: financingRepo,
       pending: pendingRepo,
@@ -321,6 +352,7 @@ export function fakeStore(seed: {
       cardRows,
       categoryRows,
       bankRows,
+      loanRows,
     },
     balanceOf,
   };

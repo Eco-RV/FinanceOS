@@ -19,6 +19,14 @@ Cierre de la Fase 2 del rediseño por dominio y limpieza.
 - Todas las escrituras del catálogo pasan por casos de uso
   (`src/application/catalog.ts`) con reglas en `src/domain/catalog/`.
 
+### Préstamos bancarios (nuevo)
+- `/procesos/prestamos`: préstamos a cuota fija (sistema francés) con
+  calendario de cuotas, interés y abono al capital, capital pendiente,
+  intereses pagados y por pagar, y aviso de atraso.
+- "Pagar cuota" registra un gasto desde una cuenta, en orden; "Deshacer"
+  quita el último pago. El desembolso puede registrarse como ingreso.
+- Reglas L1–L5 y F5 en `src/domain/loans/`.
+
 ### Limpieza
 - Se borra el SP `create_financing` (1.2.2), reemplazado por
   `create_financing_v2` en 2.0.0.
@@ -27,6 +35,7 @@ Cierre de la Fase 2 del rediseño por dominio y limpieza.
 
 ### Base de datos (correr a mano, DESPUÉS de todo 2.0.0)
 1. `supabase/Versionamiento/2.1.0/00_drop_create_financing.sql`
+2. `supabase/Versionamiento/2.1.0/01_loans.sql`
 
 ## 2.0.0 — 2026-10-12
 

@@ -55,6 +55,8 @@ export type Transaction = {
   card_id: string | null;
   financing_id: string | null;
   installment_no: number | null;
+  /** Pago de cuota (con `installment_no`) o desembolso de un préstamo (2.1.0). */
+  loan_id?: string | null;
   /** Cuenta destino de una transferencia (2.0.0). */
   to_account_id?: string | null;
   /** "sinpe" en gastos por SINPE Móvil (2.0.0). */
@@ -77,6 +79,22 @@ export type Financing = {
   first_charge_on: string; // "YYYY-MM-DD"
   /** Fecha en que se eliminó (F4): las cuotas posteriores ya no existen. */
   cancelled_on?: string | null;
+  archived: boolean;
+  created_at: string;
+};
+
+/** Préstamo bancario con interés (2.1.0). El calendario lo deriva el dominio. */
+export type Loan = {
+  id: string;
+  user_id: string;
+  name: string;
+  lender: string | null;
+  principal: number;
+  annual_rate: number;
+  months: number;
+  currency: string;
+  first_payment_on: string; // "YYYY-MM-DD"
+  account_id: string | null;
   archived: boolean;
   created_at: string;
 };

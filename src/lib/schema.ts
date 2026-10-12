@@ -274,6 +274,65 @@ export const financingSchema = z.object({
 
 export type FinancingInput = z.infer<typeof financingSchema>;
 
+// ─────────────────────────────  préstamos  ─────────────────────────────
+
+const uuid = (message: string) => z.string().regex(/^[0-9a-fA-F-]{36}$/, message);
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida");
+const optionalLender = z
+  .string()
+  .trim()
+  .max(60, "Máximo 60 caracteres")
+  .optional()
+  .transform((v) => v || null);
+const optionalAccount = z
+  .string()
+  .optional()
+  .transform((v) => v || null)
+  .pipe(uuid("Cuenta inválida").nullable());
+
+export const loanSchema = z
+  .object({
+    name: z.string().trim().min(1, "El nombre es obligatorio").max(60),
+    lender: optionalLender,
+    currency: z.enum(CURRENCIES),
+    principal: z.coerce
+      .number()
+      .finite("Monto inválido")
+      .positive("El monto debe ser mayor que cero"),
+    annual_rate: z.coerce
+      .number()
+      .finite("Tasa inválida")
+      .min(0, "La tasa no puede ser negativa")
+      .max(100, "Máximo 100 %"),
+    months: z.coerce
+      .number()
+      .int("Meses enteros")
+      .min(1, "Mínimo 1 mes")
+      .max(480, "Máximo 480 meses"),
+    first_payment_on: isoDate,
+    account_id: optionalAccount,
+    disbursement_account_id: optionalAccount,
+    disbursement_on: isoDate.optional().or(z.literal("")),
+  })
+  .superRefine((v, ctx) => {
+    if (v.disbursement_account_id && !v.disbursement_on) {
+      ctx.addIssue({ code: "custom", path: ["disbursement_on"], message: "Indicá la fecha del desembolso" });
+    }
+  });
+
+export const loanRenameSchema = z.object({
+  id: uuid("Préstamo inválido"),
+  name: z.string().trim().min(1, "El nombre es obligatorio").max(60),
+  lender: optionalLender,
+  account_id: optionalAccount,
+});
+
+export const loanPaymentSchema = z.object({
+  loan_id: uuid("Préstamo inválido"),
+  account_id: uuid("Elegí una cuenta"),
+  occurred_on: isoDate,
+});
+
 // ─────────────────────────────  bancos  ─────────────────────────────
 
 /** "a@x.cr, B@y.cr" (o una por línea) → ["a@x.cr", "b@y.cr"], sin duplicados. */

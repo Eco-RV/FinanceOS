@@ -59,7 +59,12 @@
 | F2 | Las cuotas caen el mismo día cada mes (ajustado al último día en meses cortos). | — | Decidido |
 | F3 | Las cuotas se consultan en una sección propia de la tarjeta, separadas de los gastos. | — | Decidido |
 | F4 | Al eliminar un financiamiento se borran solo sus cuotas **futuras**; las ya ocurridas y los abonos ya hechos quedan y se quitan a mano. | — | Decidido · Implementado 2.0.0 (fecha ≤ hoy se conserva) |
-| F5 | Financiamiento con interés y préstamo usan la misma **tabla de amortización** (sistema francés: cuota fija). | — | Propuesta |
+| F5 | Financiamiento con interés y préstamo usan la misma **tabla de amortización** (sistema francés: cuota fija; tasa mensual = anual / 12; interés redondeado a céntimos por cuota; la última cuota cierra en 0). | — | Decidido · Implementado 2.1.0 en préstamos |
+| L1 | Un préstamo tiene capital > 0, tasa anual de 0 a 100 % y de 1 a 480 meses, en una sola moneda. Su calendario se deriva de esos términos (no se guarda) y los términos no se editan. | Rechaza | Decidido · Implementado 2.1.0 |
+| L2 | Las cuotas se pagan **en orden**. Pagar crea un gasto desde una cuenta de débito activa en la moneda del préstamo, por el monto de la cuota, con la fecha real del pago. Pagos y desembolso se gestionan solo desde Préstamos. | Rechaza | Decidido · Implementado 2.1.0 |
+| L3 | Una cuota se paga una sola vez; un préstamo pagado no admite más pagos. | Rechaza | Decidido · Implementado 2.1.0 |
+| L4 | Un préstamo está **atrasado** si tiene cuotas con fecha anterior a hoy sin pagar. | Advierte | Decidido · Implementado 2.1.0 |
+| L5 | Solo se deshace el pago de la **última** cuota pagada. | Rechaza | Decidido · Implementado 2.1.0 |
 | F6 | Las partes de una cuota entre miembros suman exactamente la cuota. | Rechaza | Propuesta |
 | F7 | Un reembolso de miembro no toca la tarjeta ni las cuentas. | — | Decidido |
 | F8 | El aviso de cuota es informativo: se envía a cada miembro con su parte y las quincenas (1, 2 o 3) que faltan para la fecha límite. | — | Decidido |

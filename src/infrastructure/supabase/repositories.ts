@@ -15,6 +15,8 @@ import {
   type CardRepository,
   type CategoryKind,
   type CategoryRepository,
+  type Loan,
+  type LoanRepository,
   type ExchangeRateRepository,
   type FinancingRepository,
   type MerchantRuleRepository,
@@ -37,7 +39,7 @@ function exactILike(text: string): string {
   return text.trim().replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
-type CatalogTable = "accounts" | "credit_cards" | "categories" | "banks";
+type CatalogTable = "accounts" | "credit_cards" | "categories" | "banks" | "loans";
 
 async function findEntry<Extra extends string = never>(
   supabase: SupabaseClient,
@@ -245,6 +247,70 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     },
   };
 
+  const LOAN_COLUMNS =
+    "id, name, lender, principal, annual_rate, months, currency, first_payment_on, account_id, archived";
+  const toLoan = (r: Record<string, unknown>): Loan => ({
+    id: r.id as string,
+    name: r.name as string,
+    lender: (r.lender as string | null) ?? null,
+    principal: Number(r.principal),
+    annual_rate: Number(r.annual_rate),
+    months: Number(r.months),
+    currency: isCurrency(String(r.currency)) ? (r.currency as Currency) : "CRC",
+    first_payment_on: r.first_payment_on as string,
+    account_id: (r.account_id as string | null) ?? null,
+    archived: Boolean(r.archived),
+  });
+  const loanPayments = (loanId: string) =>
+    supabase
+      .from("transactions")
+      .select("id, installment_no")
+      .eq("loan_id", loanId)
+      .not("installment_no", "is", null)
+      .eq("archived", false);
+
+  const loans: LoanRepository = {
+    async find(id) {
+      const { data } = await supabase.from("loans").select(LOAN_COLUMNS).eq("id", id).maybeSingle();
+      return data ? toLoan(data) : null;
+    },
+    // G5: las cuotas pagadas son la historia; el desembolso no cuenta.
+    historyCount: (id) =>
+      count(
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("loan_id", id)
+          .not("installment_no", "is", null),
+        HISTORY_ERROR,
+      ),
+    setArchived: (id, archived) =>
+      setArchived(supabase, "loans", id, archived, "No se pudo actualizar el préstamo"),
+    async delete(id) {
+      const { error } = await supabase.from("loans").delete().eq("id", id);
+      check(error, "No se pudo eliminar el préstamo");
+    },
+    async create(fields) {
+      const { data, error } = await supabase.from("loans").insert(fields).select("id").single();
+      check(error, "No se pudo guardar el préstamo");
+      return { id: data!.id as string };
+    },
+    async rename(id, fields) {
+      const { error } = await supabase.from("loans").update(fields).eq("id", id);
+      check(error, "No se pudo actualizar el préstamo");
+    },
+    async paidInstallments(id) {
+      const { data, error } = await loanPayments(id);
+      check(error, "No se pudieron leer los pagos del préstamo");
+      return (data ?? []).map((r) => Number(r.installment_no));
+    },
+    async paymentOf(id, no) {
+      const { data, error } = await loanPayments(id).eq("installment_no", no).maybeSingle();
+      check(error, "No se pudo leer el pago de la cuota");
+      return (data?.id as string | undefined) ?? null;
+    },
+  };
+
   const movements: MovementRepository = {
     async cardIdOf(id) {
       const { data } = await supabase
@@ -253,6 +319,14 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .eq("id", id)
         .maybeSingle();
       return data?.card_id ?? null;
+    },
+    async loanIdOf(id) {
+      const { data } = await supabase
+        .from("transactions")
+        .select("loan_id")
+        .eq("id", id)
+        .maybeSingle();
+      return data?.loan_id ?? null;
     },
     async categoryOf(id) {
       const { data } = await supabase
@@ -279,6 +353,10 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .insert(movement)
         .select("id")
         .single();
+      // L3: el índice único de cuotas de préstamo choca si se paga dos veces.
+      if (error?.code === UNIQUE_VIOLATION && movement.loan_id) {
+        throw new InfrastructureError("Esa cuota ya está pagada");
+      }
       check(error, "No se pudo guardar el movimiento");
       return { id: data!.id as string };
     },
@@ -449,6 +527,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     cards,
     categories,
     banks,
+    loans,
     movements,
     financings,
     pending,

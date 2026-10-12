@@ -53,6 +53,7 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 | `financing/installments.ts` | F1, F2, M7 | SP `create_financing` (en la Fase 3 el SP dejó de calcular; en 2.1.0 se borra) |
 | `financing/amortization.ts` | F5 | — (nuevo, base para 2.0.0) |
 | `coverage/coverage.ts` | Cobertura del débito vs. pagos de contado | `dashboard/page.tsx` |
+| `loans/loan.ts` (2.1.0) | F5, L1–L5 (calendario derivado, pago en orden, atraso) | — (nuevo) |
 | `catalog/lifecycle.ts` (2.1.0) | G4 (nada sobre lo desactivado), G5 (eliminar vs. desactivar) | `delete()` directo en las actions (borraba en cascada) |
 
 En la Fase 3 el trigger de saldos quedó como proyección verificable y el SP
@@ -111,6 +112,19 @@ El SP `create_financing` (1.2.2) quedó sin uso y se borra en 2.1.0
 
 No requiere SQL: la columna `archived` ya existía en las cuatro tablas y todas
 las lecturas ya la filtran.
+
+## Préstamos (2.1.0)
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Reglas | `domain/loans/loan.ts` | `loanSchedule` (F5 sobre `frenchAmortization`), `loanProgress` (avance, atraso L4, intereses), `nextInstallment` (L2/L3), `lastPaidInstallment` (L5). |
+| Puerto | `LoanRepository` (`application/ports.ts`) | `create`, `rename`, `paidInstallments`, `paymentOf` + ciclo de vida (G5: historia = cuotas pagadas). |
+| Casos de uso | `application/loans.ts` | `createLoan` (+ desembolso opcional como ingreso), `renameLoan`, `payInstallment`, `undoLastInstallment`. |
+| Persistencia | `2.1.0/01_loans.sql` + adaptador | Tabla `loans` y `transactions.loan_id`; la base solo impide pagar dos veces la misma cuota y movimientos de préstamo mal formados. |
+
+Decisión: el calendario es un **cálculo**, no datos. Guardarlo duplicaría la
+regla (como pasó con `create_financing`) y podría desfasarse; se recalcula en
+cada lectura, que es barato (≤ 480 filas).
 
 ## Decisiones de infraestructura
 

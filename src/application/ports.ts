@@ -31,6 +31,9 @@ export type NewMovement = {
   channel?: MovementChannel | null;
   counterparty_name?: string | null;
   counterparty_phone?: string | null;
+  /** Pago de cuota (con `installment_no`) o desembolso (sin) de un préstamo. */
+  loan_id?: string | null;
+  installment_no?: number | null;
 };
 
 export type AccountFields = {
@@ -117,6 +120,8 @@ export interface MovementRepository {
   cardIdOf(movementId: string): Promise<string | null>;
   /** Categoría que tiene hoy un movimiento (G4 al editar), o `null`. */
   categoryOf(movementId: string): Promise<string | null>;
+  /** Préstamo al que pertenece un movimiento (pago o desembolso), o `null`. */
+  loanIdOf(movementId: string): Promise<string | null>;
   /**
    * Saldo inicial activo de una cuenta o tarjeta en una moneda (C1: como
    * máximo uno por moneda; una cuenta tiene una sola).
@@ -169,6 +174,30 @@ export interface PendingRepository {
 export interface MerchantRuleRepository {
   /** Guarda (o actualiza) la categoría aprendida para un comercio. */
   learn(merchantKey: string, category: string): Promise<void>;
+}
+
+export type LoanFields = {
+  name: string;
+  lender: string | null;
+  principal: number;
+  annual_rate: number;
+  months: number;
+  currency: Currency;
+  first_payment_on: ISODate;
+  /** Cuenta sugerida para pagar las cuotas. */
+  account_id: string | null;
+};
+
+export type Loan = LoanFields & { id: string; archived: boolean };
+
+export interface LoanRepository extends LifecycleRepository<Loan> {
+  create(fields: LoanFields): Promise<{ id: string }>;
+  /** Renombra o cambia el prestamista o la cuenta sugerida (no los términos). */
+  rename(loanId: string, fields: Pick<LoanFields, "name" | "lender" | "account_id">): Promise<void>;
+  /** Números de cuota pagados (movimientos activos). */
+  paidInstallments(loanId: string): Promise<number[]>;
+  /** Movimiento del pago de una cuota, o `null`. */
+  paymentOf(loanId: string, installmentNo: number): Promise<string | null>;
 }
 
 export interface BalanceRepository {

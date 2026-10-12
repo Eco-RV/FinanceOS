@@ -15,7 +15,10 @@ import type {
   CategoryRepository,
   MovementRepository,
 } from "./ports.ts";
-import { ok, run, type UseCaseResult } from "./result.ts";
+import { fail, ok, run, type UseCaseResult } from "./result.ts";
+
+/** L2: los pagos y el desembolso de un préstamo se gestionan desde Préstamos. */
+const LOAN_MOVEMENT = "Este movimiento es de un préstamo: se gestiona desde Préstamos";
 
 export type MovementDeps = {
   accounts: AccountRepository;
@@ -108,6 +111,8 @@ export function saveMovement(
     const affected = new Set<string>();
     if (input.card_id) affected.add(input.card_id);
 
+    if (input.id && (await deps.movements.loanIdOf(input.id))) return fail(LOAN_MOVEMENT, "L2");
+
     if (input.id) {
       const previousCard = await deps.movements.cardIdOf(input.id);
       if (previousCard) affected.add(previousCard);
@@ -126,6 +131,7 @@ export function deleteMovement(
   id: string,
 ): Promise<UseCaseResult<SaveMovementOutput>> {
   return run(async () => {
+    if (await deps.movements.loanIdOf(id)) return fail(LOAN_MOVEMENT, "L2");
     const cardId = await deps.movements.cardIdOf(id);
     await deps.movements.delete(id);
     return ok({ affectedCardIds: cardId ? [cardId] : [] });
