@@ -26,9 +26,11 @@ export function CardFormDialog({
 }: {
   card?: CreditCard;
   openings?: Partial<Record<string, OpeningBalance>>;
-  banks?: Pick<Bank, "id" | "name">[];
+  /** Puede traer bancos desactivados: solo se ofrece el que la tarjeta ya tiene (G4). */
+  banks?: (Pick<Bank, "id" | "name"> & { archived?: boolean })[];
 }) {
   const editing = Boolean(card);
+  const bankOptions = banks.filter((b) => !b.archived || b.id === card?.bank_id);
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveCard,
     editing ? "Tarjeta actualizada" : "Tarjeta agregada",
@@ -209,7 +211,7 @@ export function CardFormDialog({
             </p>
           </div>
 
-          {banks.length > 0 ? (
+          {bankOptions.length > 0 ? (
             <FormField
               label="Banco para importar correos (opcional)"
               htmlFor="bank_id"
@@ -222,9 +224,9 @@ export function CardFormDialog({
                 defaultValue={card?.bank_id ?? ""}
               >
                 <option value="">Sin banco</option>
-                {banks.map((b) => (
+                {bankOptions.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
+                    {b.archived ? `${b.name} (desactivado)` : b.name}
                   </option>
                 ))}
               </Select>

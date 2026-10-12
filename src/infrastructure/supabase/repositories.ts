@@ -11,7 +11,10 @@ import {
   InfrastructureError,
   type AccountRepository,
   type BalanceRepository,
+  type BankRepository,
   type CardRepository,
+  type CategoryKind,
+  type CategoryRepository,
   type ExchangeRateRepository,
   type FinancingRepository,
   type MerchantRuleRepository,
@@ -20,11 +23,58 @@ import {
   type PendingRepository,
 } from "@/application";
 
-type PgError = { message: string } | null;
+type PgError = { message: string; code?: string } | null;
 
 function check(error: PgError, message: string): void {
   if (error) throw new InfrastructureError(message);
 }
+
+/** Violación de un índice único (p. ej. categoría repetida). */
+const UNIQUE_VIOLATION = "23505";
+
+/** Patrón `ilike` que compara el texto completo, sin comodines del usuario. */
+function exactILike(text: string): string {
+  return text.trim().replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+type CatalogTable = "accounts" | "credit_cards" | "categories" | "banks";
+
+async function findEntry<Extra extends string = never>(
+  supabase: SupabaseClient,
+  table: CatalogTable,
+  id: string,
+  extra: Extra[] = [],
+) {
+  const { data } = await supabase
+    .from(table)
+    .select(["name", "archived", ...extra].join(", "))
+    .eq("id", id)
+    .maybeSingle();
+  return (data as ({ name: string; archived: boolean } & Record<Extra, string | null>) | null) ?? null;
+}
+
+async function setArchived(
+  supabase: SupabaseClient,
+  table: CatalogTable,
+  id: string,
+  archived: boolean,
+  message: string,
+): Promise<void> {
+  const { error } = await supabase.from(table).update({ archived }).eq("id", id);
+  check(error, message);
+}
+
+/** Cuenta filas sin traerlas (`head`). */
+async function count(
+  query: PromiseLike<{ count: number | null; error: PgError }>,
+  message: string,
+): Promise<number> {
+  const { count: n, error } = await query;
+  check(error, message);
+  return n ?? 0;
+}
+
+const HISTORY_ERROR = "No se pudo revisar la historia";
 
 async function currencyOf(
   supabase: SupabaseClient,
@@ -60,6 +110,20 @@ async function saveRow(
 export function supabaseRepositories(supabase: SupabaseClient) {
   const accounts: AccountRepository = {
     currencyOf: (id) => currencyOf(supabase, "accounts", id),
+    find: (id) => findEntry(supabase, "accounts", id),
+    // G5: movimientos propios (origen o destino), sin su saldo inicial;
+    // archivados incluidos, también son historia.
+    historyCount: (id) =>
+      count(
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .neq("type", "opening_balance")
+          .or(`account_id.eq.${id},to_account_id.eq.${id}`),
+        HISTORY_ERROR,
+      ),
+    setArchived: (id, archived) =>
+      setArchived(supabase, "accounts", id, archived, "No se pudo actualizar la cuenta"),
     save: (id, fields) =>
       saveRow(supabase, "accounts", id, fields, "No se pudo guardar la cuenta"),
     async delete(id) {
@@ -70,11 +134,114 @@ export function supabaseRepositories(supabase: SupabaseClient) {
 
   const cards: CardRepository = {
     currencyOf: (id) => currencyOf(supabase, "credit_cards", id),
+    find: (id) => findEntry(supabase, "credit_cards", id, ["bank_id"]),
+    async historyCount(id) {
+      const [movementCount, financingCount] = await Promise.all([
+        count(
+          supabase
+            .from("transactions")
+            .select("id", { count: "exact", head: true })
+            .neq("type", "opening_balance")
+            .eq("card_id", id),
+          HISTORY_ERROR,
+        ),
+        count(
+          supabase
+            .from("financings")
+            .select("id", { count: "exact", head: true })
+            .eq("card_id", id),
+          HISTORY_ERROR,
+        ),
+      ]);
+      return movementCount + financingCount;
+    },
+    setArchived: (id, archived) =>
+      setArchived(supabase, "credit_cards", id, archived, "No se pudo actualizar la tarjeta"),
     save: (id, fields) =>
       saveRow(supabase, "credit_cards", id, fields, "No se pudo guardar la tarjeta"),
     async delete(id) {
       const { error } = await supabase.from("credit_cards").delete().eq("id", id);
       check(error, "No se pudo eliminar la tarjeta");
+    },
+  };
+
+  const categories: CategoryRepository = {
+    find: (id) => findEntry(supabase, "categories", id, ["kind"]) as ReturnType<CategoryRepository["find"]>,
+    async historyCount(id) {
+      const category = await findEntry(supabase, "categories", id, ["kind"]);
+      if (!category) return 0;
+      // `transactions.category` es texto libre: se casa por nombre y tipo.
+      return count(
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("type", category.kind as CategoryKind)
+          .ilike("category", exactILike(category.name)),
+        HISTORY_ERROR,
+      );
+    },
+    async setArchived(id, archived) {
+      const { error } = await supabase.from("categories").update({ archived }).eq("id", id);
+      if (error?.code === UNIQUE_VIOLATION) {
+        throw new InfrastructureError("Ya hay una categoría activa con ese nombre");
+      }
+      check(error, "No se pudo actualizar la categoría");
+    },
+    async save(id, fields) {
+      const { data, error } = id
+        ? await supabase.from("categories").update(fields).eq("id", id).select("id").single()
+        : await supabase.from("categories").insert(fields).select("id").single();
+      if (error?.code === UNIQUE_VIOLATION) throw new InfrastructureError("Ya existe esa categoría");
+      check(error, "No se pudo guardar la categoría");
+      return { id: data!.id as string };
+    },
+    async names(kind) {
+      const { data, error } = await supabase.from("categories").select("name").eq("kind", kind);
+      check(error, "No se pudieron leer las categorías");
+      return (data ?? []).map((c) => c.name as string);
+    },
+    async createMany(rows) {
+      const { error } = await supabase.from("categories").insert(rows);
+      check(error, "No se pudieron cargar las categorías");
+    },
+    async isDeactivated(kind, name) {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("archived")
+        .eq("kind", kind)
+        .ilike("name", exactILike(name));
+      check(error, "No se pudieron leer las categorías");
+      return (data ?? []).length > 0 && (data ?? []).every((c) => c.archived);
+    },
+    async delete(id) {
+      const { error } = await supabase.from("categories").delete().eq("id", id);
+      check(error, "No se pudo eliminar la categoría");
+    },
+  };
+
+  const banks: BankRepository = {
+    find: (id) => findEntry(supabase, "banks", id),
+    // G5: los avisos importados (en cualquier estado) son la historia del banco.
+    historyCount: (id) =>
+      count(
+        supabase
+          .from("pending_transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("bank_id", id),
+        HISTORY_ERROR,
+      ),
+    setArchived: (id, archived) =>
+      setArchived(supabase, "banks", id, archived, "No se pudo actualizar el banco"),
+    async save(id, fields) {
+      const { data, error } = id
+        ? await supabase.from("banks").update(fields).eq("id", id).select("id").single()
+        : await supabase.from("banks").insert(fields).select("id").single();
+      check(error, "No se pudo guardar el banco");
+      return { id: data!.id as string };
+    },
+    async delete(id) {
+      const { error } = await supabase.from("banks").delete().eq("id", id);
+      check(error, "No se pudo eliminar el banco");
     },
   };
 
@@ -86,6 +253,14 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .eq("id", id)
         .maybeSingle();
       return data?.card_id ?? null;
+    },
+    async categoryOf(id) {
+      const { data } = await supabase
+        .from("transactions")
+        .select("category")
+        .eq("id", id)
+        .maybeSingle();
+      return data?.category ?? null;
     },
     async openingOf(target, id, currency) {
       const { data } = await supabase
@@ -272,6 +447,8 @@ export function supabaseRepositories(supabase: SupabaseClient) {
   return {
     accounts,
     cards,
+    categories,
+    banks,
     movements,
     financings,
     pending,

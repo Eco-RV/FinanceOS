@@ -30,14 +30,23 @@ para llevar su control en la app.
   el saldo al corte y el pago de contado. Se edita desde "Editar tarjeta", no
   desde la lista de movimientos.
 
-### 2. Editar o eliminar una tarjeta
-Como usuario quiero editar los datos de una tarjeta o eliminarla si ya no la
-uso.
+### 2. Editar, eliminar o desactivar una tarjeta
+Como usuario quiero editar los datos de una tarjeta, o quitarla de mis
+listados si ya no la uso sin perder su historia.
 
 **Criterios de aceptación**
-- Editar permite cambiar cualquier campo, incluido el saldo a mano.
-- Eliminar es permanente y borra en cascada sus movimientos y sus
-  financiamientos (y las cuotas de esos financiamientos).
+- Editar permite cambiar cualquier campo y el saldo inicial; el saldo actual
+  no se edita a mano.
+- Regla G5: una tarjeta **sin movimientos ni financiamientos** (su saldo
+  inicial no cuenta) se puede **eliminar**. Si tiene historia, el botón es
+  **Desactivar**: se conserva todo, deja de ofrecerse para registrar y de
+  contar en el resumen y en los pagos de contado (la confirmación avisa si
+  todavía tiene saldo).
+- Las tarjetas desactivadas aparecen en "Desactivadas" al final de la página,
+  desde donde se activan de nuevo.
+- Regla G4: no se registra ni se edita sobre una tarjeta desactivada, y no se
+  le asocia un banco desactivado (sí conserva el que ya tenía; se muestra
+  como "(desactivado)").
 
 ### 3. Ver el listado de tarjetas con su estado
 Como usuario quiero ver todas mis tarjetas con un indicador de estado, el
@@ -139,7 +148,6 @@ eliminar uno completo si ya no aplica.
 ## Pendiente / fuera de alcance
 
 - No hay edición de un financiamiento (solo crear y eliminar/cancelar).
-- No hay "archivar" tarjeta desde la interfaz, igual que en cuentas.
 - Préstamos con interés y tabla de amortización — roadmap paso 3, no
   implementado.
 - Los saldos en `USD` de las tarjetas no entran en los cálculos de cobertura
@@ -207,3 +215,6 @@ sistema francés (cuota fija).
 - **2026-10-11 (v2.0.0, en desarrollo)** — Tarjeta bimoneda: saldo y estado de
   cuenta por moneda, límite en su moneda, disponible con tipo de cambio manual,
   saldo inicial en ₡ y $ (`06_multicurrency_cards.sql`).
+- **2026-10-12 (v2.1.0, en desarrollo)** — Eliminar vs. desactivar (G5): una
+  tarjeta con movimientos o financiamientos ya no se borra en cascada; se
+  desactiva y se puede reactivar (G4).

@@ -1,6 +1,7 @@
 /** Casos de uso del libro de movimientos: gasto (incl. SINPE), ingreso, abono y transferencia. */
 
 import {
+  assertCategoryUsable,
   normalizeSinpePhone,
   validateMovement,
   type Currency,
@@ -8,13 +9,19 @@ import {
   type MovementChannel,
   type MovementType,
 } from "../domain/index.ts";
-import type { AccountRepository, CardRepository, MovementRepository } from "./ports.ts";
+import type {
+  AccountRepository,
+  CardRepository,
+  CategoryRepository,
+  MovementRepository,
+} from "./ports.ts";
 import { ok, run, type UseCaseResult } from "./result.ts";
 
 export type MovementDeps = {
   accounts: AccountRepository;
   cards: CardRepository;
   movements: MovementRepository;
+  categories: CategoryRepository;
 };
 
 export type SaveMovementInput = {
@@ -71,6 +78,17 @@ export function saveMovement(
       counterpartyPhone: input.counterparty_phone ?? null,
     });
     const isSinpe = channel === "sinpe";
+
+    // G4: no se usa una categoría desactivada (al editar, se puede conservar).
+    const categoryKind =
+      input.type === "expense" ? "expense" : input.type === "income" ? "income" : null;
+    if (categoryKind && input.category) {
+      const [deactivated, previous] = await Promise.all([
+        deps.categories.isDeactivated(categoryKind, input.category),
+        input.id ? deps.movements.categoryOf(input.id) : null,
+      ]);
+      assertCategoryUsable({ category: input.category, deactivated, previous });
+    }
 
     const values = {
       type: input.type,

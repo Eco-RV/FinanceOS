@@ -2,10 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { accountSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
-import { saveAccount as saveAccountUseCase } from "@/application";
+import {
+  removeFromCatalog,
+  saveAccount as saveAccountUseCase,
+  setCatalogActive,
+} from "@/application";
+import { lifecycleForm, toFormResult } from "@/lib/catalog-actions";
 import { repositories } from "@/infrastructure/container";
 
 function revalidate() {
@@ -38,12 +42,26 @@ export async function saveAccount(
   return { ok: true };
 }
 
-export async function deleteAccount(formData: FormData) {
+/** G5: solo se elimina una cuenta sin movimientos. */
+export async function deleteAccount(formData: FormData): Promise<FormResult> {
   await requireUser();
-  const id = formData.get("id") as string;
-  if (!id) return;
+  const { id } = lifecycleForm(formData);
+  if (!id) return { ok: false, message: "Falta la cuenta" };
 
-  const supabase = await createClient();
-  await supabase.from("accounts").delete().eq("id", id);
-  revalidate();
+  const { accounts } = await repositories();
+  const result = await removeFromCatalog(accounts, "account", id);
+  if (result.ok) revalidate();
+  return toFormResult(result);
+}
+
+/** Desactiva o reactiva una cuenta; conserva sus movimientos y su saldo. */
+export async function setAccountActive(formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const { id, active } = lifecycleForm(formData);
+  if (!id) return { ok: false, message: "Falta la cuenta" };
+
+  const { accounts } = await repositories();
+  const result = await setCatalogActive(accounts, "account", id, active);
+  if (result.ok) revalidate();
+  return toFormResult(result);
 }

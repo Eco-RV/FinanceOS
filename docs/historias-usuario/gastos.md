@@ -34,9 +34,14 @@ Ajustes, para poder clasificar mis gastos a mi manera.
   se le ofrece la lista sugerida (`EXPENSE_CATEGORIES` en `schema.ts`:
   Comida, Transporte, Servicios, Vivienda, Salud, Entretenimiento, Compras,
   Educación, Suscripciones, Otros).
-- La categoría viaja como texto libre en el movimiento: renombrar o borrar
-  una categoría en Ajustes **no** actualiza los movimientos históricos que ya
-  la usaban.
+- La categoría viaja como texto libre en el movimiento: renombrar una
+  categoría en Ajustes **no** actualiza los movimientos históricos que ya la
+  usaban.
+- Regla G5: una categoría que ya usa algún gasto no se elimina, se
+  **desactiva** (deja de ofrecerse). Regla G4: un gasto nuevo no puede usar
+  una categoría desactivada; al editar un gasto viejo se puede conservar la
+  que ya tenía. Las desactivadas se reactivan desde Ajustes → Categorías.
+  "Cargar categorías sugeridas" no revive las desactivadas.
 
 ### 3. Editar o eliminar un gasto
 Como usuario quiero poder corregir o borrar un gasto que registré mal, para
@@ -100,3 +105,6 @@ hice y a qué teléfono, para saber después a quién le pagué y en qué.
   `src/app/(app)/procesos/_transactions/`.
 - **2026-10-11 (v2.0.0, en desarrollo)** — SINPE como gasto desde cuenta con
   destinatario y teléfono (`05_transfers_and_sinpe.sql`).
+- **2026-10-12 (v2.1.0, en desarrollo)** — Categorías: eliminar solo si
+  ningún gasto la usa, si no se desactiva (G5); no se registra con una
+  desactivada (G4).

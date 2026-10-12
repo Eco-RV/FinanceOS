@@ -29,8 +29,9 @@ en Ajustes, para clasificar de dónde viene el dinero.
 - Si no hay categorías propias de tipo `income`, se ofrece la lista sugerida
   (`INCOME_CATEGORIES`: Salario, Freelance, Reembolso, Intereses, Regalo,
   Otros).
-- Igual que en gastos, la categoría es texto libre: renombrar/borrar una
-  categoría en Ajustes no toca los ingresos ya registrados.
+- Igual que en gastos, la categoría es texto libre: renombrar una categoría
+  en Ajustes no toca los ingresos ya registrados. Una categoría con ingresos
+  se desactiva en vez de eliminarse (G5) y no se usa en ingresos nuevos (G4).
 
 ### 3. Editar o eliminar un ingreso
 Como usuario quiero corregir o borrar un ingreso mal registrado, para que el
@@ -61,3 +62,5 @@ fecha más reciente primero.
 - **2026-10-08 (v1.2.3)** — Primera versión de este documento, redactada a
   partir de `src/app/(app)/procesos/ingresos/page.tsx` y
   `src/app/(app)/procesos/_transactions/`.
+- **2026-10-12 (v2.1.0, en desarrollo)** — Categorías desactivables (G4/G5),
+  igual que en gastos.

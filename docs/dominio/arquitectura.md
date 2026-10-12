@@ -38,7 +38,7 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 
 0. **Lenguaje y reglas** (esta carpeta). ✅
 1. `src/domain/` puro con tests. ✅ (ver detalle abajo)
-2. Casos de uso + puertos; Server Actions delgadas; Supabase como adaptador. ✅ para los flujos con reglas (ver detalle abajo)
+2. Casos de uso + puertos; Server Actions delgadas; Supabase como adaptador. ✅ (cerrada en 2.1.0 con el catálogo: cuentas, tarjetas, categorías y bancos)
 3. Saldos: el dominio decide; el saldo guardado (o el trigger) queda como
    proyección para rendimiento, verificable contra los movimientos. ✅ (ver detalle abajo)
 
@@ -53,6 +53,7 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 | `financing/installments.ts` | F1, F2, M7 | SP `create_financing` (el SP sigue insertando; ahora la regla también está en TS) |
 | `financing/amortization.ts` | F5 | — (nuevo, base para 2.0.0) |
 | `coverage/coverage.ts` | Cobertura del débito vs. pagos de contado | `dashboard/page.tsx` |
+| `catalog/lifecycle.ts` (2.1.0) | G4 (nada sobre lo desactivado), G5 (eliminar vs. desactivar) | `delete()` directo en las actions (borraba en cascada) |
 
 En la Fase 3 el trigger de saldos quedó como proyección verificable y el SP
 de cuotas dejó de calcular (ver abajo).
@@ -74,10 +75,11 @@ Decisiones de esta fase:
   Supabase para mostrar datos; los cálculos sí pasan por el dominio
   (`cardStatement`, `computeCoverage`). Solo las **escrituras** pasan por casos
   de uso, que es donde viven las reglas.
-- **CRUD sin reglas propias** (cuentas, tarjetas, categorías, bancos) y la
-  sincronización de correo todavía hablan con Supabase desde su action; se
-  migran cuando ganen reglas (p. ej. G5 desactivar vs. eliminar, C3 una
-  tarjeta de débito por cuenta).
+- **Catálogo (2.1.0)**: cuentas, tarjetas, categorías y bancos ya escriben
+  solo por casos de uso (`application/catalog.ts` + `products.ts`), con G4 y
+  G5. Solo la sincronización de correo (`src/lib/mail/sync.ts`) sigue
+  hablando con Supabase directo: corre con service role desde el cron y no
+  aplica reglas de negocio (solo deja pendientes).
 - `G4` empieza a aplicarse: una cuenta o tarjeta archivada ya no se ofrece
   como origen al registrar (el adaptador no la encuentra).
 
@@ -96,6 +98,18 @@ Probado contra Postgres (PGlite) con datos de 1.3.0: saldos idénticos antes y
 después, `balance_drift` vacío e idempotente.
 
 El SP `create_financing` (1.2.2) queda sin uso; se puede borrar en 2.1.
+
+## Fase 2 (cierre, 2.1.0) — catálogo: eliminar vs. desactivar
+
+| Pieza | Dónde | Qué hace |
+|---|---|---|
+| Reglas | `domain/catalog/lifecycle.ts` | `assertCanDelete` (G5), `assertActive` y `assertCategoryUsable` (G4). |
+| Puertos | `LifecycleRepository` en `application/ports.ts` | `find`, `historyCount`, `setArchived`, `delete`; lo extienden `AccountRepository`, `CardRepository`, `CategoryRepository` y `BankRepository`. |
+| Casos de uso | `application/catalog.ts` | `removeFromCatalog`, `setCatalogActive`, `saveCategory`, `seedCategories`, `saveBank`. `saveAccount`/`saveCard` rechazan editar lo desactivado; `saveCard` no asocia un banco desactivado; `saveMovement` y `approvePending` no usan una categoría desactivada. |
+| UI | `components/lifecycle-button.tsx`, `components/catalog-actions.tsx`, `lib/catalog-history.ts` | Cada fila muestra **Eliminar** o **Desactivar** según su historia (el caso de uso vuelve a revisar); lo desactivado se lista aparte para reactivarlo. |
+
+No requiere SQL: la columna `archived` ya existía en las cuatro tablas y todas
+las lecturas ya la filtran.
 
 ## Decisiones de infraestructura
 

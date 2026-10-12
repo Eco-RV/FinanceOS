@@ -86,8 +86,7 @@ export default async function CardDetailPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("banks")
-      .select("id, name")
-      .eq("archived", false)
+      .select("id, name, archived")
       .order("name", { ascending: true }),
     supabase
       .from("exchange_rates")
@@ -156,7 +155,7 @@ export default async function CardDetailPage({
                 .filter((t) => t.type === "opening_balance")
                 .map((t) => ({ ...t, account_id: null })),
             ).get(card.id)}
-            banks={(bankData ?? []) as Pick<Bank, "id" | "name">[]}
+            banks={(bankData ?? []) as Pick<Bank, "id" | "name" | "archived">[]}
           />
         </div>
       </div>

@@ -1,8 +1,9 @@
 /** Casos de uso de la bandeja "Por confirmar" (importación desde correo). */
 
-import { isCurrency, merchantKey } from "../domain/index.ts";
+import { assertCategoryUsable, isCurrency, merchantKey } from "../domain/index.ts";
 import type {
   CardRepository,
+  CategoryRepository,
   MerchantRuleRepository,
   MovementRepository,
   PendingRepository,
@@ -14,6 +15,7 @@ export type PendingDeps = {
   movements: MovementRepository;
   pending: PendingRepository;
   merchantRules: MerchantRuleRepository;
+  categories: CategoryRepository;
 };
 
 export type ApprovePendingInput = {
@@ -42,6 +44,10 @@ export function approvePending(
 
     const category = input.category.trim();
     if (!category) return fail("La categoría es obligatoria", "M1");
+    assertCategoryUsable({
+      category,
+      deactivated: await deps.categories.isDeactivated("expense", category),
+    });
 
     const { id: movementId } = await deps.movements.create({
       type: "expense",
