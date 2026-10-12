@@ -70,7 +70,6 @@ export default async function CardDetailPage({
     supabase
       .from("accounts")
       .select("*")
-      .eq("archived", false)
       .order("created_at", { ascending: true }),
     supabase
       .from("categories")
@@ -86,8 +85,7 @@ export default async function CardDetailPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("banks")
-      .select("id, name")
-      .eq("archived", false)
+      .select("id, name, archived")
       .order("name", { ascending: true }),
     supabase
       .from("exchange_rates")
@@ -102,7 +100,10 @@ export default async function CardDetailPage({
 
   const card = cardData as CreditCard;
   const transactions = (txData ?? []) as Transaction[];
-  const accounts = (accData ?? []) as Account[];
+  // Incluye las desactivadas para nombrar el origen de abonos viejos; el
+  // formulario de abono solo recibe las activas (G4).
+  const allAccounts = (accData ?? []) as Account[];
+  const accounts = allAccounts.filter((a) => !a.archived);
   const categories = categoryNames(catData ?? [], EXPENSE_CATEGORIES);
   const financings = (financingData ?? []) as Financing[];
   const today = crToday();
@@ -156,7 +157,7 @@ export default async function CardDetailPage({
                 .filter((t) => t.type === "opening_balance")
                 .map((t) => ({ ...t, account_id: null })),
             ).get(card.id)}
-            banks={(bankData ?? []) as Pick<Bank, "id" | "name">[]}
+            banks={(bankData ?? []) as Pick<Bank, "id" | "name" | "archived">[]}
           />
         </div>
       </div>
@@ -292,7 +293,7 @@ export default async function CardDetailPage({
         ) : null}
         <TransactionList
           transactions={transactions}
-          accounts={accounts}
+          accounts={allAccounts}
           cards={[card]}
           categories={categories}
           context="card"

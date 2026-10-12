@@ -23,7 +23,6 @@ export default async function IngresosPage() {
       supabase
         .from("accounts")
         .select("*")
-        .eq("archived", false)
         .order("created_at", { ascending: true }),
       supabase
         .from("categories")
@@ -34,7 +33,10 @@ export default async function IngresosPage() {
     ]);
 
   const transactions = (txData ?? []) as Transaction[];
-  const accounts = (accData ?? []) as Account[];
+  // Incluye las desactivadas para nombrarlas en el historial (G4: el
+  // formulario solo recibe las activas).
+  const allAccounts = (accData ?? []) as Account[];
+  const accounts = allAccounts.filter((a) => !a.archived);
   const categories = categoryNames(catData ?? [], INCOME_CATEGORIES);
 
   return (
@@ -56,10 +58,10 @@ export default async function IngresosPage() {
         ) : null}
       </div>
 
-      {accounts.length > 0 ? (
+      {allAccounts.length > 0 ? (
         <TransactionList
           transactions={transactions}
-          accounts={accounts}
+          accounts={allAccounts}
           cards={[]}
           categories={categories}
           emptyLabel="Aún no registrás ingresos."

@@ -11,7 +11,12 @@ import {
   InfrastructureError,
   type AccountRepository,
   type BalanceRepository,
+  type BankRepository,
   type CardRepository,
+  type CategoryKind,
+  type CategoryRepository,
+  type Loan,
+  type LoanRepository,
   type ExchangeRateRepository,
   type FinancingRepository,
   type MerchantRuleRepository,
@@ -20,11 +25,58 @@ import {
   type PendingRepository,
 } from "@/application";
 
-type PgError = { message: string } | null;
+type PgError = { message: string; code?: string } | null;
 
 function check(error: PgError, message: string): void {
   if (error) throw new InfrastructureError(message);
 }
+
+/** Violación de un índice único (p. ej. categoría repetida). */
+const UNIQUE_VIOLATION = "23505";
+
+/** Patrón `ilike` que compara el texto completo, sin comodines del usuario. */
+function exactILike(text: string): string {
+  return text.trim().replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+type CatalogTable = "accounts" | "credit_cards" | "categories" | "banks" | "loans";
+
+async function findEntry<Extra extends string = never>(
+  supabase: SupabaseClient,
+  table: CatalogTable,
+  id: string,
+  extra: Extra[] = [],
+) {
+  const { data } = await supabase
+    .from(table)
+    .select(["name", "archived", ...extra].join(", "))
+    .eq("id", id)
+    .maybeSingle();
+  return (data as ({ name: string; archived: boolean } & Record<Extra, string | null>) | null) ?? null;
+}
+
+async function setArchived(
+  supabase: SupabaseClient,
+  table: CatalogTable,
+  id: string,
+  archived: boolean,
+  message: string,
+): Promise<void> {
+  const { error } = await supabase.from(table).update({ archived }).eq("id", id);
+  check(error, message);
+}
+
+/** Cuenta filas sin traerlas (`head`). */
+async function count(
+  query: PromiseLike<{ count: number | null; error: PgError }>,
+  message: string,
+): Promise<number> {
+  const { count: n, error } = await query;
+  check(error, message);
+  return n ?? 0;
+}
+
+const HISTORY_ERROR = "No se pudo revisar la historia";
 
 async function currencyOf(
   supabase: SupabaseClient,
@@ -60,6 +112,20 @@ async function saveRow(
 export function supabaseRepositories(supabase: SupabaseClient) {
   const accounts: AccountRepository = {
     currencyOf: (id) => currencyOf(supabase, "accounts", id),
+    find: (id) => findEntry(supabase, "accounts", id),
+    // G5: movimientos propios (origen o destino), sin su saldo inicial;
+    // archivados incluidos, también son historia.
+    historyCount: (id) =>
+      count(
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .neq("type", "opening_balance")
+          .or(`account_id.eq.${id},to_account_id.eq.${id}`),
+        HISTORY_ERROR,
+      ),
+    setArchived: (id, archived) =>
+      setArchived(supabase, "accounts", id, archived, "No se pudo actualizar la cuenta"),
     save: (id, fields) =>
       saveRow(supabase, "accounts", id, fields, "No se pudo guardar la cuenta"),
     async delete(id) {
@@ -70,11 +136,178 @@ export function supabaseRepositories(supabase: SupabaseClient) {
 
   const cards: CardRepository = {
     currencyOf: (id) => currencyOf(supabase, "credit_cards", id),
+    find: (id) => findEntry(supabase, "credit_cards", id, ["bank_id"]),
+    async historyCount(id) {
+      const [movementCount, financingCount] = await Promise.all([
+        count(
+          supabase
+            .from("transactions")
+            .select("id", { count: "exact", head: true })
+            .neq("type", "opening_balance")
+            .eq("card_id", id),
+          HISTORY_ERROR,
+        ),
+        count(
+          supabase
+            .from("financings")
+            .select("id", { count: "exact", head: true })
+            .eq("card_id", id),
+          HISTORY_ERROR,
+        ),
+      ]);
+      return movementCount + financingCount;
+    },
+    setArchived: (id, archived) =>
+      setArchived(supabase, "credit_cards", id, archived, "No se pudo actualizar la tarjeta"),
     save: (id, fields) =>
       saveRow(supabase, "credit_cards", id, fields, "No se pudo guardar la tarjeta"),
     async delete(id) {
       const { error } = await supabase.from("credit_cards").delete().eq("id", id);
       check(error, "No se pudo eliminar la tarjeta");
+    },
+  };
+
+  const categories: CategoryRepository = {
+    find: (id) => findEntry(supabase, "categories", id, ["kind"]) as ReturnType<CategoryRepository["find"]>,
+    async historyCount(id) {
+      const category = await findEntry(supabase, "categories", id, ["kind"]);
+      if (!category) return 0;
+      // `transactions.category` es texto libre: se casa por nombre y tipo.
+      return count(
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("type", category.kind as CategoryKind)
+          .ilike("category", exactILike(category.name)),
+        HISTORY_ERROR,
+      );
+    },
+    async setArchived(id, archived) {
+      const { error } = await supabase.from("categories").update({ archived }).eq("id", id);
+      if (error?.code === UNIQUE_VIOLATION) {
+        throw new InfrastructureError("Ya hay una categoría activa con ese nombre");
+      }
+      check(error, "No se pudo actualizar la categoría");
+    },
+    async save(id, fields) {
+      const { data, error } = id
+        ? await supabase.from("categories").update(fields).eq("id", id).select("id").single()
+        : await supabase.from("categories").insert(fields).select("id").single();
+      if (error?.code === UNIQUE_VIOLATION) throw new InfrastructureError("Ya existe esa categoría");
+      check(error, "No se pudo guardar la categoría");
+      return { id: data!.id as string };
+    },
+    async names(kind) {
+      const { data, error } = await supabase.from("categories").select("name").eq("kind", kind);
+      check(error, "No se pudieron leer las categorías");
+      return (data ?? []).map((c) => c.name as string);
+    },
+    async createMany(rows) {
+      const { error } = await supabase.from("categories").insert(rows);
+      check(error, "No se pudieron cargar las categorías");
+    },
+    async isDeactivated(kind, name) {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("archived")
+        .eq("kind", kind)
+        .ilike("name", exactILike(name));
+      check(error, "No se pudieron leer las categorías");
+      return (data ?? []).length > 0 && (data ?? []).every((c) => c.archived);
+    },
+    async delete(id) {
+      const { error } = await supabase.from("categories").delete().eq("id", id);
+      check(error, "No se pudo eliminar la categoría");
+    },
+  };
+
+  const banks: BankRepository = {
+    find: (id) => findEntry(supabase, "banks", id),
+    // G5: los avisos importados (en cualquier estado) son la historia del banco.
+    historyCount: (id) =>
+      count(
+        supabase
+          .from("pending_transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("bank_id", id),
+        HISTORY_ERROR,
+      ),
+    setArchived: (id, archived) =>
+      setArchived(supabase, "banks", id, archived, "No se pudo actualizar el banco"),
+    async save(id, fields) {
+      const { data, error } = id
+        ? await supabase.from("banks").update(fields).eq("id", id).select("id").single()
+        : await supabase.from("banks").insert(fields).select("id").single();
+      check(error, "No se pudo guardar el banco");
+      return { id: data!.id as string };
+    },
+    async delete(id) {
+      const { error } = await supabase.from("banks").delete().eq("id", id);
+      check(error, "No se pudo eliminar el banco");
+    },
+  };
+
+  const LOAN_COLUMNS =
+    "id, name, lender, principal, annual_rate, months, currency, first_payment_on, account_id, archived";
+  const toLoan = (r: Record<string, unknown>): Loan => ({
+    id: r.id as string,
+    name: r.name as string,
+    lender: (r.lender as string | null) ?? null,
+    principal: Number(r.principal),
+    annual_rate: Number(r.annual_rate),
+    months: Number(r.months),
+    currency: isCurrency(String(r.currency)) ? (r.currency as Currency) : "CRC",
+    first_payment_on: r.first_payment_on as string,
+    account_id: (r.account_id as string | null) ?? null,
+    archived: Boolean(r.archived),
+  });
+  const loanPayments = (loanId: string) =>
+    supabase
+      .from("transactions")
+      .select("id, installment_no")
+      .eq("loan_id", loanId)
+      .not("installment_no", "is", null)
+      .eq("archived", false);
+
+  const loans: LoanRepository = {
+    async find(id) {
+      const { data } = await supabase.from("loans").select(LOAN_COLUMNS).eq("id", id).maybeSingle();
+      return data ? toLoan(data) : null;
+    },
+    // G5: las cuotas pagadas son la historia; el desembolso no cuenta.
+    historyCount: (id) =>
+      count(
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("loan_id", id)
+          .not("installment_no", "is", null),
+        HISTORY_ERROR,
+      ),
+    setArchived: (id, archived) =>
+      setArchived(supabase, "loans", id, archived, "No se pudo actualizar el préstamo"),
+    async delete(id) {
+      const { error } = await supabase.from("loans").delete().eq("id", id);
+      check(error, "No se pudo eliminar el préstamo");
+    },
+    async create(fields) {
+      const { data, error } = await supabase.from("loans").insert(fields).select("id").single();
+      check(error, "No se pudo guardar el préstamo");
+      return { id: data!.id as string };
+    },
+    async rename(id, fields) {
+      const { error } = await supabase.from("loans").update(fields).eq("id", id);
+      check(error, "No se pudo actualizar el préstamo");
+    },
+    async paidInstallments(id) {
+      const { data, error } = await loanPayments(id);
+      check(error, "No se pudieron leer los pagos del préstamo");
+      return (data ?? []).map((r) => Number(r.installment_no));
+    },
+    async paymentOf(id, no) {
+      const { data, error } = await loanPayments(id).eq("installment_no", no).maybeSingle();
+      check(error, "No se pudo leer el pago de la cuota");
+      return (data?.id as string | undefined) ?? null;
     },
   };
 
@@ -86,6 +319,22 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .eq("id", id)
         .maybeSingle();
       return data?.card_id ?? null;
+    },
+    async loanIdOf(id) {
+      const { data } = await supabase
+        .from("transactions")
+        .select("loan_id")
+        .eq("id", id)
+        .maybeSingle();
+      return data?.loan_id ?? null;
+    },
+    async categoryOf(id) {
+      const { data } = await supabase
+        .from("transactions")
+        .select("category")
+        .eq("id", id)
+        .maybeSingle();
+      return data?.category ?? null;
     },
     async openingOf(target, id, currency) {
       const { data } = await supabase
@@ -104,6 +353,10 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .insert(movement)
         .select("id")
         .single();
+      // L3: el índice único de cuotas de préstamo choca si se paga dos veces.
+      if (error?.code === UNIQUE_VIOLATION && movement.loan_id) {
+        throw new InfrastructureError("Esa cuota ya está pagada");
+      }
       check(error, "No se pudo guardar el movimiento");
       return { id: data!.id as string };
     },
@@ -272,6 +525,9 @@ export function supabaseRepositories(supabase: SupabaseClient) {
   return {
     accounts,
     cards,
+    categories,
+    banks,
+    loans,
     movements,
     financings,
     pending,

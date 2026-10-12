@@ -13,9 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
-import { DeleteButton } from "@/components/delete-button";
+import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
+import { idsWithHistory } from "@/lib/catalog-history";
+import { repositories } from "@/infrastructure/container";
 import { BankFormDialog } from "./bank-form";
-import { deleteBank } from "./actions";
+import { deleteBank, setBankActive } from "./actions";
 import { disconnectMail } from "./mail-actions";
 
 const GMAIL_MESSAGES: Record<string, string> = {
@@ -36,15 +38,17 @@ export default async function BancosPage({
 
   const supabase = await createClient();
   const [{ data }, { data: connData }] = await Promise.all([
-    supabase
-      .from("banks")
-      .select("*")
-      .eq("archived", false)
-      .order("name", { ascending: true }),
+    supabase.from("banks").select("*").order("name", { ascending: true }),
     supabase.from("mail_connections").select("*").maybeSingle(),
   ]);
 
-  const banks = (data ?? []) as Bank[];
+  const all = (data ?? []) as Bank[];
+  const withHistory = await idsWithHistory(
+    (await repositories()).banks,
+    all.map((b) => b.id),
+  );
+  const banks = all.filter((b) => !b.archived);
+  const inactive = all.filter((b) => b.archived);
   const conn = connData as MailConnection | null;
   const { gmail } = await searchParams;
 
@@ -138,10 +142,13 @@ export default async function BancosPage({
                   <TableCell className="w-24">
                     <div className="flex justify-end gap-1">
                       <BankFormDialog bank={b} />
-                      <DeleteButton
+                      <RemoveOrDeactivate
                         id={b.id}
-                        action={deleteBank}
-                        confirmLabel={`¿Eliminar el banco "${b.name}"?`}
+                        label={`el banco "${b.name}"`}
+                        hasHistory={withHistory.has(b.id)}
+                        onDelete={deleteBank}
+                        onSetActive={setBankActive}
+                        deactivateNote="No se leerán más sus correos."
                       />
                     </div>
                   </TableCell>
@@ -151,6 +158,19 @@ export default async function BancosPage({
           </Table>
         </div>
       )}
+
+      <InactiveList
+        title="Desactivados"
+        items={inactive.map((b) => ({
+          id: b.id,
+          name: b.name,
+          detail: b.sender_emails.join(", "),
+          hasHistory: withHistory.has(b.id),
+        }))}
+        noun="el banco"
+        onDelete={deleteBank}
+        onSetActive={setBankActive}
+      />
     </div>
   );
 }

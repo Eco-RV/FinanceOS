@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CheckCircle2,
   CreditCard,
+  HandCoins,
   Layers,
   Receipt,
   TriangleAlert,
@@ -18,15 +19,20 @@ import {
   isCurrency,
   crToday,
   daysUntil,
+  loanDue,
+  loanProgress,
   nextCutoffDate,
   toISODate,
   type CardStatement,
+  type CoverageLoan,
   type CoveragePayment,
 } from "@/domain";
+import { termsOf } from "@/application";
 import type {
   Account,
   CreditCard as CreditCardType,
   Financing,
+  Loan,
   Transaction,
 } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,7 +63,7 @@ const LEVEL_BAR: Record<Level, string> = {
   ok: "bg-muted-foreground/30",
 };
 
-type Payment = CoveragePayment<CreditCardType>;
+type Payment = CoveragePayment<CreditCardType, Loan>;
 
 type CardTxn = Pick<
   Transaction,
@@ -78,6 +84,8 @@ export default async function DashboardPage() {
     { data: cardTxData },
     { data: monthExpenseData },
     { data: financingData },
+    { data: loanData },
+    { data: loanPayData },
   ] = await Promise.all([
     supabase.from("accounts").select("*").eq("archived", false),
     supabase.from("credit_cards").select("*").eq("archived", false),
@@ -94,12 +102,43 @@ export default async function DashboardPage() {
       .gte("occurred_on", monthStartISO)
       .lte("occurred_on", todayISO),
     supabase.from("financings").select("*").eq("archived", false),
+    supabase.from("loans").select("*").eq("archived", false),
+    supabase
+      .from("transactions")
+      .select("loan_id, installment_no")
+      .not("loan_id", "is", null)
+      .not("installment_no", "is", null)
+      .eq("archived", false),
   ]);
 
   const accounts = (accountsData ?? []) as Account[];
   const cards = (cardsData ?? []) as CreditCardType[];
   const cardTxns = (cardTxData ?? []) as CardTxn[];
   const financings = (financingData ?? []) as Financing[];
+  const loans = (loanData ?? []) as Loan[];
+
+  // L6: cuota a cobro de cada préstamo (vencidas, o la próxima dentro de 31 días).
+  const paidByLoan = new Map<string, number[]>();
+  for (const p of (loanPayData ?? []) as { loan_id: string; installment_no: number }[]) {
+    paidByLoan.set(p.loan_id, [...(paidByLoan.get(p.loan_id) ?? []), Number(p.installment_no)]);
+  }
+  const loanEntries: CoverageLoan<Loan>[] = loans.map((loan) => {
+    const currency = loan.currency === "USD" ? "USD" : "CRC";
+    const progress = loanProgress(
+      termsOf({ ...loan, currency }),
+      paidByLoan.get(loan.id) ?? [],
+      todayISO,
+    );
+    return {
+      loan,
+      currency,
+      remainingPrincipal: progress.remainingPrincipal,
+      due: loanDue(progress, todayISO),
+    };
+  });
+  const loanPrincipalCrc = loanEntries
+    .filter((l) => l.currency === "CRC")
+    .reduce((s, l) => s + l.remainingPrincipal, 0);
 
   const monthlyExpenseTotal = (monthExpenseData ?? []).reduce(
     (s, t) => s + Number(t.amount),
@@ -158,7 +197,7 @@ export default async function DashboardPage() {
     coversSoon,
     coverageRatio,
     firstUncovered,
-  } = computeCoverage(accounts, cardEntries);
+  } = computeCoverage(accounts, cardEntries, loanEntries, today);
 
   const cutoffs = cards
     .map((card) => {
@@ -170,7 +209,9 @@ export default async function DashboardPage() {
     })
     .sort((a, b) => a.days - b.days);
 
-  const upcoming = payments.filter((p) => p.st.status !== "atrasada");
+  const upcoming = payments.filter((p) => !p.overdue);
+  const overdueCards = overdue.filter((p) => p.kind === "card").length;
+  const overdueLoans = overdue.filter((p) => p.kind === "loan").length;
 
   return (
     <div className="flex flex-col gap-8">
@@ -181,9 +222,23 @@ export default async function DashboardPage() {
           <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
           <div className="flex flex-col gap-1">
             <p className="text-sm font-medium text-destructive">
-              {overdue.length === 1
-                ? "1 tarjeta atrasada"
-                : `${overdue.length} tarjetas atrasadas`}
+              {[
+                overdueCards > 0
+                  ? `${overdueCards} tarjeta${overdueCards === 1 ? "" : "s"}`
+                  : null,
+                overdueLoans > 0
+                  ? `${overdueLoans} préstamo${overdueLoans === 1 ? "" : "s"}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" y ")}{" "}
+              {overdueLoans === 0
+                ? overdueCards === 1
+                  ? "atrasada"
+                  : "atrasadas"
+                : overdue.length === 1
+                  ? "atrasado"
+                  : "atrasados"}
               {overdueTotal > 0
                 ? ` · ${formatCurrency(overdueTotal)} sin pagar`
                 : ""}{" "}
@@ -193,7 +248,7 @@ export default async function DashboardPage() {
               {overdue
                 .map(
                   (p) =>
-                    `${p.card.name} (venció ${relativeDayLabel(p.st.daysToDue)})`,
+                    `${paymentName(p)} (venció ${relativeDayLabel(p.daysToDue)})`,
                 )
                 .join(" · ")}
             </p>
@@ -209,7 +264,7 @@ export default async function DashboardPage() {
             icon={<Wallet className="size-4" />}
           />
           <Stat
-            title="A pagar de contado"
+            title={loanEntries.some((l) => l.due) ? "A pagar (tarjetas y préstamos)" : "A pagar de contado"}
             value={formatCurrency(totalCrcDue)}
             negative={totalCrcDue > availableDebit && totalCrcDue > 0}
             icon={<CalendarClock className="size-4" />}
@@ -233,9 +288,16 @@ export default async function DashboardPage() {
               icon={<Layers className="size-4" />}
             />
           ) : null}
+          {loans.length > 0 ? (
+            <Stat
+              title="Capital pendiente en préstamos"
+              value={formatCurrency(loanPrincipalCrc)}
+              icon={<HandCoins className="size-4" />}
+            />
+          ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
-          Patrimonio neto (todas las cuentas − deuda): {formatCurrency(netWorth)}
+          Patrimonio neto (cuentas − tarjetas − préstamos): {formatCurrency(netWorth)}
           {financings.length > 0
             ? ` · Pendiente en financiamientos: ${formatCurrency(financingPending)}`
             : ""}
@@ -257,7 +319,7 @@ export default async function DashboardPage() {
           <div className="flex flex-1 flex-col gap-2">
             <p className="text-sm font-medium">
               {coversSoon
-                ? "Tu débito cubre los pagos de contado de los próximos 10 días."
+                ? "Tu débito cubre los pagos de los próximos 10 días."
                 : `Con tu débito te faltan ${formatCurrency(
                     dueSoon - availableDebit,
                   )} para los pagos de los próximos 10 días.`}
@@ -275,18 +337,18 @@ export default async function DashboardPage() {
       ) : null}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Pagos de contado</h2>
-        {cards.length === 0 ? (
+        <h2 className="text-lg font-medium">Pagos próximos</h2>
+        {cards.length === 0 && loans.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No hay tarjetas registradas.{" "}
+            No hay tarjetas ni préstamos registrados.{" "}
             <Link href="/procesos/tarjetas" className="underline">
-              Agrega una
+              Agrega una tarjeta
             </Link>
             .
           </p>
         ) : payments.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Ninguna tarjeta tiene saldo de contado pendiente. Estás al día.
+            Sin pagos de contado ni cuotas pendientes. Estás al día.
           </p>
         ) : (
           <div className="flex flex-col gap-4">
@@ -331,6 +393,21 @@ export default async function DashboardPage() {
   );
 }
 
+function paymentName(p: Payment): string {
+  return p.kind === "card" ? p.card.name : p.loan.name;
+}
+
+function paymentKey(p: Payment): string {
+  return p.kind === "card" ? `card:${p.card.id}:${p.currency}` : `loan:${p.loan.id}`;
+}
+
+function paymentSubtitle(p: Payment): string | null {
+  if (p.kind === "card") return cardSubtitle(p.card);
+  const n = p.due.installments;
+  const cuotas = n.length === 1 ? `Cuota ${n[0]}/${p.loan.months}` : `Cuotas ${n[0]}–${n.at(-1)}/${p.loan.months}`;
+  return ["Préstamo", cuotas, p.loan.lender].filter(Boolean).join(" · ");
+}
+
 function cardSubtitle(card: CreditCardType) {
   return (
     [card.institution, card.last_four && `•••• ${card.last_four}`]
@@ -355,7 +432,7 @@ function PaymentGroup({
       </p>
       <div className="overflow-hidden rounded-lg border">
         {payments.map((p, i) => (
-          <div key={p.card.id}>
+          <div key={paymentKey(p)}>
             {dividerAt === i && i > 0 ? (
               <p className="border-y bg-muted/40 px-4 py-1.5 text-xs text-muted-foreground">
                 Desde aquí los pagos superan tu disponible en débito
@@ -370,9 +447,11 @@ function PaymentGroup({
 }
 
 function PaymentRow({ p }: { p: Payment }) {
-  const { card, st, amount } = p;
-  const days = st.daysToDue;
-  const overdue = st.status === "atrasada";
+  const { amount, currency } = p;
+  const days = p.daysToDue;
+  const overdue = p.overdue;
+  const href =
+    p.kind === "card" ? `/procesos/tarjetas/${p.card.id}` : `/procesos/prestamos/${p.loan.id}`;
   const level = levelFor(days, overdue);
   const badgeText = overdue
     ? `venció ${relativeDayLabel(days)}`
@@ -380,7 +459,7 @@ function PaymentRow({ p }: { p: Payment }) {
       ? "vence hoy"
       : `vence ${relativeDayLabel(days)}`;
   const proximity = Math.max(0, Math.min(1, 1 - days / 30));
-  const subtitle = cardSubtitle(card);
+  const subtitle = paymentSubtitle(p);
 
   return (
     <div
@@ -391,17 +470,19 @@ function PaymentRow({ p }: { p: Payment }) {
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="font-medium">{card.name}</p>
+          <Link href={href} className="font-medium hover:underline">
+            {paymentName(p)}
+          </Link>
           {subtitle ? (
             <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
           ) : null}
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="tabular-nums font-medium">
-            {formatCurrency(amount, card.currency)}
-            {card.currency !== "CRC" ? (
+            {formatCurrency(amount, currency)}
+            {currency !== "CRC" ? (
               <span className="ml-1 text-xs text-muted-foreground">
-                ({card.currency})
+                ({currency})
               </span>
             ) : null}
           </span>
@@ -411,7 +492,7 @@ function PaymentRow({ p }: { p: Payment }) {
       <div className="flex items-center gap-2">
         <Bar value={proximity} className={LEVEL_BAR[level]} />
         <span className="shrink-0 text-xs text-muted-foreground">
-          {formatDate(st.dueDate)}
+          {formatDate(p.dueDate)}
         </span>
       </div>
     </div>

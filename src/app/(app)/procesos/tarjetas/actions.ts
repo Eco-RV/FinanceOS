@@ -2,10 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { creditCardSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
-import { saveCard as saveCardUseCase } from "@/application";
+import {
+  removeFromCatalog,
+  saveCard as saveCardUseCase,
+  setCatalogActive,
+} from "@/application";
+import { lifecycleForm, toFormResult } from "@/lib/catalog-actions";
 import { repositories } from "@/infrastructure/container";
 
 function revalidate(id?: string) {
@@ -46,12 +50,26 @@ export async function saveCard(
   return { ok: true };
 }
 
-export async function deleteCard(formData: FormData) {
+/** G5: solo se elimina una tarjeta sin movimientos ni financiamientos. */
+export async function deleteCard(formData: FormData): Promise<FormResult> {
   await requireUser();
-  const id = formData.get("id") as string;
-  if (!id) return;
+  const { id } = lifecycleForm(formData);
+  if (!id) return { ok: false, message: "Falta la tarjeta" };
 
-  const supabase = await createClient();
-  await supabase.from("credit_cards").delete().eq("id", id);
-  revalidate(id);
+  const { cards } = await repositories();
+  const result = await removeFromCatalog(cards, "card", id);
+  if (result.ok) revalidate(id);
+  return toFormResult(result);
+}
+
+/** Desactiva o reactiva una tarjeta; conserva sus movimientos y su saldo. */
+export async function setCardActive(formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const { id, active } = lifecycleForm(formData);
+  if (!id) return { ok: false, message: "Falta la tarjeta" };
+
+  const { cards } = await repositories();
+  const result = await setCatalogActive(cards, "card", id, active);
+  if (result.ok) revalidate(id);
+  return toFormResult(result);
 }

@@ -30,14 +30,25 @@ para llevar su control en la app.
   el saldo al corte y el pago de contado. Se edita desde "Editar tarjeta", no
   desde la lista de movimientos.
 
-### 2. Editar o eliminar una tarjeta
-Como usuario quiero editar los datos de una tarjeta o eliminarla si ya no la
-uso.
+### 2. Editar, eliminar o desactivar una tarjeta
+Como usuario quiero editar los datos de una tarjeta, o quitarla de mis
+listados si ya no la uso sin perder su historia.
 
 **Criterios de aceptación**
-- Editar permite cambiar cualquier campo, incluido el saldo a mano.
-- Eliminar es permanente y borra en cascada sus movimientos y sus
-  financiamientos (y las cuotas de esos financiamientos).
+- Editar permite cambiar cualquier campo y el saldo inicial; el saldo actual
+  no se edita a mano.
+- Regla G5: una tarjeta **sin movimientos ni financiamientos** (su saldo
+  inicial no cuenta) se puede **eliminar**. Si tiene historia, el botón es
+  **Desactivar**: se conserva todo, deja de ofrecerse para registrar y de
+  contar en el resumen y en los pagos de contado (la confirmación avisa si
+  todavía tiene saldo).
+- Las tarjetas desactivadas aparecen en "Desactivadas" al final de la página,
+  desde donde se activan de nuevo.
+- Regla G4: no se registra ni se edita sobre una tarjeta desactivada, y no se
+  le asocia un banco desactivado (sí conserva el que ya tenía; se muestra
+  como "(desactivado)").
+- Sus cargos siguen en el listado de Gastos con el origen como
+  "<nombre> (desactivada)" y sin editar/eliminar hasta reactivarla.
 
 ### 3. Ver el listado de tarjetas con su estado
 Como usuario quiero ver todas mis tarjetas con un indicador de estado, el
@@ -133,15 +144,14 @@ eliminar uno completo si ya no aplica.
 - Tarjeta bimoneda (T1): cada cargo, abono y saldo inicial va al saldo de su
   moneda; `credit_cards.currency` es la **moneda del límite**.
 - Un cargo con tarjeta se registra en CRC o USD (selector "Moneda del cargo").
-- Un financiamiento no tiene interés (tasa 0); préstamos con interés son un
-  concepto distinto, todavía no implementado (ver *Pendiente*).
+- Un financiamiento no tiene interés (tasa 0); los préstamos con interés son
+  un módulo aparte ([`prestamos.md`](./prestamos.md)).
 
 ## Pendiente / fuera de alcance
 
 - No hay edición de un financiamiento (solo crear y eliminar/cancelar).
-- No hay "archivar" tarjeta desde la interfaz, igual que en cuentas.
-- Préstamos con interés y tabla de amortización — roadmap paso 3, no
-  implementado.
+- Financiamiento con interés sobre tarjeta (propuesta abajo). Los préstamos
+  bancarios ya existen: ver [`prestamos.md`](./prestamos.md).
 - Los saldos en `USD` de las tarjetas no entran en los cálculos de cobertura
   del dashboard (se listan, pero no suman).
 - El tipo de cambio es manual; no se consulta el BCCR todavía.
@@ -165,10 +175,13 @@ sistema francés (cuota fija).
 | Cuota | Interés | Abono al capital | Capital restante |
 |---|---|---|---|
 | 1 | ₡12 000,00 | ₡44 735,76 | ₡555 264,24 |
-| 2 | ₡11 105,28 | ₡45 630,47 | ₡509 633,77 |
-| 3 | ₡10 192,68 | ₡46 543,08 | ₡463 090,69 |
+| 2 | ₡11 105,28 | ₡45 630,48 | ₡509 633,76 |
+| 3 | ₡10 192,68 | ₡46 543,08 | ₡463 090,68 |
 | … | baja | sube | … |
-| 12 | ₡1 112,47 | ₡55 623,29 | ₡0,00 |
+| 12 | ₡1 112,47 | ₡55 623,27 | ₡0,00 |
+
+(Interés redondeado a céntimos en cada cuota, como lo calcula
+`frenchAmortization`; la última cuota es ₡56 735,74 para cerrar en 0.)
 
 **Criterios de aceptación (propuestos)**
 - Al crear se piden tarjeta, monto (capital), meses, tasa anual y fecha de
@@ -207,3 +220,6 @@ sistema francés (cuota fija).
 - **2026-10-11 (v2.0.0, en desarrollo)** — Tarjeta bimoneda: saldo y estado de
   cuenta por moneda, límite en su moneda, disponible con tipo de cambio manual,
   saldo inicial en ₡ y $ (`06_multicurrency_cards.sql`).
+- **2026-10-12 (v2.1.0, en desarrollo)** — Eliminar vs. desactivar (G5): una
+  tarjeta con movimientos o financiamientos ya no se borra en cascada; se
+  desactiva y se puede reactivar (G4).

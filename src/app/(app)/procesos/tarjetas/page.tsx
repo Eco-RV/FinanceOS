@@ -21,13 +21,15 @@ import {
 } from "@/components/ui/table";
 import { buttonVariants } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
-import { DeleteButton } from "@/components/delete-button";
+import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
+import { idsWithHistory } from "@/lib/catalog-history";
+import { repositories } from "@/infrastructure/container";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { CardFormDialog } from "./card-form";
 import { cardOpeningsById } from "@/lib/transactions";
 import { CardBalances, CardOwed, urgentDaysToDue } from "./card-money";
 import { CardStatusBadge } from "./card-status";
-import { deleteCard } from "./actions";
+import { deleteCard, setCardActive } from "./actions";
 
 type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on" | "currency">;
 
@@ -40,7 +42,6 @@ export default async function TarjetasPage() {
     supabase
       .from("credit_cards")
       .select("*")
-      .eq("archived", false)
       .order("created_at", { ascending: true }),
     supabase
       .from("transactions")
@@ -49,13 +50,34 @@ export default async function TarjetasPage() {
       .not("card_id", "is", null),
     supabase
       .from("banks")
-      .select("id, name")
-      .eq("archived", false)
+      .select("id, name, archived")
       .order("name", { ascending: true }),
   ]);
 
-  const cards = (cardData ?? []) as CreditCard[];
-  const banks = (bankData ?? []) as Pick<Bank, "id" | "name">[];
+  const allCards = (cardData ?? []) as CreditCard[];
+  const withHistory = await idsWithHistory(
+    (await repositories()).cards,
+    allCards.map((c) => c.id),
+  );
+  const cards = allCards.filter((c) => !c.archived);
+  const inactive = allCards.filter((c) => c.archived);
+  const hasDebt = (c: CreditCard) =>
+    Number(c.current_balance) !== 0 || Number(c.usd_balance ?? 0) !== 0;
+  const removeAction = (card: CreditCard) => (
+    <RemoveOrDeactivate
+      id={card.id}
+      label={`la tarjeta "${card.name}"`}
+      hasHistory={withHistory.has(card.id)}
+      onDelete={deleteCard}
+      onSetActive={setCardActive}
+      deactivateNote={
+        hasDebt(card)
+          ? "Todavía tiene saldo: deja de contar en el resumen y en los pagos de contado."
+          : undefined
+      }
+    />
+  );
+  const banks = (bankData ?? []) as Pick<Bank, "id" | "name" | "archived">[];
   const txns = (txData ?? []) as CardTxn[];
   const openings = cardOpeningsById(
     txns
@@ -172,11 +194,7 @@ export default async function TarjetasPage() {
                           <Eye className="size-4" />
                         </Link>
                         <CardFormDialog card={card} openings={openings.get(card.id)} banks={banks} />
-                        <DeleteButton
-                          id={card.id}
-                          action={deleteCard}
-                          confirmLabel={`¿Eliminar la tarjeta "${card.name}"?`}
-                        />
+                        {removeAction(card)}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -209,11 +227,7 @@ export default async function TarjetasPage() {
                       <Eye className="size-4" />
                     </Link>
                     <CardFormDialog card={card} openings={openings.get(card.id)} banks={banks} />
-                    <DeleteButton
-                      id={card.id}
-                      action={deleteCard}
-                      confirmLabel={`¿Eliminar la tarjeta "${card.name}"?`}
-                    />
+                    {removeAction(card)}
                   </>
                 }
               >
@@ -232,6 +246,18 @@ export default async function TarjetasPage() {
           </MobileList>
         </>
       )}
+
+      <InactiveList
+        items={inactive.map((c) => ({
+          id: c.id,
+          name: c.name,
+          detail: c.last_four ? `•••• ${c.last_four}` : undefined,
+          hasHistory: withHistory.has(c.id),
+        }))}
+        noun="la tarjeta"
+        onDelete={deleteCard}
+        onSetActive={setCardActive}
+      />
     </div>
   );
 }

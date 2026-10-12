@@ -1,8 +1,9 @@
 /**
- * Cuotas de un financiamiento sin interés (tasa 0). Misma regla que el SP
- * `create_financing` (supabase/Versionamiento/1.2.2/01_create_financing_function.sql):
- * reparto en céntimos con el residuo en la última cuota (F1) y el mismo día
- * cada mes, ajustado en meses cortos (F2).
+ * Cuotas de un financiamiento sin interés (tasa 0): reparto en céntimos con el
+ * residuo en la última cuota (F1) y el mismo día cada mes, ajustado en meses
+ * cortos (F2). Es la única fuente de la regla: `create_financing_v2` solo
+ * guarda este plan (el SP `create_financing` de 1.2.2, que la duplicaba en
+ * SQL, se borra en `supabase/Versionamiento/2.1.0/00_drop_create_financing.sql`).
  */
 
 import { DomainError } from "../shared/errors.ts";

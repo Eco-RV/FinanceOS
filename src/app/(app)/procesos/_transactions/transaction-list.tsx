@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -10,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { signedAmount } from "@/domain";
-import { originLabel } from "@/lib/transactions";
+import { originLabel, productLabel, touchesInactive } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 import type { Account, CreditCard, Transaction } from "@/lib/types";
 import { DeleteButton } from "@/components/delete-button";
@@ -19,6 +20,10 @@ import { deleteTransaction } from "./actions";
 
 type Props = {
   transactions: Transaction[];
+  /**
+   * Todas las cuentas y tarjetas, también las desactivadas: se usan para
+   * nombrar el origen; los formularios de editar solo ofrecen las activas.
+   */
   accounts: Account[];
   cards: CreditCard[];
   /** Categorías para el selector del editar (gastos/ingresos o cargos de tarjeta). */
@@ -55,6 +60,8 @@ export function TransactionList({
   cancelledFinancingIds = [],
 }: Props) {
   const isCard = context === "card";
+  const activeAccounts = accounts.filter((a) => !a.archived);
+  const activeCards = cards.filter((c) => !c.archived);
 
   if (transactions.length === 0) {
     return (
@@ -81,7 +88,7 @@ export function TransactionList({
       ? "Saldo inicial"
       : t.type === "transfer"
         ? `${originLabel(t, accounts, cards)} → ${
-            accounts.find((a) => a.id === t.to_account_id)?.name ?? "—"
+            productLabel(accounts.find((a) => a.id === t.to_account_id))
           }`
         : t.channel === "sinpe"
           ? `${originLabel(t, accounts, cards)} · SINPE${sinpeTo ? ` a ${sinpeTo}` : ""}`
@@ -119,11 +126,20 @@ export function TransactionList({
       <span className="text-xs text-muted-foreground">Ver en Financiamientos</span>
     ) : isOpening ? (
       <span className="text-xs text-muted-foreground">Se edita en la tarjeta</span>
+    ) : t.loan_id ? (
+      <Link
+        href={`/procesos/prestamos/${t.loan_id}`}
+        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+      >
+        Ver en Préstamos
+      </Link>
+    ) : touchesInactive(t, accounts, cards) ? (
+      <span className="text-xs text-muted-foreground">Desactivada: actívala para editar</span>
     ) : (
       <TransactionRowActions
         transaction={t}
-        accounts={accounts}
-        cards={cards}
+        accounts={activeAccounts}
+        cards={activeCards}
         categories={categories}
       />
     );

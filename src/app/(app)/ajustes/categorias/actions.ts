@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import {
   categorySchema,
   CATEGORY_KINDS,
@@ -11,14 +10,20 @@ import {
 } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 import type { CategoryKind } from "@/lib/types";
+import {
+  removeFromCatalog,
+  saveCategory as saveCategoryUseCase,
+  seedCategories as seedCategoriesUseCase,
+  setCatalogActive,
+} from "@/application";
+import { repositories } from "@/infrastructure/container";
+import { lifecycleForm, toFormResult } from "@/lib/catalog-actions";
 
 function revalidate() {
   revalidatePath("/ajustes/categorias");
   revalidatePath("/procesos/gastos");
   revalidatePath("/procesos/ingresos");
 }
-
-const DUP = "Ya existe esa categoría";
 
 export async function saveCategory(
   _prev: FormResult,
@@ -32,30 +37,34 @@ export async function saveCategory(
     return { ok: false, errors: fieldErrors(parsed.error) };
   }
 
-  const supabase = await createClient();
-  const { error } = id
-    ? await supabase.from("categories").update(parsed.data).eq("id", id)
-    : await supabase.from("categories").insert(parsed.data);
-
-  if (error) {
-    return {
-      ok: false,
-      message: error.code === "23505" ? DUP : error.message,
-    };
-  }
-
-  revalidate();
-  return { ok: true };
+  const { categories } = await repositories();
+  const result = await saveCategoryUseCase(categories, { id, fields: parsed.data });
+  if (result.ok) revalidate();
+  return toFormResult(result);
 }
 
-export async function deleteCategory(formData: FormData) {
+/** G5: solo se elimina una categoría que ningún movimiento usa. */
+export async function deleteCategory(formData: FormData): Promise<FormResult> {
   await requireUser();
-  const id = formData.get("id") as string;
-  if (!id) return;
+  const { id } = lifecycleForm(formData);
+  if (!id) return { ok: false, message: "Falta la categoría" };
 
-  const supabase = await createClient();
-  await supabase.from("categories").delete().eq("id", id);
-  revalidate();
+  const { categories } = await repositories();
+  const result = await removeFromCatalog(categories, "category", id);
+  if (result.ok) revalidate();
+  return toFormResult(result);
+}
+
+/** Desactiva (deja de ofrecerse) o reactiva una categoría. */
+export async function setCategoryActive(formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const { id, active } = lifecycleForm(formData);
+  if (!id) return { ok: false, message: "Falta la categoría" };
+
+  const { categories } = await repositories();
+  const result = await setCatalogActive(categories, "category", id, active);
+  if (result.ok) revalidate();
+  return toFormResult(result);
 }
 
 export async function seedCategories(formData: FormData) {
@@ -63,22 +72,8 @@ export async function seedCategories(formData: FormData) {
   const kind = formData.get("kind") as CategoryKind;
   if (!CATEGORY_KINDS.includes(kind)) return;
 
-  const supabase = await createClient();
-  const { data: existing } = await supabase
-    .from("categories")
-    .select("name")
-    .eq("kind", kind);
-
-  const have = new Set(
-    (existing ?? []).map((c) => c.name.trim().toLowerCase()),
-  );
+  const { categories } = await repositories();
   const suggested = kind === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  const rows = suggested
-    .filter((name) => !have.has(name.toLowerCase()))
-    .map((name) => ({ kind, name }));
-
-  if (rows.length > 0) {
-    await supabase.from("categories").insert(rows);
-  }
+  await seedCategoriesUseCase(categories, kind, suggested);
   revalidate();
 }

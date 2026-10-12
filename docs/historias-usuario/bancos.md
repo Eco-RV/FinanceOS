@@ -21,8 +21,13 @@ los avisos y el formato de esos correos, para que la app sepa cuáles leer.
 - Campos: `name` (obligatorio, ≤ 60), `sender_emails` (1-10 correos válidos,
   separados por coma, espacio o salto de línea; se guardan en minúsculas y sin
   repetidos), `parser_key` (formato soportado, p. ej. BAC), `enabled`.
-- Se gestiona en `/ajustes/bancos` (crear, editar, eliminar, pausar).
+- Se gestiona en `/ajustes/bancos` (crear, editar, pausar, desactivar,
+  eliminar).
 - Pausar un banco (`enabled = false`) deja de leer sus correos sin borrarlo.
+- Regla G5: un banco **sin avisos importados** se puede eliminar; si ya trajo
+  avisos (en cualquier estado), se **desactiva**: no se leen más sus correos,
+  no se ofrece al editar tarjetas y queda en "Desactivados", desde donde se
+  activa de nuevo. Un banco desactivado no se edita (G4).
 
 ### 2. Conectar mi correo
 Como usuario quiero conectar mi Gmail con permiso solo de lectura, para que la
@@ -114,3 +119,5 @@ distinga tarjetas de bancos distintos con los mismos últimos 4 dígitos.
   programada, bandeja "Por confirmar" y categorías sugeridas por comercio.
 - **2026-10-11 (v2.0.0, en desarrollo)** — Un pendiente se aprueba contra
   cualquier tarjeta (bimoneda); va al saldo de la moneda de la compra.
+- **2026-10-12 (v2.1.0, en desarrollo)** — Eliminar vs. desactivar banco (G5).
+  Un pendiente no se aprueba con una categoría desactivada (G4).

@@ -31,6 +31,7 @@ pierden. Esta carpeta es ese lugar fijo:
 | [`ingresos.md`](./ingresos.md) | Registro de ingresos |
 | [`bancos.md`](./bancos.md) | Bancos y correos: importación automática de compras |
 | [`transferencias.md`](./transferencias.md) | Transferencias entre cuentas propias |
+| [`prestamos.md`](./prestamos.md) | Préstamos bancarios a cuota fija |
 
 Cuando aparezca un nuevo proceso principal (p. ej. "Préstamos" o "Ahorros y
 metas" del roadmap), se agrega un archivo nuevo a esta tabla siguiendo el

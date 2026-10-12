@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
-import { DeleteButton } from "@/components/delete-button";
+import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
+import { idsWithHistory } from "@/lib/catalog-history";
+import { repositories } from "@/infrastructure/container";
 import { CategoryFormDialog } from "./category-form";
-import { deleteCategory, seedCategories } from "./actions";
+import { deleteCategory, seedCategories, setCategoryActive } from "./actions";
 
 export default async function CategoriasPage() {
   await requireUser();
@@ -20,10 +22,15 @@ export default async function CategoriasPage() {
   const { data } = await supabase
     .from("categories")
     .select("*")
-    .eq("archived", false)
     .order("name", { ascending: true });
 
-  const categories = (data ?? []) as Category[];
+  const all = (data ?? []) as Category[];
+  const withHistory = await idsWithHistory(
+    (await repositories()).categories,
+    all.map((c) => c.id),
+  );
+  const categories = all.filter((c) => !c.archived);
+  const inactive = all.filter((c) => c.archived);
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,11 +46,15 @@ export default async function CategoriasPage() {
         kind="expense"
         title="Gastos"
         items={categories.filter((c) => c.kind === "expense")}
+        inactive={inactive.filter((c) => c.kind === "expense")}
+        withHistory={withHistory}
       />
       <CategorySection
         kind="income"
         title="Ingresos"
         items={categories.filter((c) => c.kind === "income")}
+        inactive={inactive.filter((c) => c.kind === "income")}
+        withHistory={withHistory}
       />
     </div>
   );
@@ -53,10 +64,14 @@ function CategorySection({
   kind,
   title,
   items,
+  inactive,
+  withHistory,
 }: {
   kind: CategoryKind;
   title: string;
   items: Category[];
+  inactive: Category[];
+  withHistory: Set<string>;
 }) {
   return (
     <section className="flex flex-col gap-3">
@@ -87,10 +102,12 @@ function CategorySection({
                   <TableCell className="w-24">
                     <div className="flex justify-end gap-1">
                       <CategoryFormDialog kind={c.kind} category={c} />
-                      <DeleteButton
+                      <RemoveOrDeactivate
                         id={c.id}
-                        action={deleteCategory}
-                        confirmLabel={`¿Eliminar la categoría "${c.name}"?`}
+                        label={`la categoría "${c.name}"`}
+                        hasHistory={withHistory.has(c.id)}
+                        onDelete={deleteCategory}
+                        onSetActive={setCategoryActive}
                       />
                     </div>
                   </TableCell>
@@ -100,6 +117,17 @@ function CategorySection({
           </Table>
         </div>
       )}
+
+      <InactiveList
+        items={inactive.map((c) => ({
+          id: c.id,
+          name: c.name,
+          hasHistory: withHistory.has(c.id),
+        }))}
+        noun="la categoría"
+        onDelete={deleteCategory}
+        onSetActive={setCategoryActive}
+      />
     </section>
   );
 }

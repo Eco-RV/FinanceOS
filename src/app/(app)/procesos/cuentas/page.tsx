@@ -11,11 +11,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BackLink } from "@/components/back-link";
-import { DeleteButton } from "@/components/delete-button";
+import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
+import { idsWithHistory } from "@/lib/catalog-history";
+import { repositories } from "@/infrastructure/container";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { openingsById } from "@/lib/transactions";
 import { AccountFormDialog } from "./account-form";
-import { deleteAccount } from "./actions";
+import { deleteAccount, setAccountActive } from "./actions";
 
 const TYPE_LABELS: Record<AccountType, string> = {
   checking: "Débito",
@@ -31,7 +33,6 @@ export default async function CuentasPage() {
     supabase
       .from("accounts")
       .select("*")
-      .eq("archived", false)
       .order("created_at", { ascending: true }),
     supabase
       .from("transactions")
@@ -41,7 +42,27 @@ export default async function CuentasPage() {
       .not("account_id", "is", null),
   ]);
 
-  const accounts = (data ?? []) as Account[];
+  const all = (data ?? []) as Account[];
+  const withHistory = await idsWithHistory(
+    (await repositories()).accounts,
+    all.map((a) => a.id),
+  );
+  const accounts = all.filter((a) => !a.archived);
+  const inactive = all.filter((a) => a.archived);
+  const removeAction = (account: Account) => (
+    <RemoveOrDeactivate
+      id={account.id}
+      label={`la cuenta "${account.name}"`}
+      hasHistory={withHistory.has(account.id)}
+      onDelete={deleteAccount}
+      onSetActive={setAccountActive}
+      deactivateNote={
+        Number(account.current_balance) !== 0
+          ? `Su saldo (${formatCurrency(Number(account.current_balance), account.currency)}) deja de contar en el resumen.`
+          : undefined
+      }
+    />
+  );
   const openings = openingsById(openingData);
   const totalCrc = accounts
     .filter((a) => a.currency === "CRC")
@@ -102,11 +123,7 @@ export default async function CuentasPage() {
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         <AccountFormDialog account={account} opening={openings.get(account.id)} />
-                        <DeleteButton
-                          id={account.id}
-                          action={deleteAccount}
-                          confirmLabel={`¿Eliminar la cuenta "${account.name}"?`}
-                        />
+                        {removeAction(account)}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -124,11 +141,7 @@ export default async function CuentasPage() {
                 actions={
                   <>
                     <AccountFormDialog account={account} opening={openings.get(account.id)} />
-                    <DeleteButton
-                      id={account.id}
-                      action={deleteAccount}
-                      confirmLabel={`¿Eliminar la cuenta "${account.name}"?`}
-                    />
+                    {removeAction(account)}
                   </>
                 }
               >
@@ -154,6 +167,18 @@ export default async function CuentasPage() {
           </span>
         </p>
       ) : null}
+
+      <InactiveList
+        items={inactive.map((a) => ({
+          id: a.id,
+          name: a.name,
+          detail: `${TYPE_LABELS[a.type]} · ${formatCurrency(Number(a.current_balance), a.currency)}`,
+          hasHistory: withHistory.has(a.id),
+        }))}
+        noun="la cuenta"
+        onDelete={deleteAccount}
+        onSetActive={setAccountActive}
+      />
     </div>
   );
 }

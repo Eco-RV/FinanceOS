@@ -1,6 +1,7 @@
 /** Casos de uso del libro de movimientos: gasto (incl. SINPE), ingreso, abono y transferencia. */
 
 import {
+  assertCategoryUsable,
   normalizeSinpePhone,
   validateMovement,
   type Currency,
@@ -8,13 +9,22 @@ import {
   type MovementChannel,
   type MovementType,
 } from "../domain/index.ts";
-import type { AccountRepository, CardRepository, MovementRepository } from "./ports.ts";
-import { ok, run, type UseCaseResult } from "./result.ts";
+import type {
+  AccountRepository,
+  CardRepository,
+  CategoryRepository,
+  MovementRepository,
+} from "./ports.ts";
+import { fail, ok, run, type UseCaseResult } from "./result.ts";
+
+/** L2: los pagos y el desembolso de un préstamo se gestionan desde Préstamos. */
+const LOAN_MOVEMENT = "Este movimiento es de un préstamo: se gestiona desde Préstamos";
 
 export type MovementDeps = {
   accounts: AccountRepository;
   cards: CardRepository;
   movements: MovementRepository;
+  categories: CategoryRepository;
 };
 
 export type SaveMovementInput = {
@@ -72,6 +82,17 @@ export function saveMovement(
     });
     const isSinpe = channel === "sinpe";
 
+    // G4: no se usa una categoría desactivada (al editar, se puede conservar).
+    const categoryKind =
+      input.type === "expense" ? "expense" : input.type === "income" ? "income" : null;
+    if (categoryKind && input.category) {
+      const [deactivated, previous] = await Promise.all([
+        deps.categories.isDeactivated(categoryKind, input.category),
+        input.id ? deps.movements.categoryOf(input.id) : null,
+      ]);
+      assertCategoryUsable({ category: input.category, deactivated, previous });
+    }
+
     const values = {
       type: input.type,
       amount: input.amount,
@@ -89,6 +110,8 @@ export function saveMovement(
 
     const affected = new Set<string>();
     if (input.card_id) affected.add(input.card_id);
+
+    if (input.id && (await deps.movements.loanIdOf(input.id))) return fail(LOAN_MOVEMENT, "L2");
 
     if (input.id) {
       const previousCard = await deps.movements.cardIdOf(input.id);
@@ -108,6 +131,7 @@ export function deleteMovement(
   id: string,
 ): Promise<UseCaseResult<SaveMovementOutput>> {
   return run(async () => {
+    if (await deps.movements.loanIdOf(id)) return fail(LOAN_MOVEMENT, "L2");
     const cardId = await deps.movements.cardIdOf(id);
     await deps.movements.delete(id);
     return ok({ affectedCardIds: cardId ? [cardId] : [] });

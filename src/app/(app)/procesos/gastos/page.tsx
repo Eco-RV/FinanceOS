@@ -24,15 +24,15 @@ export default async function GastosPage() {
       .eq("type", "expense")
       .eq("archived", false)
       .order("occurred_on", { ascending: false }),
+    // Incluye las desactivadas para nombrarlas en el historial; los
+    // formularios solo reciben las activas (G4).
     supabase
       .from("accounts")
       .select("*")
-      .eq("archived", false)
       .order("created_at", { ascending: true }),
     supabase
       .from("credit_cards")
       .select("*")
-      .eq("archived", false)
       .order("created_at", { ascending: true }),
     supabase
       .from("categories")
@@ -43,8 +43,10 @@ export default async function GastosPage() {
   ]);
 
   const transactions = (txData ?? []) as Transaction[];
-  const accounts = (accData ?? []) as Account[];
-  const cards = (cardData ?? []) as CreditCard[];
+  const allAccounts = (accData ?? []) as Account[];
+  const allCards = (cardData ?? []) as CreditCard[];
+  const accounts = allAccounts.filter((a) => !a.archived);
+  const cards = allCards.filter((c) => !c.archived);
   const categories = categoryNames(catData ?? [], EXPENSE_CATEGORIES);
   const canRegister = accounts.length > 0 || cards.length > 0;
 
@@ -82,8 +84,8 @@ export default async function GastosPage() {
       {canRegister ? (
         <TransactionList
           transactions={transactions}
-          accounts={accounts}
-          cards={cards}
+          accounts={allAccounts}
+          cards={allCards}
           categories={categories}
           emptyLabel="Aún no registrás gastos."
         />

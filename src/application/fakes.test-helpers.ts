@@ -9,9 +9,15 @@ import {
 import type {
   AccountRepository,
   BalanceRepository,
+  BankFields,
+  BankRepository,
   CardRepository,
+  CategoryFields,
+  CategoryRepository,
   ExchangeRateRepository,
   FinancingRepository,
+  Loan,
+  LoanRepository,
   MerchantRuleRepository,
   MovementRepository,
   NewFinancing,
@@ -19,18 +25,40 @@ import type {
   PendingPurchase,
   PendingRepository,
 } from "./ports.ts";
+import { InfrastructureError } from "./ports.ts";
+
+type Product = { name: string; currency: Currency; archived: boolean; bank_id: string | null };
+type CategoryRow = CategoryFields & { archived: boolean };
+type BankRow = BankFields & { archived: boolean };
+type PendingRow = PendingPurchase & { status: string; bank_id?: string | null };
 
 export function fakeStore(seed: {
   accounts?: Record<string, Currency>;
   cards?: Record<string, Currency>;
-  pending?: PendingPurchase[];
+  pending?: (PendingPurchase & { bank_id?: string | null })[];
+  categories?: Record<string, CategoryRow>;
+  banks?: Record<string, BankRow>;
 } = {}) {
-  const accountCurrencies = new Map(Object.entries(seed.accounts ?? {}));
-  const cardCurrencies = new Map(Object.entries(seed.cards ?? {}));
+  const product = (currency: Currency, name: string): Product => ({
+    name,
+    currency,
+    archived: false,
+    bank_id: null,
+  });
+  const accountRows = new Map(
+    Object.entries(seed.accounts ?? {}).map(([id, c]) => [id, product(c, id)]),
+  );
+  const cardRows = new Map(
+    Object.entries(seed.cards ?? {}).map(([id, c]) => [id, product(c, id)]),
+  );
+  const categoryRows = new Map(Object.entries(seed.categories ?? {}));
+  const bankRows = new Map(Object.entries(seed.banks ?? {}));
   const movements = new Map<string, NewMovement & { financing_id?: string }>();
   const financings = new Map<string, NewFinancing>();
   const cancelled = new Map<string, string>();
-  const pending = new Map((seed.pending ?? []).map((p) => [p.id, { ...p, status: "pending" }]));
+  const pending = new Map<string, PendingRow>(
+    (seed.pending ?? []).map((p) => [p.id, { ...p, status: "pending" }]),
+  );
   const rules = new Map<string, string>();
   let seq = 0;
   const nextId = (prefix: string) => `${prefix}-${++seq}`;
@@ -38,30 +66,113 @@ export function fakeStore(seed: {
   /** Saldos guardados (proyección), que se pueden desincronizar a propósito. */
   const stored = new Map<string, number>();
 
+  /** Lo que comparten los fakes de catálogo: buscar, desactivar, borrar. */
+  function lifecycle<Row extends { name: string; archived: boolean }>(
+    rows: Map<string, Row>,
+    historyCount: (id: string) => number,
+  ) {
+    return {
+      find: async (id: string) => {
+        const r = rows.get(id);
+        return r ? { ...r } : null;
+      },
+      historyCount: async (id: string) => historyCount(id),
+      setArchived: async (id: string, archived: boolean) => {
+        const r = rows.get(id);
+        if (r) r.archived = archived;
+      },
+      delete: async (id: string) => {
+        rows.delete(id);
+      },
+    };
+  }
+
+  const isOwnHistory = (m: NewMovement, key: "account_id" | "card_id", id: string) =>
+    m.type !== "opening_balance" && (m[key] === id || (key === "account_id" && m.to_account_id === id));
+
   const accounts: AccountRepository = {
-    currencyOf: async (id) => accountCurrencies.get(id) ?? null,
+    ...lifecycle(accountRows, (id) =>
+      [...movements.values()].filter((m) => isOwnHistory(m, "account_id", id)).length,
+    ),
+    currencyOf: async (id) => {
+      const r = accountRows.get(id);
+      return r && !r.archived ? r.currency : null;
+    },
     save: async (id, fields) => {
       const key = id ?? nextId("acc");
-      accountCurrencies.set(key, fields.currency);
+      const prev = accountRows.get(key);
+      accountRows.set(key, {
+        name: fields.name,
+        currency: fields.currency,
+        archived: prev?.archived ?? false,
+        bank_id: null,
+      });
       return { id: key };
-    },
-    delete: async (id) => {
-      accountCurrencies.delete(id);
     },
   };
   const cards: CardRepository = {
-    currencyOf: async (id) => cardCurrencies.get(id) ?? null,
+    ...lifecycle(cardRows, (id) =>
+      [...movements.values()].filter((m) => isOwnHistory(m, "card_id", id)).length +
+      [...financings.values()].filter((f) => f.card_id === id).length,
+    ),
+    currencyOf: async (id) => {
+      const r = cardRows.get(id);
+      return r && !r.archived ? r.currency : null;
+    },
     save: async (id, fields) => {
       const key = id ?? nextId("card");
-      cardCurrencies.set(key, fields.currency);
+      const prev = cardRows.get(key);
+      cardRows.set(key, {
+        name: fields.name,
+        currency: fields.currency,
+        archived: prev?.archived ?? false,
+        bank_id: fields.bank_id === undefined ? (prev?.bank_id ?? null) : fields.bank_id,
+      });
       return { id: key };
     },
-    delete: async (id) => {
-      cardCurrencies.delete(id);
+  };
+  const lower = (n: string) => n.trim().toLowerCase();
+  const categories: CategoryRepository = {
+    ...lifecycle(categoryRows, (id) => {
+      const c = categoryRows.get(id);
+      if (!c) return 0;
+      return [...movements.values()].filter(
+        (m) => m.type === c.kind && m.category != null && lower(m.category) === lower(c.name),
+      ).length;
+    }),
+    save: async (id, fields) => {
+      const clash = [...categoryRows].some(
+        ([key, c]) =>
+          key !== id && !c.archived && c.kind === fields.kind && lower(c.name) === lower(fields.name),
+      );
+      if (clash) throw new InfrastructureError("Ya existe esa categoría");
+      const key = id ?? nextId("cat");
+      categoryRows.set(key, { ...fields, archived: categoryRows.get(key)?.archived ?? false });
+      return { id: key };
+    },
+    names: async (kind) => [...categoryRows.values()].filter((c) => c.kind === kind).map((c) => c.name),
+    createMany: async (rows) => {
+      for (const r of rows) categoryRows.set(nextId("cat"), { ...r, archived: false });
+    },
+    isDeactivated: async (kind, name) => {
+      const same = [...categoryRows.values()].filter(
+        (c) => c.kind === kind && lower(c.name) === lower(name),
+      );
+      return same.length > 0 && same.every((c) => c.archived);
+    },
+  };
+  const banks: BankRepository = {
+    ...lifecycle(bankRows, (id) => [...pending.values()].filter((p) => p.bank_id === id).length),
+    save: async (id, fields) => {
+      const key = id ?? nextId("bank");
+      bankRows.set(key, { ...fields, archived: bankRows.get(key)?.archived ?? false });
+      return { id: key };
     },
   };
   const movementRepo: MovementRepository = {
     cardIdOf: async (id) => movements.get(id)?.card_id ?? null,
+    categoryOf: async (id) => movements.get(id)?.category ?? null,
+    loanIdOf: async (id) => movements.get(id)?.loan_id ?? null,
     openingOf: async (target, id, currency) => {
       for (const [movementId, m] of movements) {
         const owner = target === "account" ? m.account_id : m.card_id;
@@ -137,15 +248,42 @@ export function fakeStore(seed: {
     },
   };
 
+  const loanRows = new Map<string, Omit<Loan, "id">>();
+  const loanPayments = (loanId: string) =>
+    [...movements].filter(([, m]) => m.loan_id === loanId && m.installment_no != null);
+  const loans: LoanRepository = {
+    ...lifecycle(loanRows, (id) => loanPayments(id).length),
+    find: async (id) => {
+      const r = loanRows.get(id);
+      return r ? { ...r, id } : null;
+    },
+    create: async (fields) => {
+      const id = nextId("loan");
+      loanRows.set(id, { ...fields, archived: false });
+      return { id };
+    },
+    rename: async (id, fields) => {
+      const r = loanRows.get(id);
+      if (r) Object.assign(r, fields);
+    },
+    paidInstallments: async (id) => loanPayments(id).map(([, m]) => m.installment_no!),
+    paymentOf: async (id, no) => loanPayments(id).find(([, m]) => m.installment_no === no)?.[0] ?? null,
+    delete: async (id) => {
+      loanRows.delete(id);
+      // on delete cascade: arrastra el desembolso.
+      for (const [mvId, m] of movements) if (m.loan_id === id) movements.delete(mvId);
+    },
+  };
+
   const cardKey = (id: string, currency: Currency) => `${id}:${currency}`;
   const balances: BalanceRepository = {
     stored: async () => [
-      ...[...accountCurrencies.keys()].map((id) => ({
+      ...[...accountRows.keys()].map((id) => ({
         target: "account" as const,
         id,
         stored: stored.get(id) ?? 0,
       })),
-      ...[...cardCurrencies.keys()].flatMap((id) =>
+      ...[...cardRows.keys()].flatMap((id) =>
         (["CRC", "USD"] as const).map((currency) => ({
           target: "card" as const,
           id,
@@ -192,6 +330,9 @@ export function fakeStore(seed: {
     deps: {
       accounts,
       cards,
+      categories,
+      banks,
+      loans,
       movements: movementRepo,
       financings: financingRepo,
       pending: pendingRepo,
@@ -199,7 +340,20 @@ export function fakeStore(seed: {
       balances,
       exchangeRates,
     },
-    state: { movements, financings, cancelled, rates, pending, rules, stored, accountCurrencies, cardCurrencies },
+    state: {
+      movements,
+      financings,
+      cancelled,
+      rates,
+      pending,
+      rules,
+      stored,
+      accountRows,
+      cardRows,
+      categoryRows,
+      bankRows,
+      loanRows,
+    },
     balanceOf,
   };
 }
