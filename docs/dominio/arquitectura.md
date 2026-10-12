@@ -50,7 +50,7 @@ Reglas que hoy viven fuera del dominio y se deben mover:
 | `shared/calendar.ts` | G6 (hoy en CR), T5 (meses cortos) | `src/lib/dates.ts`, `daysUntil` de `src/lib/format.ts` |
 | `ledger/movement.ts` | G1 (saldos derivados), signos del trigger, G2, M1, M3, M5 | trigger SQL + `saveTransaction` |
 | `cards/statement.ts` | T3–T7, M7 | `src/lib/cards.ts` |
-| `financing/installments.ts` | F1, F2, M7 | SP `create_financing` (el SP sigue insertando; ahora la regla también está en TS) |
+| `financing/installments.ts` | F1, F2, M7 | SP `create_financing` (en la Fase 3 el SP dejó de calcular; en 2.1.0 se borra) |
 | `financing/amortization.ts` | F5 | — (nuevo, base para 2.0.0) |
 | `coverage/coverage.ts` | Cobertura del débito vs. pagos de contado | `dashboard/page.tsx` |
 | `catalog/lifecycle.ts` (2.1.0) | G4 (nada sobre lo desactivado), G5 (eliminar vs. desactivar) | `delete()` directo en las actions (borraba en cascada) |
@@ -97,7 +97,8 @@ Decisiones de esta fase:
 Probado contra Postgres (PGlite) con datos de 1.3.0: saldos idénticos antes y
 después, `balance_drift` vacío e idempotente.
 
-El SP `create_financing` (1.2.2) queda sin uso; se puede borrar en 2.1.
+El SP `create_financing` (1.2.2) quedó sin uso y se borra en 2.1.0
+(`supabase/Versionamiento/2.1.0/00_drop_create_financing.sql`).
 
 ## Fase 2 (cierre, 2.1.0) — catálogo: eliminar vs. desactivar
 

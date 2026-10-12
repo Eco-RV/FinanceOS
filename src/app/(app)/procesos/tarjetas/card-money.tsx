@@ -3,7 +3,7 @@ import type { Currency, MultiCurrencyStatement } from "@/domain";
 import type { CreditCard } from "@/lib/types";
 
 /** Saldos de la tarjeta por moneda (T1). Siempre la del límite; la otra solo si ≠ 0. */
-export function cardBalances(card: CreditCard): { currency: Currency; amount: number }[] {
+function cardBalances(card: CreditCard): { currency: Currency; amount: number }[] {
   const all = [
     { currency: "CRC" as Currency, amount: Number(card.current_balance) },
     { currency: "USD" as Currency, amount: Number(card.usd_balance ?? 0) },
@@ -24,7 +24,7 @@ export function CardBalances({ card }: { card: CreditCard }) {
 }
 
 /** Lo que falta pagar de contado, por moneda (solo monedas pendientes o atrasadas). */
-export function owedByCurrency(m: MultiCurrencyStatement) {
+function owedByCurrency(m: MultiCurrencyStatement) {
   return m.currencies
     .map((currency) => ({ currency, st: m.byCurrency[currency]! }))
     .filter(({ st }) => st.status === "pendiente" || st.status === "atrasada");

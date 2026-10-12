@@ -1,13 +1,5 @@
 import type { Transaction, Account, CreditCard, OpeningBalance } from "@/lib/types";
 
-export const TRANSACTION_TYPE_LABELS = {
-  expense: "Gasto",
-  income: "Ingreso",
-  card_payment: "Pago de tarjeta",
-  opening_balance: "Saldo inicial",
-  transfer: "Transferencia",
-} as const;
-
 /** "account:<id>" | "card:<id>" -> partes. */
 export function parseOrigin(token: string): {
   kind: "account" | "card";

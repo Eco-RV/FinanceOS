@@ -48,7 +48,7 @@ export function htmlToLines(html: string): string[] {
 }
 
 /** minúsculas, sin acentos ni ":" final: clave estable para comparar etiquetas. */
-export function normalizeLabel(label: string): string {
+function normalizeLabel(label: string): string {
   return label
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

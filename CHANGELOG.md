@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.1.0 — sin publicar
+
+Cierre de la Fase 2 del rediseño por dominio y limpieza.
+
+### Eliminar vs. desactivar (G4, G5)
+- Cuentas, tarjetas, categorías y bancos con historia ya no se borran en
+  cascada: se **desactivan** (se conservan y se pueden reactivar). Lo que no
+  tiene historia se puede eliminar. El saldo inicial no cuenta como historia.
+- Sobre lo desactivado no se registra ni se edita (G4): movimientos, saldo
+  inicial, categoría de un gasto o ingreso nuevo, aprobar un pendiente con
+  una categoría desactivada, asociar una tarjeta a un banco desactivado.
+- Sección "Desactivadas" en cada página para reactivar.
+- Los listados de movimientos nombran el origen desactivado como
+  "<nombre> (desactivada)"; esas filas no se editan hasta reactivarlo.
+
+### Arquitectura
+- Todas las escrituras del catálogo pasan por casos de uso
+  (`src/application/catalog.ts`) con reglas en `src/domain/catalog/`.
+
+### Limpieza
+- Se borra el SP `create_financing` (1.2.2), reemplazado por
+  `create_financing_v2` en 2.0.0.
+- Se quita código sin uso (`TRANSACTION_TYPE_LABELS`) y se ajusta la
+  documentación de financiamientos.
+
+### Base de datos (correr a mano, DESPUÉS de todo 2.0.0)
+1. `supabase/Versionamiento/2.1.0/00_drop_create_financing.sql`
+
 ## 2.0.0 — 2026-10-12
 
 Rediseño por dominio (DDD pragmático): la lógica de negocio se separa de la
