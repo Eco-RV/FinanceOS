@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DollarSign, Landmark, LogOut, Scale, Tags } from "lucide-react";
+import { DollarSign, Landmark, LogOut, RotateCcw, Scale, Tags } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { signOutAction } from "@/lib/session-actions";
 import { Button } from "@/components/ui/button";
@@ -108,6 +108,23 @@ export default async function AjustesPage() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               Colones por dólar, para tarjetas bimoneda.
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link
+          href="/ajustes/arranque"
+          className="rounded-xl transition-colors hover:bg-muted/40"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RotateCcw className="size-4 text-muted-foreground" />
+                Arranque de 0
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Empezar de nuevo con saldos iniciales nuevos.
             </CardContent>
           </Card>
         </Link>

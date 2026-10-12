@@ -35,7 +35,7 @@
 | M5 | Un abono afecta el saldo de la tarjeta **en la moneda de la cuenta origen** (no hay conversión en un abono). | — | Decidido · Implementado 2.0.0 |
 | M6 | Un ingreso puede tener fecha futura. | — | Decidido |
 | M7 | Un movimiento con fecha futura es **programado**: no cuenta en saldos "de hoy" ni en el pago de contado hasta que llega su fecha. Sí cuenta en el disponible de la tarjeta si es cuota de un financiamiento. | — | Propuesta (amplía la regla actual de cuotas) |
-| M8 | El Arranque de 0 pide confirmación explícita, archiva todos los movimientos y exige un saldo inicial nuevo por cuenta y tarjeta. | Rechaza sin confirmación | Decidido (qué conserva) · Propuesta (archivar) |
+| M8 | El Arranque de 0 pide confirmación escrita (`ARRANCAR`) y un saldo inicial nuevo (puede ser 0) por cada cuenta y tarjeta activa (tarjetas: CRC y USD). De forma atómica: borra las cuotas pendientes (fecha > hoy) de los financiamientos, **archiva** todos los movimientos (no visibles), elimina financiamientos y préstamos (sus cuotas cobradas quedan archivadas) y crea los saldos iniciales nuevos, que son lo único visible. | Rechaza sin confirmación o sin saldos | Decidido 2026-10-12 · Implementado 2.2.0 |
 
 ## Tarjetas de crédito
 

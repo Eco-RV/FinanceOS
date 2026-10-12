@@ -64,7 +64,7 @@
 | **Categoría de gasto** / **de ingreso** | Clasificación de un gasto (comida, transporte…) o un ingreso. El usuario parte de una lista sugerida y puede editar, deshabilitar y consultar. | Decidido |
 | **Movimiento programado** | Movimiento con fecha futura que nace de un plan (salario, suscripción, seguro, cuota). Se muestra como **proyección** y no se confunde con lo ocurrido hasta que llega su fecha. | Propuesta |
 | **Archivar** | Sacar movimientos de la vista y de los saldos sin borrarlos. | Propuesta |
-| **Arranque de 0** | Rutina con confirmación que archiva todos los movimientos (gastos, ingresos, abonos, transferencias…) y pide un saldo inicial nuevo para cada cuenta y tarjeta. Conserva cuentas, tarjetas, bancos, categorías, salario, suscripciones y seguros. | Decidido (qué conserva) · Propuesta (archiva en vez de borrar) |
+| **Arranque de 0** | Rutina con confirmación que archiva todos los movimientos (gastos, ingresos, abonos, transferencias, cuotas cobradas…), elimina financiamientos y préstamos con sus cuotas pendientes y pide un saldo inicial nuevo para cada cuenta y tarjeta. Conserva cuentas, tarjetas, bancos, categorías, salario, suscripciones y seguros. | Decidido |
 
 ## Planes recurrentes
 

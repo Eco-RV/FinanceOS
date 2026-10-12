@@ -19,6 +19,7 @@ import {
   type LoanRepository,
   type ExchangeRateRepository,
   type FinancingRepository,
+  type FreshStartRepository,
   type MerchantRuleRepository,
   type MovementRepository,
   type PendingPurchase,
@@ -503,6 +504,45 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     },
   };
 
+  const freshStart: FreshStartRepository = {
+    async activeProducts() {
+      const [{ data: acc, error: e1 }, { data: crd, error: e2 }] = await Promise.all([
+        supabase.from("accounts").select("id, name, currency").eq("archived", false),
+        supabase.from("credit_cards").select("id, name").eq("archived", false),
+      ]);
+      check(e1 ?? e2, "No se pudieron leer las cuentas y tarjetas");
+      return [
+        ...(acc ?? []).map((a) => ({
+          kind: "account" as const,
+          id: a.id as string,
+          name: a.name as string,
+          currencies: [isCurrency(String(a.currency)) ? (a.currency as Currency) : "CRC"],
+        })),
+        // T1: una tarjeta lleva saldo en CRC y en USD.
+        ...(crd ?? []).map((c) => ({
+          kind: "card" as const,
+          id: c.id as string,
+          name: c.name as string,
+          currencies: ["CRC", "USD"] as Currency[],
+        })),
+      ];
+    },
+    async run(todayISO, on, openings) {
+      // supabase/Versionamiento/2.2.0/00_fresh_start.sql (atómico).
+      const { data, error } = await supabase.rpc("fresh_start", {
+        p_today: todayISO,
+        p_on: on,
+        p_openings: openings.map((o) =>
+          o.kind === "account"
+            ? { account_id: o.id, amount: o.amount }
+            : { card_id: o.id, currency: o.currency, amount: o.amount },
+        ),
+      });
+      check(error, "No se pudo completar el arranque de 0");
+      return Number(data) || 0;
+    },
+  };
+
   const exchangeRates: ExchangeRateRepository = {
     async latest() {
       const { data } = await supabase
@@ -534,6 +574,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     merchantRules,
     balances,
     exchangeRates,
+    freshStart,
   };
 }
 

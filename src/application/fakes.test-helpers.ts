@@ -16,6 +16,7 @@ import type {
   CategoryRepository,
   ExchangeRateRepository,
   FinancingRepository,
+  FreshStartRepository,
   Loan,
   LoanRepository,
   MerchantRuleRepository,
@@ -53,7 +54,7 @@ export function fakeStore(seed: {
   );
   const categoryRows = new Map(Object.entries(seed.categories ?? {}));
   const bankRows = new Map(Object.entries(seed.banks ?? {}));
-  const movements = new Map<string, NewMovement & { financing_id?: string }>();
+  const movements = new Map<string, NewMovement & { financing_id?: string | null; archived?: boolean }>();
   const financings = new Map<string, NewFinancing>();
   const cancelled = new Map<string, string>();
   const pending = new Map<string, PendingRow>(
@@ -176,7 +177,7 @@ export function fakeStore(seed: {
     openingOf: async (target, id, currency) => {
       for (const [movementId, m] of movements) {
         const owner = target === "account" ? m.account_id : m.card_id;
-        if (m.type === "opening_balance" && owner === id && m.currency === currency) {
+        if (m.type === "opening_balance" && owner === id && m.currency === currency && !m.archived) {
           return { id: movementId, amount: m.amount, occurred_on: m.occurred_on };
         }
       }
@@ -275,6 +276,52 @@ export function fakeStore(seed: {
     },
   };
 
+  const freshStarts: { on: string; archived: number }[] = [];
+  const freshStart: FreshStartRepository = {
+    activeProducts: async () => [
+      ...[...accountRows]
+        .filter(([, r]) => !r.archived)
+        .map(([id, r]) => ({ kind: "account" as const, id, name: r.name, currencies: [r.currency] })),
+      ...[...cardRows]
+        .filter(([, r]) => !r.archived)
+        .map(([id, r]) => ({
+          kind: "card" as const,
+          id,
+          name: r.name,
+          currencies: ["CRC", "USD"] as Currency[],
+        })),
+    ],
+    // Igual que supabase/Versionamiento/2.2.0/00_fresh_start.sql.
+    run: async (todayISO, on, openings) => {
+      for (const [id, m] of movements) {
+        if (m.financing_id && m.occurred_on > todayISO && !m.archived) movements.delete(id);
+      }
+      let archived = 0;
+      for (const m of movements.values()) {
+        if (!m.archived) archived++;
+        m.archived = true;
+        m.financing_id = null;
+        m.loan_id = null;
+      }
+      financings.clear();
+      loanRows.clear();
+      for (const o of openings) {
+        movements.set(nextId("mv"), {
+          type: "opening_balance",
+          amount: o.amount,
+          currency: o.currency,
+          occurred_on: on,
+          category: null,
+          note: "Saldo inicial (arranque de 0)",
+          account_id: o.kind === "account" ? o.id : null,
+          card_id: o.kind === "card" ? o.id : null,
+        });
+      }
+      freshStarts.push({ on, archived });
+      return archived;
+    },
+  };
+
   const cardKey = (id: string, currency: Currency) => `${id}:${currency}`;
   const balances: BalanceRepository = {
     stored: async () => [
@@ -333,6 +380,7 @@ export function fakeStore(seed: {
       categories,
       banks,
       loans,
+      freshStart,
       movements: movementRepo,
       financings: financingRepo,
       pending: pendingRepo,
@@ -353,6 +401,7 @@ export function fakeStore(seed: {
       categoryRows,
       bankRows,
       loanRows,
+      freshStarts,
     },
     balanceOf,
   };
