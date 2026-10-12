@@ -65,6 +65,7 @@
 | L3 | Una cuota se paga una sola vez; un préstamo pagado no admite más pagos. | Rechaza | Decidido · Implementado 2.1.0 |
 | L4 | Un préstamo está **atrasado** si tiene cuotas con fecha anterior a hoy sin pagar. | Advierte | Decidido · Implementado 2.1.0 |
 | L5 | Solo se deshace el pago de la **última** cuota pagada. | Rechaza | Decidido · Implementado 2.1.0 |
+| L6 | **Cuota a cobro** de un préstamo: con cuotas vencidas, su total; si no, la próxima cuota cuando vence dentro de 31 días. Entra en "pagos próximos" y en la cobertura del débito junto a las tarjetas (solo CRC suma). El capital pendiente resta del patrimonio neto. | — | Decidido · Implementado 2.1.0 |
 | F6 | Las partes de una cuota entre miembros suman exactamente la cuota. | Rechaza | Propuesta |
 | F7 | Un reembolso de miembro no toca la tarjeta ni las cuentas. | — | Decidido |
 | F8 | El aviso de cuota es informativo: se envía a cada miembro con su parte y las quincenas (1, 2 o 3) que faltan para la fecha límite. | — | Decidido |

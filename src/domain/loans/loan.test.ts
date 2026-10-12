@@ -4,6 +4,7 @@ import { DomainError } from "../shared/errors.ts";
 import {
   installmentNote,
   lastPaidInstallment,
+  loanDue,
   loanProgress,
   loanSchedule,
   nextInstallment,
@@ -107,4 +108,27 @@ test("installmentNote desglosa interés y capital", () => {
     installmentNote("Carro", row, 12),
     "Carro · cuota 1/12 (interés 12000.00 · capital 44735.76)",
   );
+});
+
+test("L6: cuota a cobro — vencidas suman; la próxima solo dentro del horizonte", () => {
+  // Primera cuota el 1/11: el 12/10 faltan 20 días → entra.
+  assert.deepEqual(loanDue(loanProgress(terms, [], "2026-10-12"), "2026-10-12"), {
+    amount: 56_735.76,
+    dueOn: "2026-11-01",
+    overdue: false,
+    installments: [1],
+  });
+  // El 15/09 faltan 47 días → todavía no.
+  assert.equal(loanDue(loanProgress(terms, [], "2026-09-15"), "2026-09-15"), null);
+  // Dos cuotas vencidas.
+  const late = loanDue(loanProgress(terms, [], "2026-12-15"), "2026-12-15");
+  assert.deepEqual(late, {
+    amount: 113_471.52,
+    dueOn: "2026-11-01",
+    overdue: true,
+    installments: [1, 2],
+  });
+  // Pagado: nada.
+  const all = loanSchedule(terms).rows.map((r) => r.no);
+  assert.equal(loanDue(loanProgress(terms, all, "2030-01-01"), "2030-01-01"), null);
 });

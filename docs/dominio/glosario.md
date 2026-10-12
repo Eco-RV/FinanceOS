@@ -90,6 +90,7 @@
 | **Aviso de cuota** | Mensaje informativo (correo y/o WhatsApp) a cada miembro con su parte y cuántas quincenas (1, 2 o 3) faltan para la fecha límite. | Decidido |
 | **Préstamo** | Deuda con un banco por un monto, a N meses, con tasa de interés anual fija. | Decidido |
 | **Desembolso** | Dinero que el banco deposita al dar un préstamo. Se registra (opcional) como ingreso en una cuenta. | Decidido |
+| **Cuota a cobro (préstamo)** | Lo que hay que pagar ya de un préstamo: las cuotas vencidas, o la próxima si vence dentro de 31 días (L6). | Decidido |
 | **Capital pendiente** | Lo que falta pagar del monto prestado, sin intereses futuros: el saldo después de la última cuota pagada. | Decidido |
 | **Tabla de amortización** | Calendario de cuotas de un préstamo o financiamiento con interés: por cuota, interés, abono al capital y capital restante. Sistema francés (cuota fija). | Decidido |
 

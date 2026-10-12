@@ -67,7 +67,24 @@ Como usuario quiero deshacer un pago que marqué por error.
 - En Gastos e Ingresos los pagos y el desembolso aparecen con "Ver en
   Préstamos" en vez de editar/eliminar (L2): se gestionan solo desde aquí.
 
-### 5. Editar, eliminar o desactivar un préstamo
+### 5. Ver las cuotas en el Resumen
+Como usuario quiero ver en el Resumen las cuotas que vienen y saber si mi
+débito alcanza para pagarlas junto con las tarjetas.
+
+**Criterios de aceptación**
+- "Pagos próximos" del Resumen lista tarjetas y préstamos juntos, del más
+  urgente al de más tiempo, con enlace al detalle.
+- De cada préstamo entra (L6): si tiene cuotas vencidas, su **total** (aviso
+  rojo de atraso, "Cuotas 1–2/12"); si no, la **próxima cuota** cuando vence
+  dentro de 31 días. Un préstamo cuya primera cuota está lejos no aparece
+  todavía.
+- Esas cuotas suman en "A pagar", en el aviso de cobertura de los próximos 10
+  días y en la línea "desde aquí los pagos superan tu disponible" (solo CRC,
+  como las tarjetas).
+- Nueva tarjeta "Capital pendiente en préstamos" (CRC) y el patrimonio neto
+  resta ese capital.
+
+### 6. Editar, eliminar o desactivar un préstamo
 **Criterios de aceptación**
 - Editar cambia nombre, banco y cuenta sugerida. Monto, tasa, plazo y
   fechas **no** se editan: definen el calendario.
@@ -92,8 +109,8 @@ Como usuario quiero deshacer un pago que marqué por error.
 - Abonos extraordinarios al capital (recalcular plazo o cuota).
 - Tasa variable, seguros o comisiones dentro de la cuota; cada banco puede
   tener particularidades: conviene comparar el calendario con el del banco.
-- Los pagos de préstamos todavía no aparecen en el Resumen (dashboard) ni en
-  la cobertura del débito.
+- Las cuotas en dólares se listan en el Resumen pero no suman en la
+  cobertura (igual que las tarjetas en USD).
 - Financiamiento con interés sobre una tarjeta (propuesta en
   [`tarjetas.md`](./tarjetas.md)): usará la misma tabla de amortización.
 
@@ -102,3 +119,5 @@ Como usuario quiero deshacer un pago que marqué por error.
 - **2026-10-12 (v2.1.0, en desarrollo)** — Primera versión: préstamos con
   calendario francés, pago de cuotas en orden, desembolso opcional
   (`supabase/Versionamiento/2.1.0/01_loans.sql`).
+- **2026-10-12 (v2.1.0)** — Las cuotas a cobro entran al Resumen y a la
+  cobertura del débito (L6); el patrimonio neto resta el capital pendiente.

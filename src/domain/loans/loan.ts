@@ -10,7 +10,7 @@
  */
 
 import { DomainError } from "../shared/errors.ts";
-import type { ISODate } from "../shared/calendar.ts";
+import { daysUntil, fromISODate, type ISODate } from "../shared/calendar.ts";
 import type { Currency } from "../shared/money.ts";
 import { fromCents, toCents } from "../shared/money.ts";
 import {
@@ -134,6 +134,45 @@ export function loanProgress(
     interestPaid: sum(paidRows, "interest"),
     interestPending: sum(pendingRows, "interest"),
   };
+}
+
+/** L6: una cuota entra a "pagos próximos" si vence dentro de este plazo. */
+export const LOAN_DUE_HORIZON_DAYS = 31;
+
+/** Cuota a cobro de un préstamo, para el Resumen y la cobertura del débito. */
+export type LoanDue = {
+  /** Si hay atraso, la suma de las cuotas vencidas; si no, la próxima cuota. */
+  amount: number;
+  /** Vencimiento de la primera cuota que se cobra. */
+  dueOn: ISODate;
+  overdue: boolean;
+  /** Números de cuota que suma `amount`. */
+  installments: number[];
+};
+
+/**
+ * L6: lo que hay que pagar de un préstamo. Con cuotas vencidas, su total (L4);
+ * si no, la próxima cuota cuando vence dentro de `horizonDays`. `null` si está
+ * pagado o la próxima cuota todavía está lejos (p. ej. un préstamo nuevo cuya
+ * primera cuota es en meses).
+ */
+export function loanDue(
+  progress: LoanProgress,
+  todayISO: ISODate,
+  horizonDays: number = LOAN_DUE_HORIZON_DAYS,
+): LoanDue | null {
+  if (progress.overdue.length > 0) {
+    return {
+      amount: fromCents(progress.overdue.reduce((s, r) => s + toCents(r.payment), 0)),
+      dueOn: progress.overdue[0].occurred_on,
+      overdue: true,
+      installments: progress.overdue.map((r) => r.no),
+    };
+  }
+  const next = progress.next;
+  if (!next) return null;
+  if (daysUntil(fromISODate(next.occurred_on), fromISODate(todayISO)) > horizonDays) return null;
+  return { amount: next.payment, dueOn: next.occurred_on, overdue: false, installments: [next.no] };
 }
 
 /** Nota legible del pago de una cuota: "Cuota 3/12 · interés ₡… · capital ₡…". */
