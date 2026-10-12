@@ -47,6 +47,8 @@ listados si ya no la uso sin perder su historia.
 - Regla G4: no se registra ni se edita sobre una tarjeta desactivada, y no se
   le asocia un banco desactivado (sí conserva el que ya tenía; se muestra
   como "(desactivado)").
+- Sus cargos siguen en el listado de Gastos con el origen como
+  "<nombre> (desactivada)" y sin editar/eliminar hasta reactivarla.
 
 ### 3. Ver el listado de tarjetas con su estado
 Como usuario quiero ver todas mis tarjetas con un indicador de estado, el

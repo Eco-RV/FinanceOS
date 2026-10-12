@@ -53,6 +53,9 @@ perder la historia de lo que pasó en ella.
   no tienen movimientos).
 - Regla G4: sobre una cuenta desactivada no se registran movimientos ni se
   edita; hay que activarla primero.
+- Sus movimientos siguen en los listados de Gastos, Ingresos, Transferencias y
+  en el detalle de tarjeta, con el origen como "<nombre> (desactivada)". Esas
+  filas no se editan ni se eliminan hasta reactivar la cuenta.
 
 ### 4. Ver mis cuentas y mi liquidez total
 Como usuario quiero ver todas mis cuentas con su saldo actual y un total en
@@ -78,8 +81,6 @@ colones, para tener una vista rápida de mi liquidez.
 
 ## Pendiente / fuera de alcance
 
-- Los movimientos de una cuenta desactivada siguen en los listados de
-  Gastos/Ingresos/Transferencias, pero su origen se muestra como "—".
 - No hay conversión de moneda entre cuentas de distinta divisa.
 - Ahorros con metas (roadmap paso 4) todavía no existen como concepto propio;
   hoy una cuenta `savings` es solo una cuenta más sin objetivo asociado.

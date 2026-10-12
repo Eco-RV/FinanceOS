@@ -24,7 +24,16 @@ export function originValue(t: Pick<Transaction, "account_id" | "card_id">): str
   return "";
 }
 
-/** Etiqueta legible del origen de una fila (para tablas). */
+/** Nombre para mostrar; marca lo desactivado (G5) para que se entienda en el historial. */
+export function productLabel(p: Pick<Account, "name" | "archived"> | undefined): string {
+  if (!p) return "—";
+  return p.archived ? `${p.name} (desactivada)` : p.name;
+}
+
+/**
+ * Etiqueta legible del origen de una fila (para tablas). Recibe también las
+ * cuentas/tarjetas desactivadas para no perder el nombre en el historial.
+ */
 export function originLabel(
   t: Transaction,
   accounts: Account[],
@@ -32,13 +41,31 @@ export function originLabel(
 ): string {
   if (t.account_id) {
     const a = accounts.find((x) => x.id === t.account_id);
-    if (a) return a.name;
+    if (a) return productLabel(a);
   }
   if (t.card_id) {
     const c = cards.find((x) => x.id === t.card_id);
-    if (c) return c.name;
+    if (c) return productLabel(c);
   }
   return "—";
+}
+
+/**
+ * G4: un movimiento ligado a una cuenta o tarjeta desactivada no se edita ni
+ * se elimina desde los listados; primero hay que activarla.
+ */
+export function touchesInactive(
+  t: Pick<Transaction, "account_id" | "card_id" | "to_account_id">,
+  accounts: Pick<Account, "id" | "archived">[],
+  cards: Pick<CreditCard, "id" | "archived">[],
+): boolean {
+  const inactive = (list: { id: string; archived: boolean }[], id: string | null | undefined) =>
+    Boolean(id) && list.some((x) => x.id === id && x.archived);
+  return (
+    inactive(accounts, t.account_id) ||
+    inactive(accounts, t.to_account_id) ||
+    inactive(cards, t.card_id)
+  );
 }
 
 type OpeningRow = {
