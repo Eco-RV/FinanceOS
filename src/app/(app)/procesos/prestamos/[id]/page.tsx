@@ -63,7 +63,7 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
             {loan.name}
             {loan.archived ? <Badge variant="outline">Desactivado</Badge> : null}
           </h1>
@@ -121,7 +121,7 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-medium">Calendario de cuotas</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Calendario de cuotas</h2>
           {loan.archived ? null : (
             <div className="flex flex-wrap gap-2">
               {p.paidCount > 0 ? (
@@ -146,7 +146,7 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
           </p>
         ) : null}
 
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="surface overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -209,8 +209,10 @@ function Alert({ tone, children }: { tone: "danger" | "ok"; children: ReactNode 
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-4",
-        tone === "danger" ? "border-destructive/40 bg-destructive/5" : "border-border",
+        "flex items-start gap-3 rounded-xl p-4",
+        tone === "danger"
+          ? "border border-destructive/30 bg-destructive/5 dark:bg-destructive/10"
+          : "surface",
       )}
     >
       {children}

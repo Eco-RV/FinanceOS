@@ -43,7 +43,7 @@ export default async function MiembrosPage() {
       <BackLink href="/ajustes" label="Ajustes" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Miembros</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Miembros</h1>
           <p className="text-sm text-muted-foreground">
             Familia que te paga parte de las cuotas de un financiamiento.
           </p>
@@ -52,13 +52,13 @@ export default async function MiembrosPage() {
       </div>
 
       {members.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
           Todavía no tenés miembros. Agregá uno y después repartí las cuotas
           desde el detalle de un financiamiento.
         </p>
       ) : (
         <>
-          <div className="hidden rounded-lg border sm:block">
+          <div className="surface hidden overflow-hidden sm:block">
             <Table>
               <TableHeader>
                 <TableRow>

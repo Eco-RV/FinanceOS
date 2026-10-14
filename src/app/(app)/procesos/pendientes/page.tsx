@@ -53,7 +53,7 @@ export default async function PendientesPage() {
       <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Compras por confirmar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Compras por confirmar</h1>
           <p className="text-sm text-muted-foreground">
             Detectadas en los avisos de tu banco. Confirmá la tarjeta y la
             categoría para registrarlas como gasto.
@@ -63,7 +63,7 @@ export default async function PendientesPage() {
       </div>
 
       {!connData ? (
-        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
           Todavía no conectaste tu correo.{" "}
           <Link href="/ajustes/bancos" className="underline">
             Conectalo en Ajustes → Bancos
@@ -71,7 +71,7 @@ export default async function PendientesPage() {
           .
         </div>
       ) : pending.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
           No hay compras por confirmar.
           {connData.last_synced_at
             ? ` Última lectura: ${formatDate(connData.last_synced_at.slice(0, 10))}.`
@@ -89,7 +89,7 @@ export default async function PendientesPage() {
                 : categories;
 
             return (
-              <li key={p.id} className="rounded-lg border p-3">
+              <li key={p.id} className="surface p-3">
                 <form className="flex flex-col gap-3">
                   <input type="hidden" name="id" value={p.id} />
 

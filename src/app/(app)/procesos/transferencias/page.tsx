@@ -36,7 +36,7 @@ export default async function TransferenciasPage() {
       <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Transferencias</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Transferencias</h1>
           <p className="text-sm text-muted-foreground">
             Dinero que movés entre tus propias cuentas. No cuenta como gasto.
           </p>

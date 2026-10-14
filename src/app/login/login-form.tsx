@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Wallet } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -23,9 +24,12 @@ export function LoginForm() {
   );
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-lg">FinanceOS</CardTitle>
+    <Card className="w-full max-w-sm motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-98 motion-safe:duration-300">
+      <CardHeader className="gap-1.5">
+        <span className="mb-2 grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+          <Wallet className="size-5" />
+        </span>
+        <CardTitle className="text-xl">FinanceOS</CardTitle>
         <CardDescription>
           {mode === "login"
             ? "Inicia sesión con tu correo"
@@ -72,7 +76,7 @@ export function LoginForm() {
 
           <button
             type="button"
-            className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+            className="rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring active:opacity-70"
             onClick={() => setMode(mode === "login" ? "signup" : "login")}
           >
             {mode === "login"

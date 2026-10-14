@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FormField } from "@/components/form-field";
+import { FormField, Select } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import type { Bank } from "@/lib/types";
 import { PARSERS } from "@/lib/mail/parsers/index.ts";
@@ -82,18 +82,17 @@ export function BankFormDialog({ bank }: { bank?: Bank }) {
             htmlFor="parser_key"
             error={errors?.parser_key}
           >
-            <select
+            <Select
               id="parser_key"
               name="parser_key"
               defaultValue={bank?.parser_key ?? "bac"}
-              className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
             >
               {Object.entries(PARSERS).map(([key, { label }]) => (
                 <option key={key} value={key}>
                   {label}
                 </option>
               ))}
-            </select>
+            </Select>
           </FormField>
 
           <label className="flex items-center gap-2 text-sm">

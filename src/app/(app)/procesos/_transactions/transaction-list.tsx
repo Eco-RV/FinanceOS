@@ -65,7 +65,7 @@ export function TransactionList({
 
   if (transactions.length === 0) {
     return (
-      <div className="rounded-lg border">
+      <div className="surface overflow-hidden">
         <Table>
           <TableBody>
             <TableRow>
@@ -156,7 +156,7 @@ export function TransactionList({
 
   return (
     <>
-      <div className="hidden rounded-lg border sm:block">
+      <div className="surface hidden overflow-hidden sm:block">
       <Table>
         <TableHeader>
           <TableRow>

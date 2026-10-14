@@ -24,7 +24,7 @@ export function UserMenu({ email }: { email: string }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Cuenta"
-        className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium text-foreground transition-colors outline-none hover:bg-muted/70 focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-muted/70"
+        className="grid size-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-semibold text-foreground ring-1 ring-foreground/5 transition-[background-color,box-shadow,scale] duration-150 ease-fluid outline-none hover:bg-foreground/10 focus-visible:ring-3 focus-visible:ring-ring/50 aria-expanded:bg-foreground/10 motion-safe:active:scale-95"
       >
         {initials(email)}
       </DropdownMenuTrigger>

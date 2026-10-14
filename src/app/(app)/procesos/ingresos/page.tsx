@@ -44,7 +44,7 @@ export default async function IngresosPage() {
       <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Ingresos</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Ingresos</h1>
           <p className="text-sm text-muted-foreground">
             Depósitos y entradas a tus cuentas.
           </p>

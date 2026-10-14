@@ -57,7 +57,7 @@ export default async function BancosPage({
       <BackLink href="/ajustes" label="Ajustes" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Bancos</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Bancos</h1>
           <p className="text-sm text-muted-foreground">
             De qué remitentes leer notificaciones de compras con tarjeta.
           </p>
@@ -67,17 +67,17 @@ export default async function BancosPage({
 
       {gmail && GMAIL_MESSAGES[gmail] ? (
         <p
-          className={`rounded-lg border p-3 text-sm ${
-            gmail === "ok" ? "" : "border-destructive/50 text-destructive"
+          className={`rounded-xl p-3 text-sm ${
+            gmail === "ok" ? "surface" : "border border-destructive/30 bg-destructive/5 text-destructive"
           }`}
         >
           {GMAIL_MESSAGES[gmail]}
         </p>
       ) : null}
 
-      <section className="flex flex-col gap-3 rounded-lg border p-4">
+      <section className="surface flex flex-col gap-3 p-4">
         <div>
-          <h2 className="text-lg font-medium">Correo</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Correo</h2>
           <p className="text-sm text-muted-foreground">
             Finance OS lee los avisos de los bancos de abajo y, si lo usás,
             envía desde tu cuenta los avisos de cuota a tus miembros. Nunca ve
@@ -122,12 +122,12 @@ export default async function BancosPage({
       </section>
 
       {banks.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
           Todavía no agregaste ningún banco. Agregá uno con el correo desde el
           que te llegan los avisos de compra.
         </div>
       ) : (
-        <div className="rounded-lg border">
+        <div className="surface overflow-hidden">
           <Table>
             <TableBody>
               {banks.map((b) => (

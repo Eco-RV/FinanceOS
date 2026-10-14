@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, LoaderCircle, Trash2 } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ export function LifecycleButton({
       aria-label={label}
       title={label}
       disabled={pending}
+      aria-busy={pending}
       onClick={() => {
         if (confirmLabel && !window.confirm(confirmLabel)) return;
         const formData = new FormData();
@@ -51,7 +52,11 @@ export function LifecycleButton({
         });
       }}
     >
-      <Icon className="size-4" />
+      {pending ? (
+        <LoaderCircle className="size-4 animate-spin" />
+      ) : (
+        <Icon className="size-4" />
+      )}
     </Button>
   );
 }

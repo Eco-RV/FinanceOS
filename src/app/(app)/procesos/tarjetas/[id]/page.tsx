@@ -150,7 +150,7 @@ export default async function CardDetailPage({
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold">{card.name}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{card.name}</h1>
               <CardStatusBadge status={multi.status} daysToDue={urgentDaysToDue(multi)} />
             </div>
             {subtitle ? (
@@ -176,7 +176,7 @@ export default async function CardDetailPage({
         const settled = s.status === "al-dia" || s.status === "sin-saldo";
         return (
           <section key={cur} className="flex flex-col gap-3">
-            <h2 className="text-lg font-medium">
+            <h2 className="text-lg font-semibold tracking-tight">
               Estado de cuenta{multi.currencies.length > 1 ? ` en ${cur === "CRC" ? "colones" : "dólares"}` : ""}
             </h2>
 
@@ -270,7 +270,7 @@ export default async function CardDetailPage({
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-medium">Financiamientos</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Financiamientos</h2>
           <FinancingForm
             cardId={card.id}
             currency={card.currency}
@@ -293,7 +293,7 @@ export default async function CardDetailPage({
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-medium">Movimientos</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Movimientos</h2>
           {accounts.length > 0 ? (
             <TransactionForm
               type="card_payment"
@@ -333,10 +333,10 @@ function Alert({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-4",
+        "flex items-start gap-3 rounded-xl p-4",
         tone === "danger"
-          ? "border-destructive/40 bg-destructive/5"
-          : "border-border",
+          ? "border border-destructive/30 bg-destructive/5 dark:bg-destructive/10"
+          : "surface",
       )}
     >
       {children}

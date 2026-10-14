@@ -1,9 +1,10 @@
-import Link from "next/link";
-import { DollarSign, Landmark, LogOut, RotateCcw, Scale, Tags, Users } from "lucide-react";
+import { DollarSign, Landmark, LogOut, MonitorCog, RotateCcw, Scale, Tags, UserCog, Users } from "lucide-react";
+import type { ComponentType } from "react";
 import { requireUser } from "@/lib/auth";
 import { signOutAction } from "@/lib/session-actions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { NavCard, NavCardDisabled } from "@/components/nav-card";
 import {
   Card,
   CardContent,
@@ -12,9 +13,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const SOON: { title: string; description: string }[] = [
-  { title: "Cuenta", description: "Cambiar contraseña y correo." },
-  { title: "App", description: "Tema, moneda base y formato de fecha." },
+type IconType = ComponentType<{ className?: string }>;
+
+const LINKS: { href: string; label: string; description: string; icon: IconType }[] = [
+  { href: "/ajustes/categorias", label: "Categorías", description: "Categorías de gastos e ingresos.", icon: Tags },
+  { href: "/ajustes/bancos", label: "Bancos", description: "Correos de compras con tarjeta.", icon: Landmark },
+  { href: "/ajustes/miembros", label: "Miembros", description: "Familia que paga parte de tus financiamientos.", icon: Users },
+  { href: "/ajustes/saldos", label: "Verificar saldos", description: "Que cada saldo cuadre con sus movimientos.", icon: Scale },
+  { href: "/ajustes/tipo-cambio", label: "Tipo de cambio", description: "Colones por dólar, para tarjetas bimoneda.", icon: DollarSign },
+  { href: "/ajustes/arranque", label: "Arranque de 0", description: "Empezar de nuevo con saldos iniciales nuevos.", icon: RotateCcw },
+];
+
+const SOON: { title: string; description: string; icon: IconType }[] = [
+  { title: "Cuenta", description: "Cambiar contraseña y correo.", icon: UserCog },
+  { title: "App", description: "Moneda base y formato de fecha.", icon: MonitorCog },
 ];
 
 export default async function AjustesPage() {
@@ -23,7 +35,7 @@ export default async function AjustesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Ajustes</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Ajustes</h1>
         <p className="text-sm text-muted-foreground">
           Preferencias de tu cuenta y de la app.
         </p>
@@ -44,120 +56,24 @@ export default async function AjustesPage() {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Link
-          href="/ajustes/categorias"
-          className="rounded-xl transition-colors hover:bg-muted/40"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tags className="size-4 text-muted-foreground" />
-                Categorías
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Categorías de gastos e ingresos.
-            </CardContent>
-          </Card>
-        </Link>
+        {LINKS.map(({ href, label, description, icon }) => (
+          <NavCard
+            key={href}
+            href={href}
+            icon={icon}
+            label={label}
+            description={description}
+          />
+        ))}
 
-        <Link
-          href="/ajustes/bancos"
-          className="rounded-xl transition-colors hover:bg-muted/40"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Landmark className="size-4 text-muted-foreground" />
-                Bancos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Correos de compras con tarjeta.
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link
-          href="/ajustes/miembros"
-          className="rounded-xl transition-colors hover:bg-muted/40"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="size-4 text-muted-foreground" />
-                Miembros
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Familia que paga parte de tus financiamientos.
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link
-          href="/ajustes/saldos"
-          className="rounded-xl transition-colors hover:bg-muted/40"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Scale className="size-4 text-muted-foreground" />
-                Verificar saldos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Que cada saldo cuadre con sus movimientos.
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link
-          href="/ajustes/tipo-cambio"
-          className="rounded-xl transition-colors hover:bg-muted/40"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="size-4 text-muted-foreground" />
-                Tipo de cambio
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Colones por dólar, para tarjetas bimoneda.
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link
-          href="/ajustes/arranque"
-          className="rounded-xl transition-colors hover:bg-muted/40"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RotateCcw className="size-4 text-muted-foreground" />
-                Arranque de 0
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Empezar de nuevo con saldos iniciales nuevos.
-            </CardContent>
-          </Card>
-        </Link>
-
-        {SOON.map(({ title, description }) => (
-          <Card key={title}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-2">
-                {title}
-                <Badge variant="secondary">Próximamente</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {description}
-            </CardContent>
-          </Card>
+        {SOON.map(({ title, description, icon }) => (
+          <NavCardDisabled
+            key={title}
+            icon={icon}
+            label={title}
+            description={description}
+            badge={<Badge variant="secondary">Próximamente</Badge>}
+          />
         ))}
       </div>
     </div>

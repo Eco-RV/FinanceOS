@@ -119,7 +119,7 @@ export default async function TarjetasPage() {
       <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Tarjetas de crédito</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Tarjetas de crédito</h1>
           <p className="text-sm text-muted-foreground">
             Estado del corte y fecha límite de pago de cada tarjeta.
           </p>
@@ -128,7 +128,7 @@ export default async function TarjetasPage() {
       </div>
 
       {cards.length === 0 ? (
-        <div className="rounded-lg border">
+        <div className="surface overflow-hidden">
           <Table>
             <TableBody>
               <TableRow>
@@ -141,7 +141,7 @@ export default async function TarjetasPage() {
         </div>
       ) : (
         <>
-          <div className="hidden rounded-lg border sm:block">
+          <div className="surface hidden overflow-hidden sm:block">
             <Table>
               <TableHeader>
                 <TableRow>

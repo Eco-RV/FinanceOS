@@ -36,7 +36,7 @@ export default async function CategoriasPage() {
     <div className="flex flex-col gap-6">
       <BackLink href="/ajustes" label="Ajustes" />
       <div>
-        <h1 className="text-2xl font-semibold">Categorías</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Categorías</h1>
         <p className="text-sm text-muted-foreground">
           Las que usás al registrar gastos e ingresos.
         </p>
@@ -76,12 +76,12 @@ function CategorySection({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-medium">{title}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         <CategoryFormDialog kind={kind} />
       </div>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-4">
           <p className="text-sm text-muted-foreground">
             No tenés categorías de {title.toLowerCase()}.
           </p>
@@ -93,7 +93,7 @@ function CategorySection({
           </form>
         </div>
       ) : (
-        <div className="rounded-lg border">
+        <div className="surface overflow-hidden">
           <Table>
             <TableBody>
               {items.map((c) => (
