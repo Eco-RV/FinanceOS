@@ -1,5 +1,4 @@
 import type { ComponentType } from "react";
-import Link from "next/link";
 import {
   ArrowLeftRight,
   Banknote,
@@ -15,7 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { crToday, toISODate } from "@/domain";
 import { loadFinancingBoard } from "@/lib/financing-board";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NavCard } from "@/components/nav-card";
 
 type Item = {
   href: string;
@@ -107,25 +106,15 @@ export default async function ProcesosPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {items.map(({ href, label, description, icon: Icon, badge }) => (
-          <Link
+        {items.map(({ href, label, description, icon, badge }) => (
+          <NavCard
             key={href}
             href={href}
-            className="rounded-xl transition-colors hover:bg-muted/40"
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon className="size-4 text-muted-foreground" />
-                  {label}
-                  {badge ? <Badge>{badge}</Badge> : null}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                {description}
-              </CardContent>
-            </Card>
-          </Link>
+            icon={icon}
+            label={label}
+            description={description}
+            badge={badge ? <Badge>{badge}</Badge> : null}
+          />
         ))}
       </div>
     </div>
