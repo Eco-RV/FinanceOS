@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.4.0 — sin publicar
+## 2.4.0 — 2026-10-14
 
 Rediseño visual: superficies más limpias, microinteracciones y tema oscuro.
 
@@ -21,7 +21,13 @@ Rediseño visual: superficies más limpias, microinteracciones y tema oscuro.
   mientras trabajan.
 - Con "reducir movimiento" del sistema no hay escalas ni desplazamientos.
 
+### Dependencias
+- Se quitó `next-themes` (el tema lo maneja la app).
+
 ### Base de datos
+- Sin cambios.
+
+### Configuración
 - Sin cambios.
 
 ## 2.3.0 — 2026-10-14

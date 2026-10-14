@@ -50,7 +50,7 @@ saldos de cuentas de débito y ahorros.
 
 Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind v4 ·
 shadcn/ui sobre `@base-ui/react` · Supabase (`@supabase/ssr`, Auth email+password,
-Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
+Postgres + RLS) · Zod v4 · sonner (toasts) · tema claro/oscuro propio (`src/lib/theme.ts`).
 
 ## Arquitectura y convenciones
 
@@ -82,7 +82,7 @@ Postgres + RLS) · Zod v4 · sonner (toasts) · next-themes.
 | Navegación | `src/components/app-nav.tsx` (`"use client"`) + `src/components/back-link.tsx` | 3 pestañas: **Resumen** (`/dashboard`) · **Procesos** (`/procesos`) · **Ajustes** (`/ajustes`); `useIsActive` hace prefix-match, así que `/procesos/*` ilumina Procesos. `AppTopBar` (marca + pestañas en `sm+` + `ThemeToggle` + `UserMenu`) y `AppBottomNav` (tabs inferiores en móvil). `<BackLink href label />` = enlace "← <índice>" arriba a la izquierda en cada sub-página (`/procesos/*`, `/ajustes/categorias`). `UserMenu` (`src/components/user-menu.tsx`): avatar + dropdown con correo y cerrar sesión. `src/app/(app)/layout.tsx` también trae cuentas/tarjetas/categorías una vez y renderiza el FAB global (ver fila siguiente). |
 | Acceso rápido / responsive | `src/components/mobile-list.tsx` (`MobileList`/`MobileCard`/`MobileField`) + `TransactionForm` prop `fab` | El layout de `(app)` muestra un botón flotante "Nuevo gasto" (`TransactionForm type="expense" fab`) en todas las páginas. Las listas con muchas columnas (Cuentas, Tarjetas, Movimientos, Financiamientos) renderizan **dos vistas**: la `<Table>` de siempre envuelta en `hidden sm:block`, y un bloque `sm:hidden` con `MobileList`/`MobileCard` que muestra la misma fila como tarjeta apilada (mismos componentes de acción, sin lógica nueva) — así en mobile no hace falta scroll horizontal para editar/borrar. |
 | Diseño e interacción (2.4.0) | `src/app/globals.css` (tokens `--shadow-card`/`--shadow-card-hover`, `ease-fluid`, utilidad `surface`, reduced-motion) + `src/lib/interactive.ts` (`FOCUS_OUTLINE`, `PRESSABLE_SURFACE`, `PRESSABLE_ROW`) + `src/components/nav-card.tsx` (`NavCard`/`NavCardDisabled`) + `panel.tsx` + `link-pending.tsx` (`LinkChevron`) | Fondo de página gris suave y superficies blancas (`surface` = card + `ring` suave + sombra) para tablas, listas y bloques. Una card que **solo navega** es un `NavCard` (todo el `Link` es la card); una fila que solo navega usa `PRESSABLE_ROW` (Resumen: pagos y cortes). Filas o cards con acciones internas (editar/eliminar) **no** se hacen clicables enteras. `Button` se hunde (`scale 0.97`) salvo los disparadores de menú; transiciones solo de color/sombra/escala. Spinners de ejecución en `LifecycleButton`, `DeleteButton` (`useFormStatus`) y acciones de miembros. |
-| Tema claro/oscuro (2.4.0) | `src/lib/theme-script.ts` (`THEME_SCRIPT`, en `<head>` de `src/app/layout.tsx`) + `src/lib/theme.ts` (`useTheme`, `setTheme`) + `src/components/theme-toggle.tsx` | Sin elección guardada sigue al sistema; el botón sol/luna guarda `light`/`dark` en `localStorage` (`theme`). El script pone `.dark` en `<html>` antes de pintar (patrón de `node_modules/next/dist/docs/01-app/02-guides/preventing-flash-before-hydration.md`); el ícono se elige por CSS (`dark:`) para no desincronizar la hidratación. Sonner usa el mismo `useTheme`. `next-themes` queda instalado pero sin uso. |
+| Tema claro/oscuro (2.4.0) | `src/lib/theme-script.ts` (`THEME_SCRIPT`, en `<head>` de `src/app/layout.tsx`) + `src/lib/theme.ts` (`useTheme`, `setTheme`) + `src/components/theme-toggle.tsx` | Sin elección guardada sigue al sistema; el botón sol/luna guarda `light`/`dark` en `localStorage` (`theme`). El script pone `.dark` en `<html>` antes de pintar (patrón de `node_modules/next/dist/docs/01-app/02-guides/preventing-flash-before-hydration.md`); el ícono se elige por CSS (`dark:`) para no desincronizar la hidratación. Sonner usa el mismo `useTheme`. Sin `next-themes` (se quitó en 2.4.0). |
 | Instalable (PWA-lite) | `src/app/manifest.ts`, `public/icon.svg`, `viewport`/`metadata` en `src/app/layout.tsx` | `display: standalone`, `theme-color` claro/oscuro, `apple-touch-icon`. Sin service worker. |
 
 - **Degrada con gracia sin variables de Supabase**: `getUser()` atrapa el error; útil
@@ -190,7 +190,7 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 | 2.1 | Cierre de la Fase 2: catálogo por casos de uso, eliminar vs. desactivar (G5) y nada sobre lo desactivado (G4) · limpieza (SP `create_financing`) · préstamos bancarios con cuotas en el Resumen | ✅ v2.1.0 (en `main`) |
 | 2.2 | Arranque de 0 (M8) | ✅ v2.2.0 (en `main`) |
 | 2.3 | Financiamientos completos: con interés (F5), edición (F9), miembros con reparto por cuota (F6), reembolsos (F7) y avisos por quincena por WhatsApp/correo (F8) | ✅ v2.3.0 (en `main`) |
-| 2.4 | Rediseño UI/UX: superficies, microinteracciones, cards/filas clicables enteras y tema claro/oscuro | 🚧 `feature/2.4.0` |
+| 2.4 | Rediseño UI/UX: superficies, microinteracciones, cards/filas clicables enteras y tema claro/oscuro | ✅ v2.4.0 (en `main`) |
 | 4 | Ahorros y metas | ⏳ |
 
 ## Gotchas
