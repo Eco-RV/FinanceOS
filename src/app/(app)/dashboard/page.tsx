@@ -40,6 +40,9 @@ import type {
 } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Panel } from "@/components/panel";
+import { LinkChevron } from "@/components/link-pending";
+import { FOCUS_OUTLINE, PRESSABLE_ROW, PRESSABLE_SURFACE } from "@/lib/interactive";
 import { cn } from "@/lib/utils";
 
 type Level = "overdue" | "urgent" | "soon" | "ok";
@@ -230,10 +233,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-2xl font-semibold">Resumen</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Resumen</h1>
 
       {overdue.length > 0 ? (
-        <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 dark:bg-destructive/10">
           <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
           <div className="flex flex-col gap-1">
             <p className="text-sm font-medium text-destructive">
@@ -322,10 +325,16 @@ export default async function DashboardPage() {
       {noticesToSend > 0 || receivableCrc > 0 ? (
         <Link
           href="/procesos/cobros"
-          className="flex items-start gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/40"
+          className={cn(
+            "flex items-center gap-3 rounded-xl bg-card p-4 shadow-card ring-1 ring-foreground/6 dark:ring-foreground/10",
+            PRESSABLE_SURFACE,
+            FOCUS_OUTLINE,
+          )}
         >
-          <BellRing className="mt-0.5 size-5 shrink-0 text-foreground/70" />
-          <div className="flex flex-col gap-0.5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-foreground/80">
+            <BellRing className="size-[18px]" />
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <p className="text-sm font-medium">
               {noticesToSend > 0
                 ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} de cuota por enviar`
@@ -337,14 +346,17 @@ export default async function DashboardPage() {
               </p>
             ) : null}
           </div>
+          <LinkChevron />
         </Link>
       ) : null}
 
       {dueSoon > 0 ? (
         <div
           className={cn(
-            "flex items-start gap-3 rounded-lg border p-4",
-            coversSoon ? "border-border" : "border-destructive/40 bg-destructive/5",
+            "flex items-start gap-3 rounded-xl p-4",
+            coversSoon
+              ? "bg-card shadow-card ring-1 ring-foreground/6 dark:ring-foreground/10"
+              : "border border-destructive/30 bg-destructive/5 dark:bg-destructive/10",
           )}
         >
           {coversSoon ? (
@@ -373,7 +385,7 @@ export default async function DashboardPage() {
       ) : null}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Pagos próximos</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Pagos próximos</h2>
         {cards.length === 0 && loans.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No hay tarjetas ni préstamos registrados.{" "}
@@ -408,11 +420,11 @@ export default async function DashboardPage() {
 
       {cutoffs.length > 0 ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium">Próximos cortes</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Próximos cortes</h2>
           <p className="text-sm text-muted-foreground">
             El corte fija el saldo de contado que vas a tener que pagar.
           </p>
-          <div className="overflow-hidden rounded-lg border">
+          <Panel className="divide-y">
             {cutoffs.map(({ card, st, cutoff, days }) => (
               <CutoffRow
                 key={card.id}
@@ -422,7 +434,7 @@ export default async function DashboardPage() {
                 days={days}
               />
             ))}
-          </div>
+          </Panel>
         </section>
       ) : null}
     </div>
@@ -466,18 +478,18 @@ function PaymentGroup({
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {title}
       </p>
-      <div className="overflow-hidden rounded-lg border">
+      <Panel className="divide-y">
         {payments.map((p, i) => (
           <div key={paymentKey(p)}>
             {dividerAt === i && i > 0 ? (
-              <p className="border-y bg-muted/40 px-4 py-1.5 text-xs text-muted-foreground">
+              <p className="border-b bg-muted/50 px-4 py-1.5 text-xs text-muted-foreground">
                 Desde aquí los pagos superan tu disponible en débito
               </p>
             ) : null}
             <PaymentRow p={p} />
           </div>
         ))}
-      </div>
+      </Panel>
     </div>
   );
 }
@@ -498,17 +510,17 @@ function PaymentRow({ p }: { p: Payment }) {
   const subtitle = paymentSubtitle(p);
 
   return (
-    <div
+    <Link
+      href={href}
       className={cn(
         "flex flex-col gap-2 border-l-4 px-4 py-3",
+        PRESSABLE_ROW,
         LEVEL_BORDER[level],
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <Link href={href} className="font-medium hover:underline">
-            {paymentName(p)}
-          </Link>
+          <p className="font-medium">{paymentName(p)}</p>
           {subtitle ? (
             <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
           ) : null}
@@ -530,8 +542,9 @@ function PaymentRow({ p }: { p: Payment }) {
         <span className="shrink-0 text-xs text-muted-foreground">
           {formatDate(p.dueDate)}
         </span>
+        <LinkChevron className="-mr-1" />
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -548,8 +561,11 @@ function CutoffRow({
 }) {
   const soon = days <= 1;
   return (
-    <div className="flex items-center justify-between gap-4 px-4 py-3">
-      <div className="min-w-0">
+    <Link
+      href={`/procesos/tarjetas/${card.id}`}
+      className={cn("flex items-center justify-between gap-4 px-4 py-3", PRESSABLE_ROW)}
+    >
+      <div className="min-w-0 flex-1">
         <p className="font-medium">{card.name}</p>
         <p className="text-xs text-muted-foreground">
           {st.newCharges > 0
@@ -568,7 +584,8 @@ function CutoffRow({
           {days === 0 ? "corta hoy" : `corta ${relativeDayLabel(days)}`}
         </span>
       </div>
-    </div>
+      <LinkChevron className="-mr-1" />
+    </Link>
   );
 }
 
@@ -620,7 +637,7 @@ function Stat({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+        <CardTitle className="flex items-center gap-1.5 text-sm font-medium tracking-normal text-muted-foreground">
           {icon}
           {title}
         </CardTitle>
@@ -628,7 +645,7 @@ function Stat({
       <CardContent>
         <p
           className={cn(
-            "text-2xl font-semibold tabular-nums",
+            "text-2xl font-semibold tracking-tight tabular-nums",
             negative && "text-destructive",
           )}
         >
