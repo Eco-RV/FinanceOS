@@ -8,6 +8,7 @@ import {
   crToday,
   isCurrency,
   nextCutoffDate,
+  toISODate,
   type Currency,
 } from "@/domain";
 import type { Bank, CreditCard, Transaction } from "@/lib/types";
@@ -27,6 +28,7 @@ import { repositories } from "@/infrastructure/container";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { CardFormDialog } from "./card-form";
 import { cardOpeningsById } from "@/lib/transactions";
+import { scheduledInterestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { CardBalances, CardOwed, urgentDaysToDue } from "./card-money";
 import { CardStatusBadge } from "./card-status";
 import { deleteCard, setCardActive } from "./actions";
@@ -54,7 +56,12 @@ export default async function TarjetasPage() {
       .order("name", { ascending: true }),
   ]);
 
-  const allCards = (cardData ?? []) as CreditCard[];
+  const today = crToday();
+  // F5: solo el capital de los financiamientos cuenta desde el día 1.
+  const interest = await scheduledInterestByCard(supabase, toISODate(today));
+  const allCards = ((cardData ?? []) as CreditCard[]).map((c) =>
+    withoutScheduledInterest(c, interest),
+  );
   const withHistory = await idsWithHistory(
     (await repositories()).cards,
     allCards.map((c) => c.id),
@@ -84,7 +91,6 @@ export default async function TarjetasPage() {
       .filter((t) => t.type === "opening_balance")
       .map((t) => ({ ...t, account_id: null })),
   );
-  const today = crToday();
 
   const byCard = new Map<string, CardTxn[]>();
   for (const t of txns) {

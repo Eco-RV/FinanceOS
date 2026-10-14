@@ -79,8 +79,9 @@ export default async function BancosPage({
         <div>
           <h2 className="text-lg font-medium">Correo</h2>
           <p className="text-sm text-muted-foreground">
-            Finance OS lee, solo lectura, los avisos de los bancos de abajo.
-            Nunca ve tu contraseña y podés revocarlo cuando quieras.
+            Finance OS lee los avisos de los bancos de abajo y, si lo usás,
+            envía desde tu cuenta los avisos de cuota a tus miembros. Nunca ve
+            tu contraseña y podés revocarlo cuando quieras.
           </p>
         </div>
         {conn ? (
@@ -93,11 +94,22 @@ export default async function BancosPage({
                   : "Aún sin leer"}
               </div>
             </div>
-            <form action={disconnectMail}>
-              <Button type="submit" variant="outline" size="sm">
-                Desconectar
-              </Button>
-            </form>
+            <div className="flex flex-wrap gap-2">
+              {String(conn.scopes ?? "").includes("gmail.send") ? null : (
+                <a
+                  href="/api/gmail/connect"
+                  className={buttonVariants({ size: "sm" })}
+                  title="Para enviar avisos de cuota por correo"
+                >
+                  Reconectar para enviar avisos
+                </a>
+              )}
+              <form action={disconnectMail}>
+                <Button type="submit" variant="outline" size="sm">
+                  Desconectar
+                </Button>
+              </form>
+            </div>
           </div>
         ) : (
           <a

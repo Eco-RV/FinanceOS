@@ -2,6 +2,8 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
 import { BackLink } from "@/components/back-link";
+import { crToday, toISODate } from "@/domain";
+import { scheduledInterestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { FreshStartForm, type FreshStartRow } from "./fresh-start-form";
 
 type AccountRow = { id: string; name: string; currency: string; current_balance: number };
@@ -42,6 +44,10 @@ export default async function ArranquePage() {
     count("loans"),
   ]);
 
+  // F5: el interés de cuotas que no han llegado no es deuda; se borra con el plan.
+  const interest = await scheduledInterestByCard(supabase, toISODate(crToday()));
+  const cards = ((cardData ?? []) as CardRow[]).map((c) => withoutScheduledInterest(c, interest));
+
   // Por defecto cada saldo inicial nuevo es el saldo de hoy: solo se corrige lo que no cuadre.
   const rows: FreshStartRow[] = [
     ...((accData ?? []) as AccountRow[]).map((a) => ({
@@ -51,7 +57,7 @@ export default async function ArranquePage() {
       currency: a.currency === "USD" ? "USD" : "CRC",
       current: Number(a.current_balance),
     })),
-    ...((cardData ?? []) as CardRow[]).flatMap((c) => [
+    ...cards.flatMap((c) => [
       {
         field: `opening:card:${c.id}:CRC`,
         name: c.name,
