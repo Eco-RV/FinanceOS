@@ -18,7 +18,7 @@
 |---|---|---|
 | **Usuario** | La persona dueña de los datos. Entra con correo y contraseña o con Google; puede cambiar su contraseña y cerrar sesión. | Decidido |
 | **Familia** | Grupo de **contactos** del usuario (nombre, correo, WhatsApp) con quienes divide cuotas. **No** tienen login ni ven la app. | Decidido |
-| **Miembro** | Un contacto de la familia. | Decidido |
+| **Miembro** | Un contacto de la familia que paga parte de las cuotas de un financiamiento. Tiene nombre y correo y/o WhatsApp (Ajustes → Miembros). | Decidido · Implementado 2.3.0 |
 
 ## Bancos y productos
 
@@ -81,13 +81,15 @@
 | Término | Definición | Estado |
 |---|---|---|
 | **Financiamiento sin interés (tasa 0)** | Compra a N cuotas iguales sobre una tarjeta de crédito, sin interés. El total resta al disponible desde el día 1. | Decidido |
-| **Financiamiento con interés** | Compra a N cuotas sobre una tarjeta con tasa de interés. El capital resta al disponible desde el día 1; cada cuota incluye interés y abono al capital. | Propuesta (ver historia en `tarjetas.md`) |
+| **Capital (de un financiamiento)** | Lo financiado, sin intereses. En tasa 0 es el total de la compra. | Decidido · 2.3.0 |
+| **Financiamiento con interés** | Compra a N cuotas sobre una tarjeta con tasa de interés. El capital resta al disponible desde el día 1; cada cuota incluye interés y abono al capital, y su interés cuenta cuando llega su fecha. | Decidido · Implementado 2.3.0 (ver `historias-usuario/financiamientos.md`) |
 | **Cuota** | Cargo mensual de un financiamiento o préstamo, con número `i/N`. Se consulta en una sección propia, separada de los gastos. | Decidido |
 | **Cuota a cobro** | La cuota que entra en el estado de cuenta vigente. | Decidido |
 | **Abono a cuota** | Abono real a la tarjeta por el monto total de una cuota, desde una cuenta de débito. | Decidido |
-| **Parte de un miembro** | Fracción de una cuota que le toca a un miembro de la familia. | Decidido |
-| **Reembolso de miembro** | Registro de que un miembro pagó su parte (SINPE o efectivo). Es un control interno: **no toca la tarjeta**. | Decidido |
-| **Aviso de cuota** | Mensaje informativo (correo y/o WhatsApp) a cada miembro con su parte y cuántas quincenas (1, 2 o 3) faltan para la fecha límite. | Decidido |
+| **Parte de un miembro** | Monto fijo por cuota que le toca a un miembro de la familia; lo que sobra de la cuota es la parte del usuario. | Decidido · Implementado 2.3.0 |
+| **Reembolso de miembro** | Registro de que un miembro pagó su parte de una cuota (SINPE, efectivo, transferencia u otro). Es un control interno: **no toca la tarjeta**. | Decidido · Implementado 2.3.0 |
+| **Aviso de cuota** | Mensaje informativo (correo y/o WhatsApp) a cada miembro con su parte y cuántas quincenas (1, 2 o 3) faltan para la fecha límite. El usuario lo envía a mano desde Cobros a miembros. | Decidido · Implementado 2.3.0 |
+| **Por cobrar (a un miembro)** | Partes de cuotas que ya entraron a la tarjeta y el miembro todavía no reembolsó. | Decidido · 2.3.0 |
 | **Préstamo** | Deuda con un banco por un monto, a N meses, con tasa de interés anual fija. | Decidido |
 | **Desembolso** | Dinero que el banco deposita al dar un préstamo. Se registra (opcional) como ingreso en una cuenta. | Decidido |
 | **Cuota a cobro (préstamo)** | Lo que hay que pagar ya de un préstamo: las cuotas vencidas, o la próxima si vence dentro de 31 días (L6). | Decidido |

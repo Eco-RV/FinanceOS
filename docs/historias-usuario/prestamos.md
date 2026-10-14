@@ -111,8 +111,8 @@ débito alcanza para pagarlas junto con las tarjetas.
   tener particularidades: conviene comparar el calendario con el del banco.
 - Las cuotas en dólares se listan en el Resumen pero no suman en la
   cobertura (igual que las tarjetas en USD).
-- Financiamiento con interés sobre una tarjeta (propuesta en
-  [`tarjetas.md`](./tarjetas.md)): usará la misma tabla de amortización.
+- (Hecho en 2.3.0) El financiamiento con interés sobre una tarjeta usa la
+  misma tabla de amortización: ver [`financiamientos.md`](./financiamientos.md).
 
 ## Historial
 
