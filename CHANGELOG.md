@@ -1,6 +1,49 @@
 # Changelog
 
-## 2.2.0 — sin publicar
+## 2.3.0 — 2026-10-14
+
+Financiamientos completos: con interés, edición, miembros, reembolsos y
+avisos de cuota.
+
+### Financiamientos (tasa 0 y con interés)
+- **Tasa anual (%)** al crear un financiamiento: con 0 todo sigue igual
+  (cuotas iguales); con tasa, tabla de amortización francesa (la misma de
+  Préstamos, F5). El formulario muestra la cuota, los intereses y el costo
+  total.
+- Hasta **72 meses** (antes 48).
+- **Solo el capital** baja el saldo y el disponible desde el día 1; el interés
+  de cada cuota cuenta cuando llega su fecha (Tarjetas, detalle de tarjeta,
+  Resumen y Arranque de 0).
+- **Detalle del financiamiento**: tabla de cuotas con interés, capital, saldo,
+  estado y fecha límite de pago; interés cobrado, por cobrar y costo total.
+- **Editar** descripción y categoría, también en sus cuotas (F9). Los
+  términos no se editan.
+- En el historial de la tarjeta la cuota dice "incluye ₡X de interés" y
+  enlaza a su financiamiento.
+
+### Miembros, reembolsos y avisos (F6–F8)
+- **Ajustes → Miembros**: familia que paga parte de las cuotas (correo y
+  WhatsApp), con eliminar vs. desactivar.
+- **Repartir cuotas**: monto fijo por cuota por miembro; el resto es del
+  usuario.
+- **Reembolsos**: marcar que un miembro pagó su parte (no toca la tarjeta ni
+  las cuentas).
+- **Procesos → Cobros a miembros**: avisos por miembro y fecha límite, una vez
+  por quincena (3, 2, 1 y al vencer), por WhatsApp (mensaje listo) o correo
+  desde el Gmail conectado; lista de lo que cada miembro debe. Contador en
+  Procesos y aviso en el Resumen.
+
+### Base de datos (correr a mano, en orden, DESPUÉS de todo 2.2.0)
+1. `supabase/Versionamiento/2.3.0/00_financing_interest.sql`
+2. `supabase/Versionamiento/2.3.0/01_members.sql`
+3. `supabase/Versionamiento/2.3.0/02_mail_send_scope.sql`
+
+### Configuración
+- Google Cloud: agregar el scope `gmail.send` a la pantalla de consentimiento
+  OAuth.
+- Ajustes → Bancos: "Reconectar para enviar avisos".
+
+## 2.2.0 — 2026-10-12
 
 ### Arranque de 0 (M8)
 - `Ajustes → Arranque de 0`: con confirmación escrita (`ARRANCAR`) y un saldo
