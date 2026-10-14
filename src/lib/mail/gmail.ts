@@ -1,6 +1,9 @@
 import type { MailMessage } from "./types.ts";
 
-const SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+const READ_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+/** 2.3.0: enviar avisos de cuota a los miembros (F8). */
+export const SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
+const SCOPE = `${READ_SCOPE} ${SEND_SCOPE}`;
 const GMAIL = "https://gmail.googleapis.com/gmail/v1/users/me";
 
 function creds() {
@@ -36,6 +39,7 @@ async function tokenRequest(body: Record<string, string>) {
   const json = (await res.json()) as {
     access_token?: string;
     refresh_token?: string;
+    scope?: string;
     error?: string;
     error_description?: string;
   };
@@ -44,7 +48,7 @@ async function tokenRequest(body: Record<string, string>) {
       `Google OAuth: ${json.error ?? res.status} ${json.error_description ?? ""}`.trim(),
     );
   }
-  return json as { access_token: string; refresh_token?: string };
+  return json as { access_token: string; refresh_token?: string; scope?: string };
 }
 
 export function exchangeCode(code: string, redirectUri: string) {
@@ -137,4 +141,43 @@ export async function getMessage(
     html: findPart(payload, "text/html"),
     text: findPart(payload, "text/plain"),
   };
+}
+
+/** Codifica un encabezado con caracteres no ASCII (RFC 2047). */
+function encodeHeader(value: string): string {
+  return /^[\x20-\x7e]*$/.test(value)
+    ? value
+    : `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
+}
+
+/** Envía un correo de texto plano desde la cuenta conectada (requiere `gmail.send`). */
+export async function sendMessage(
+  accessToken: string,
+  mail: { to: string; subject: string; text: string },
+): Promise<void> {
+  const raw = [
+    `To: ${mail.to}`,
+    `Subject: ${encodeHeader(mail.subject)}`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    Buffer.from(mail.text, "utf8").toString("base64"),
+  ].join("\r\n");
+  const res = await fetch(`${GMAIL}/messages/send`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw: Buffer.from(raw, "utf8").toString("base64url") }),
+    cache: "no-store",
+  });
+  if (res.status === 401 || res.status === 403) throw new GmailPermissionError();
+  if (!res.ok) throw new Error(`Gmail API ${res.status} al enviar`);
+}
+
+/** La conexión no tiene permiso para enviar: hay que reconectar Gmail. */
+export class GmailPermissionError extends Error {
+  constructor() {
+    super("Gmail no tiene permiso para enviar");
+    this.name = "GmailPermissionError";
+  }
 }

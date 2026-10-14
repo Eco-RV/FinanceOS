@@ -7,6 +7,8 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isCurrency, type Currency, type Movement } from "@/domain";
+import { decryptToken } from "@/lib/mail/crypto";
+import { GmailPermissionError, refreshAccessToken, SEND_SCOPE, sendMessage } from "@/lib/mail/gmail";
 import {
   InfrastructureError,
   type AccountRepository,
@@ -17,6 +19,11 @@ import {
   type CategoryRepository,
   type Loan,
   type LoanRepository,
+  type Mailer,
+  type Member,
+  type MemberRepository,
+  type NoticeRepository,
+  type ReimbursementRepository,
   type ExchangeRateRepository,
   type FinancingRepository,
   type FreshStartRepository,
@@ -40,7 +47,7 @@ function exactILike(text: string): string {
   return text.trim().replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
-type CatalogTable = "accounts" | "credit_cards" | "categories" | "banks" | "loans";
+type CatalogTable = "accounts" | "credit_cards" | "categories" | "banks" | "loans" | "members";
 
 async function findEntry<Extra extends string = never>(
   supabase: SupabaseClient,
@@ -374,22 +381,41 @@ export function supabaseRepositories(supabase: SupabaseClient) {
   const financings: FinancingRepository = {
     async createWithInstallments(plan, installments) {
       // Guarda exactamente el plan que calculó el dominio, de forma atómica
-      // (supabase/Versionamiento/2.0.0/03_create_financing_v2.sql).
-      const { data, error } = await supabase.rpc("create_financing_v2", {
+      // (supabase/Versionamiento/2.3.0/00_financing_interest.sql).
+      const { data, error } = await supabase.rpc("create_financing_v3", {
         p_card_id: plan.card_id,
         p_description: plan.description,
         p_category: plan.category,
-        p_total_amount: plan.total_amount,
+        p_principal: plan.total_amount,
+        p_annual_rate: plan.annual_rate,
         p_months: plan.months,
         p_first_charge_on: plan.first_charge_on,
         p_installments: installments.map((c) => ({
           no: c.no,
           occurred_on: c.occurred_on,
           amount: c.amount,
+          interest: c.interest,
         })),
       });
       check(error, "No se pudo crear el financiamiento.");
       return { id: data as string };
+    },
+    async find(id) {
+      const { data } = await supabase
+        .from("financings")
+        .select("id, card_id, description, months, currency, cancelled_on")
+        .eq("id", id)
+        .eq("archived", false)
+        .maybeSingle();
+      if (!data) return null;
+      return {
+        id: data.id as string,
+        card_id: data.card_id as string,
+        description: data.description as string,
+        months: Number(data.months),
+        currency: isCurrency(String(data.currency)) ? (data.currency as Currency) : "CRC",
+        cancelled_on: (data.cancelled_on as string | null) ?? null,
+      };
     },
     async cardIdOf(id) {
       const { data } = await supabase
@@ -399,6 +425,29 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .maybeSingle();
       return data?.card_id ?? null;
     },
+    async update(id, fields) {
+      // supabase/Versionamiento/2.3.0/00_financing_interest.sql (plan + cuotas).
+      const { error } = await supabase.rpc("update_financing", {
+        p_financing_id: id,
+        p_description: fields.description,
+        p_category: fields.category,
+      });
+      check(error, "No se pudo actualizar el financiamiento");
+    },
+    async installments(id) {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("installment_no, amount, occurred_on")
+        .eq("financing_id", id)
+        .eq("archived", false)
+        .order("installment_no");
+      check(error, "No se pudieron leer las cuotas");
+      return (data ?? []).map((r) => ({
+        no: Number(r.installment_no),
+        amount: Number(r.amount),
+        occurred_on: r.occurred_on as string,
+      }));
+    },
     async cancel(id, todayISO) {
       // supabase/Versionamiento/2.0.0/04_cancel_financing.sql
       const { data, error } = await supabase.rpc("cancel_financing", {
@@ -407,6 +456,151 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       });
       check(error, "No se pudo eliminar el financiamiento");
       return data === "deleted" ? "deleted" : "cancelled";
+    },
+    async shares(id) {
+      const { data, error } = await supabase
+        .from("financing_shares")
+        .select("member_id, amount")
+        .eq("financing_id", id)
+        .eq("archived", false);
+      check(error, "No se pudo leer el reparto");
+      return (data ?? []).map((r) => ({ member_id: r.member_id as string, amount: Number(r.amount) }));
+    },
+    async replaceShares(id, shares) {
+      // Sin transacción: se borran las que salen y se insertan/actualizan las
+      // demás (upsert por financiamiento + miembro), así nunca queda vacío a medias.
+      const { data: current, error: e1 } = await supabase
+        .from("financing_shares")
+        .select("member_id")
+        .eq("financing_id", id);
+      check(e1, "No se pudo leer el reparto");
+      const keep = new Set(shares.map((s) => s.member_id));
+      const gone = (current ?? []).map((r) => r.member_id as string).filter((m) => !keep.has(m));
+      if (gone.length > 0) {
+        const { error } = await supabase
+          .from("financing_shares")
+          .delete()
+          .eq("financing_id", id)
+          .in("member_id", gone);
+        check(error, "No se pudo guardar el reparto");
+      }
+      if (shares.length > 0) {
+        const { error } = await supabase.from("financing_shares").upsert(
+          shares.map((s) => ({ financing_id: id, member_id: s.member_id, amount: s.amount, archived: false })),
+          { onConflict: "financing_id,member_id" },
+        );
+        check(error, "No se pudo guardar el reparto");
+      }
+    },
+  };
+
+  const MEMBER_COLUMNS = "id, name, email, phone, archived";
+  const members: MemberRepository = {
+    async find(id) {
+      const { data } = await supabase.from("members").select(MEMBER_COLUMNS).eq("id", id).maybeSingle();
+      return (data as Member | null) ?? null;
+    },
+    // G5: partes en financiamientos y reembolsos.
+    async historyCount(id) {
+      const [shares, reimbursements] = await Promise.all([
+        count(
+          supabase
+            .from("financing_shares")
+            .select("id", { count: "exact", head: true })
+            .eq("member_id", id),
+          HISTORY_ERROR,
+        ),
+        count(
+          supabase
+            .from("member_reimbursements")
+            .select("id", { count: "exact", head: true })
+            .eq("member_id", id),
+          HISTORY_ERROR,
+        ),
+      ]);
+      return shares + reimbursements;
+    },
+    async setArchived(id, archived) {
+      const { error } = await supabase.from("members").update({ archived }).eq("id", id);
+      if (error?.code === UNIQUE_VIOLATION) {
+        throw new InfrastructureError("Ya hay un miembro activo con ese nombre");
+      }
+      check(error, "No se pudo actualizar el miembro");
+    },
+    async save(id, fields) {
+      const { data, error } = id
+        ? await supabase.from("members").update(fields).eq("id", id).select("id").single()
+        : await supabase.from("members").insert(fields).select("id").single();
+      if (error?.code === UNIQUE_VIOLATION) {
+        throw new InfrastructureError("Ya existe un miembro con ese nombre");
+      }
+      check(error, "No se pudo guardar el miembro");
+      return { id: data!.id as string };
+    },
+    async delete(id) {
+      const { error } = await supabase.from("members").delete().eq("id", id);
+      check(error, "No se pudo eliminar el miembro");
+    },
+  };
+
+  const reimbursements: ReimbursementRepository = {
+    async create(r) {
+      const { data, error } = await supabase
+        .from("member_reimbursements")
+        .insert(r)
+        .select("id")
+        .single();
+      if (error?.code === UNIQUE_VIOLATION) {
+        throw new InfrastructureError("Esa parte ya está reembolsada");
+      }
+      check(error, "No se pudo registrar el reembolso");
+      return { id: data!.id as string };
+    },
+    async membersWithReimbursements(financingId) {
+      const { data, error } = await supabase
+        .from("member_reimbursements")
+        .select("member_id")
+        .eq("financing_id", financingId);
+      check(error, "No se pudieron leer los reembolsos");
+      return [...new Set((data ?? []).map((r) => r.member_id as string))];
+    },
+    async delete(id) {
+      const { data, error } = await supabase
+        .from("member_reimbursements")
+        .delete()
+        .eq("id", id)
+        .select("financing_id")
+        .maybeSingle();
+      check(error, "No se pudo deshacer el reembolso");
+      return (data?.financing_id as string | undefined) ?? null;
+    },
+  };
+
+  const notices: NoticeRepository = {
+    async record(items) {
+      const { error } = await supabase.from("member_notices").insert(items);
+      check(error, "No se pudo registrar el aviso");
+    },
+  };
+
+  /** Correo desde el Gmail conectado del usuario (F8). */
+  const RECONNECT = "Reconectá Gmail en Ajustes → Bancos para permitir enviar avisos";
+  const mailer: Mailer = {
+    async send(mail) {
+      const { data: conn } = await supabase
+        .from("mail_connections")
+        .select("refresh_token_enc, scopes")
+        .eq("provider", "gmail")
+        .maybeSingle();
+      if (!conn) throw new InfrastructureError("Conectá Gmail en Ajustes → Bancos para enviar avisos por correo");
+      if (!String(conn.scopes ?? "").includes(SEND_SCOPE)) throw new InfrastructureError(RECONNECT);
+      try {
+        const token = await refreshAccessToken(decryptToken(conn.refresh_token_enc as string));
+        await sendMessage(token, mail);
+      } catch (e) {
+        if (e instanceof GmailPermissionError) throw new InfrastructureError(RECONNECT);
+        throw new InfrastructureError("No se pudo enviar el correo");
+      }
     },
   };
 
@@ -570,6 +764,10 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     loans,
     movements,
     financings,
+    members,
+    reimbursements,
+    notices,
+    mailer,
     pending,
     merchantRules,
     balances,

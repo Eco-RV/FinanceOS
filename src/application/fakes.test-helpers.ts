@@ -5,6 +5,7 @@ import {
   deriveBalances,
   type Currency,
   type ExchangeRate,
+  type MemberShare,
 } from "../domain/index.ts";
 import type {
   AccountRepository,
@@ -18,6 +19,14 @@ import type {
   FinancingRepository,
   FreshStartRepository,
   Loan,
+  Mailer,
+  Member,
+  MemberRepository,
+  NewNotice,
+  NewReimbursement,
+  NoticeRepository,
+  OutgoingMail,
+  ReimbursementRepository,
   LoanRepository,
   MerchantRuleRepository,
   MovementRepository,
@@ -39,6 +48,8 @@ export function fakeStore(seed: {
   pending?: (PendingPurchase & { bank_id?: string | null })[];
   categories?: Record<string, CategoryRow>;
   banks?: Record<string, BankRow>;
+  /** id → nombre. */
+  members?: Record<string, string>;
 } = {}) {
   const product = (currency: Currency, name: string): Product => ({
     name,
@@ -54,8 +65,21 @@ export function fakeStore(seed: {
   );
   const categoryRows = new Map(Object.entries(seed.categories ?? {}));
   const bankRows = new Map(Object.entries(seed.banks ?? {}));
-  const movements = new Map<string, NewMovement & { financing_id?: string | null; archived?: boolean }>();
+  const movements = new Map<
+    string,
+    NewMovement & { financing_id?: string | null; interest_amount?: number | null; archived?: boolean }
+  >();
   const financings = new Map<string, NewFinancing>();
+  const shares = new Map<string, MemberShare[]>();
+  const memberRows = new Map<string, Omit<Member, "id">>(
+    Object.entries(seed.members ?? {}).map(([id, name]) => [
+      id,
+      { name, email: `${id}@correo.cr`, phone: null, archived: false },
+    ]),
+  );
+  const reimbursementRows = new Map<string, NewReimbursement>();
+  const notices: NewNotice[] = [];
+  const sentMail: OutgoingMail[] = [];
   const cancelled = new Map<string, string>();
   const pending = new Map<string, PendingRow>(
     (seed.pending ?? []).map((p) => [p.id, { ...p, status: "pending" }]),
@@ -204,6 +228,7 @@ export function fakeStore(seed: {
         movements.set(nextId("mv"), {
           type: "expense",
           amount: c.amount,
+          interest_amount: c.interest || null,
           currency: "CRC",
           occurred_on: c.occurred_on,
           category: plan.category,
@@ -211,11 +236,40 @@ export function fakeStore(seed: {
           account_id: null,
           card_id: plan.card_id,
           financing_id: id,
+          installment_no: c.no,
         });
       }
       return { id };
     },
+    find: async (id) => {
+      const f = financings.get(id);
+      return f
+        ? {
+            id,
+            card_id: f.card_id,
+            description: f.description,
+            months: f.months,
+            currency: "CRC",
+            cancelled_on: cancelled.get(id) ?? null,
+          }
+        : null;
+    },
     cardIdOf: async (id) => financings.get(id)?.card_id ?? null,
+    update: async (id, fields) => {
+      const f = financings.get(id);
+      if (!f) return;
+      financings.set(id, { ...f, ...fields });
+      for (const m of movements.values()) {
+        if (m.financing_id !== id || m.archived) continue;
+        m.category = fields.category;
+        m.note = `${fields.description} (cuota ${m.installment_no}/${f.months})`;
+      }
+    },
+    installments: async (id) =>
+      [...movements.values()]
+        .filter((m) => m.financing_id === id && !m.archived)
+        .map((m) => ({ no: m.installment_no!, amount: m.amount, occurred_on: m.occurred_on }))
+        .sort((a, b) => a.no - b.no),
     cancel: async (id, todayISO) => {
       for (const [mvId, m] of movements) {
         if (m.financing_id === id && m.occurred_on > todayISO) movements.delete(mvId);
@@ -227,6 +281,71 @@ export function fakeStore(seed: {
       }
       cancelled.set(id, todayISO);
       return "cancelled";
+    },
+    shares: async (id) => [...(shares.get(id) ?? [])],
+    replaceShares: async (id, next) => {
+      shares.set(id, [...next]);
+    },
+  };
+  const membersRepo: MemberRepository = {
+    find: async (id) => {
+      const r = memberRows.get(id);
+      return r ? { id, ...r } : null;
+    },
+    historyCount: async (id) =>
+      [...shares.values()].flat().filter((s) => s.member_id === id).length +
+      [...reimbursementRows.values()].filter((r) => r.member_id === id).length,
+    setArchived: async (id, archived) => {
+      const r = memberRows.get(id);
+      if (r) r.archived = archived;
+    },
+    delete: async (id) => {
+      memberRows.delete(id);
+    },
+    save: async (id, fields) => {
+      const taken = [...memberRows.entries()].some(
+        ([k, r]) => k !== id && !r.archived && r.name.toLowerCase() === fields.name.toLowerCase(),
+      );
+      if (taken) throw new InfrastructureError("Ya existe un miembro con ese nombre");
+      const key = id ?? nextId("mem");
+      memberRows.set(key, { ...fields, archived: memberRows.get(key)?.archived ?? false });
+      return { id: key };
+    },
+  };
+  const reimbursementsRepo: ReimbursementRepository = {
+    create: async (r) => {
+      const dup = [...reimbursementRows.values()].some(
+        (x) =>
+          x.financing_id === r.financing_id &&
+          x.member_id === r.member_id &&
+          x.installment_no === r.installment_no,
+      );
+      if (dup) throw new InfrastructureError("Esa parte ya está reembolsada");
+      const id = nextId("reim");
+      reimbursementRows.set(id, r);
+      return { id };
+    },
+    membersWithReimbursements: async (financingId) => [
+      ...new Set(
+        [...reimbursementRows.values()]
+          .filter((r) => r.financing_id === financingId)
+          .map((r) => r.member_id),
+      ),
+    ],
+    delete: async (id) => {
+      const r = reimbursementRows.get(id);
+      reimbursementRows.delete(id);
+      return r?.financing_id ?? null;
+    },
+  };
+  const noticesRepo: NoticeRepository = {
+    record: async (items) => {
+      notices.push(...items);
+    },
+  };
+  const mailer: Mailer = {
+    send: async (mail) => {
+      sentMail.push(mail);
     },
   };
   const pendingRepo: PendingRepository = {
@@ -304,6 +423,10 @@ export function fakeStore(seed: {
         m.loan_id = null;
       }
       financings.clear();
+      // Cascada de los financiamientos (2.3.0): partes, reembolsos y avisos.
+      shares.clear();
+      reimbursementRows.clear();
+      notices.length = 0;
       loanRows.clear();
       for (const o of openings) {
         movements.set(nextId("mv"), {
@@ -383,6 +506,10 @@ export function fakeStore(seed: {
       freshStart,
       movements: movementRepo,
       financings: financingRepo,
+      members: membersRepo,
+      reimbursements: reimbursementsRepo,
+      notices: noticesRepo,
+      mailer,
       pending: pendingRepo,
       merchantRules,
       balances,
@@ -391,6 +518,11 @@ export function fakeStore(seed: {
     state: {
       movements,
       financings,
+      shares,
+      memberRows,
+      reimbursementRows,
+      notices,
+      sentMail,
       cancelled,
       rates,
       pending,
