@@ -48,7 +48,7 @@ export default async function CobrosPage() {
       </div>
 
       {board.parts.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
           Ningún financiamiento tiene reparto. Agregá miembros en{" "}
           <Link href="/ajustes/miembros" className="underline">
             Ajustes → Miembros
@@ -83,8 +83,8 @@ export default async function CobrosPage() {
             </div>
           )}
           {notified.length > 0 ? (
-            <details className="rounded-lg border p-3 text-sm">
-              <summary className="cursor-pointer text-muted-foreground">
+            <details className="surface p-3 text-sm">
+              <summary className="cursor-pointer rounded-sm text-muted-foreground transition-colors select-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring">
                 Ya avisados en esta quincena ({notified.length})
               </summary>
               <div className="mt-2 flex flex-col gap-2">
@@ -107,7 +107,7 @@ export default async function CobrosPage() {
             {board.receivables.map((r) => {
               const member = board.members.get(r.member_id);
               return (
-                <div key={`${r.member_id}:${r.currency}`} className="rounded-lg border p-3">
+                <div key={`${r.member_id}:${r.currency}`} className="surface p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-medium">{member?.name ?? "Miembro"}</p>
                     <p className="font-semibold tabular-nums">{formatCurrency(r.total, r.currency)}</p>
@@ -180,7 +180,7 @@ function NoticeCard({
   const message = noticeMessage(member.name, group, board.plans);
   const notice = { memberId: member.id, dueOn: group.due_on, currency: group.currency };
   return (
-    <div className={cn("flex flex-col gap-2 rounded-lg border p-3", muted && "opacity-80")}>
+    <div className={cn("surface flex flex-col gap-2 p-3", muted && "opacity-80")}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-medium">

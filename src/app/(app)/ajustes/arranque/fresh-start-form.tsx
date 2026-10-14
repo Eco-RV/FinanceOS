@@ -62,7 +62,7 @@ export function FreshStartForm({ rows }: { rows: FreshStartRow[] }) {
             No tenés cuentas ni tarjetas activas: el arranque solo archivará la historia.
           </p>
         ) : (
-          <div className="divide-y rounded-lg border">
+          <div className="surface divide-y overflow-hidden">
             {rows.map((r) => (
               <div key={r.field} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">

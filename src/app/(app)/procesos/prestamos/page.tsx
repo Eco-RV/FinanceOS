@@ -107,12 +107,12 @@ export default async function PrestamosPage() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
           Aún no tienes préstamos. Agrega el primero.
         </div>
       ) : (
         <>
-          <div className="hidden rounded-lg border sm:block">
+          <div className="surface hidden overflow-hidden sm:block">
             <Table>
               <TableHeader>
                 <TableRow>

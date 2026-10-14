@@ -49,7 +49,7 @@ export default async function SaldosPage() {
       {!result.ok ? (
         <p className="text-sm text-destructive">{result.message}</p>
       ) : result.value.drift.length === 0 ? (
-        <div className="flex items-start gap-3 rounded-lg border p-4">
+        <div className="surface flex items-start gap-3 p-4">
           <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
           <p className="text-sm">
             Todo cuadra: {result.value.checked} cuenta(s) y tarjeta(s) verificadas.
@@ -57,14 +57,14 @@ export default async function SaldosPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+          <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 dark:bg-destructive/10">
             <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
             <p className="text-sm">
               {result.value.drift.length} saldo(s) no coinciden con sus movimientos.
               Recalcular deja el saldo igual a lo que dicen los movimientos.
             </p>
           </div>
-          <div className="rounded-lg border">
+          <div className="surface overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>

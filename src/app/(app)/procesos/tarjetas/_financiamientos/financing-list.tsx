@@ -62,7 +62,7 @@ export function FinancingList({ financings, transactions, today, categories = []
 
   return (
     <>
-      <div className="hidden rounded-lg border sm:block">
+      <div className="surface hidden overflow-hidden sm:block">
         <Table>
           <TableHeader>
             <TableRow>

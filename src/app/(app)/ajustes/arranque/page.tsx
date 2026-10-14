@@ -87,7 +87,7 @@ export default async function ArranquePage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
+      <div className="flex flex-col gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 dark:bg-destructive/10 text-sm">
         <p className="font-medium text-destructive">Qué pasa al arrancar</p>
         <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
           <li>

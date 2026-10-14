@@ -146,7 +146,7 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
           </p>
         ) : null}
 
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="surface overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -209,8 +209,10 @@ function Alert({ tone, children }: { tone: "danger" | "ok"; children: ReactNode 
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-4",
-        tone === "danger" ? "border-destructive/40 bg-destructive/5" : "border-border",
+        "flex items-start gap-3 rounded-xl p-4",
+        tone === "danger"
+          ? "border border-destructive/30 bg-destructive/5 dark:bg-destructive/10"
+          : "surface",
       )}
     >
       {children}

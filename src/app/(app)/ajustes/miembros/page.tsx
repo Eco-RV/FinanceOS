@@ -52,13 +52,13 @@ export default async function MiembrosPage() {
       </div>
 
       {members.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
           Todavía no tenés miembros. Agregá uno y después repartí las cuotas
           desde el detalle de un financiamiento.
         </p>
       ) : (
         <>
-          <div className="hidden rounded-lg border sm:block">
+          <div className="surface hidden overflow-hidden sm:block">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -203,7 +203,7 @@ export default async function FinancingDetailPage({
         <h2 className="text-lg font-medium">
           {withInterest ? "Tabla de amortización" : "Cuotas"}
         </h2>
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="surface overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

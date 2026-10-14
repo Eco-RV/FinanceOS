@@ -63,7 +63,7 @@ export default async function PendientesPage() {
       </div>
 
       {!connData ? (
-        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
           Todavía no conectaste tu correo.{" "}
           <Link href="/ajustes/bancos" className="underline">
             Conectalo en Ajustes → Bancos
@@ -71,7 +71,7 @@ export default async function PendientesPage() {
           .
         </div>
       ) : pending.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
           No hay compras por confirmar.
           {connData.last_synced_at
             ? ` Última lectura: ${formatDate(connData.last_synced_at.slice(0, 10))}.`
@@ -89,7 +89,7 @@ export default async function PendientesPage() {
                 : categories;
 
             return (
-              <li key={p.id} className="rounded-lg border p-3">
+              <li key={p.id} className="surface p-3">
                 <form className="flex flex-col gap-3">
                   <input type="hidden" name="id" value={p.id} />
 

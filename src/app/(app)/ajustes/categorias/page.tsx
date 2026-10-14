@@ -81,7 +81,7 @@ function CategorySection({
       </div>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-4">
           <p className="text-sm text-muted-foreground">
             No tenés categorías de {title.toLowerCase()}.
           </p>
@@ -93,7 +93,7 @@ function CategorySection({
           </form>
         </div>
       ) : (
-        <div className="rounded-lg border">
+        <div className="surface overflow-hidden">
           <Table>
             <TableBody>
               {items.map((c) => (

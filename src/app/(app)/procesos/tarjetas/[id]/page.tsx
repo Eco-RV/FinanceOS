@@ -333,10 +333,10 @@ function Alert({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-4",
+        "flex items-start gap-3 rounded-xl p-4",
         tone === "danger"
-          ? "border-destructive/40 bg-destructive/5"
-          : "border-border",
+          ? "border border-destructive/30 bg-destructive/5 dark:bg-destructive/10"
+          : "surface",
       )}
     >
       {children}

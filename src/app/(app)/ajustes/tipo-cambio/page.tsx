@@ -41,7 +41,7 @@ export default async function TipoCambioPage() {
         <RateFormDialog lastRate={rates[0] ? Number(rates[0].usd_crc) : undefined} />
       </div>
 
-      <div className="rounded-lg border">
+      <div className="surface overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

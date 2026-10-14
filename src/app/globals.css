@@ -147,6 +147,11 @@
   }
 }
 
+/* Superficie de listas, tablas y bloques (2.4.0): card con borde suave y sombra. */
+@utility surface {
+  @apply rounded-xl bg-card text-card-foreground shadow-card ring-1 ring-foreground/6 dark:ring-foreground/10;
+}
+
 /* Movimiento reducido: los popups solo hacen fundido, sin escala ni desplazamiento. */
 @media (prefers-reduced-motion: reduce) {
   [data-slot] {

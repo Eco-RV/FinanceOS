@@ -128,7 +128,7 @@ export default async function TarjetasPage() {
       </div>
 
       {cards.length === 0 ? (
-        <div className="rounded-lg border">
+        <div className="surface overflow-hidden">
           <Table>
             <TableBody>
               <TableRow>
@@ -141,7 +141,7 @@ export default async function TarjetasPage() {
         </div>
       ) : (
         <>
-          <div className="hidden rounded-lg border sm:block">
+          <div className="surface hidden overflow-hidden sm:block">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 type IconType = ComponentType<{ className?: string }>;
 
 const SURFACE =
-  "flex h-full flex-col gap-2 rounded-xl bg-card p-4 text-card-foreground shadow-card ring-1 ring-foreground/6 dark:ring-foreground/10";
+  "surface flex h-full flex-col gap-2 p-4";
 
 function Heading({
   icon: Icon,

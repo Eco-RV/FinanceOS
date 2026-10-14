@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { Check, Mail, MessageCircle, Undo2, Users } from "lucide-react";
+import { Check, LoaderCircle, Mail, MessageCircle, Undo2, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -212,7 +212,11 @@ export function ReimbursedBadge({ id, paidOn }: { id: string; paidOn: string }) 
           run({ id }, "Reembolso deshecho");
         }}
       >
-        <Undo2 className="size-3.5" />
+        {pending ? (
+          <LoaderCircle className="size-3.5 animate-spin" />
+        ) : (
+          <Undo2 className="size-3.5" />
+        )}
       </Button>
     </span>
   );
@@ -237,7 +241,12 @@ export function WhatsappNoticeButton({ notice, url }: { notice: NoticeKey; url: 
         );
       }}
     >
-      <MessageCircle className="size-4" /> WhatsApp
+      {pending ? (
+        <LoaderCircle className="size-4 animate-spin" />
+      ) : (
+        <MessageCircle className="size-4" />
+      )}{" "}
+      WhatsApp
     </Button>
   );
 }
@@ -257,7 +266,12 @@ export function EmailNoticeButton({ notice }: { notice: NoticeKey }) {
         )
       }
     >
-      <Mail className="size-4" /> {pending ? "Enviando…" : "Correo"}
+      {pending ? (
+        <LoaderCircle className="size-4 animate-spin" />
+      ) : (
+        <Mail className="size-4" />
+      )}{" "}
+      {pending ? "Enviando…" : "Correo"}
     </Button>
   );
 }
