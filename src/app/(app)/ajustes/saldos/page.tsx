@@ -39,7 +39,7 @@ export default async function SaldosPage() {
     <div className="flex flex-col gap-6">
       <BackLink href="/ajustes" label="Ajustes" />
       <div>
-        <h1 className="text-2xl font-semibold">Verificar saldos</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Verificar saldos</h1>
         <p className="text-sm text-muted-foreground">
           El saldo de cada cuenta y tarjeta se calcula desde sus movimientos (incluido el
           saldo inicial). Aquí se comprueba que el saldo guardado coincida.

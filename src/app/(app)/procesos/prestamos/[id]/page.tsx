@@ -63,7 +63,7 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
             {loan.name}
             {loan.archived ? <Badge variant="outline">Desactivado</Badge> : null}
           </h1>
@@ -121,7 +121,7 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-medium">Calendario de cuotas</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Calendario de cuotas</h2>
           {loan.archived ? null : (
             <div className="flex flex-wrap gap-2">
               {p.paidCount > 0 ? (

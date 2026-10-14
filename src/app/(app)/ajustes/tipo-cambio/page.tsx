@@ -32,7 +32,7 @@ export default async function TipoCambioPage() {
       <BackLink href="/ajustes" label="Ajustes" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Tipo de cambio</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Tipo de cambio</h1>
           <p className="text-sm text-muted-foreground">
             Colones por dólar. Se usa el más reciente para el disponible de las tarjetas con
             saldo en otra moneda.

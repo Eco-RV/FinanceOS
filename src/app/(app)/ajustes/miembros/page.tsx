@@ -43,7 +43,7 @@ export default async function MiembrosPage() {
       <BackLink href="/ajustes" label="Ajustes" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Miembros</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Miembros</h1>
           <p className="text-sm text-muted-foreground">
             Familia que te paga parte de las cuotas de un financiamiento.
           </p>

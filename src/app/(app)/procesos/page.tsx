@@ -99,7 +99,7 @@ export default async function ProcesosPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Procesos</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Procesos</h1>
         <p className="text-sm text-muted-foreground">
           Registrá y consultá tus movimientos.
         </p>

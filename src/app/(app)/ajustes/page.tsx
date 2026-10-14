@@ -35,7 +35,7 @@ export default async function AjustesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold">Ajustes</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Ajustes</h1>
         <p className="text-sm text-muted-foreground">
           Preferencias de tu cuenta y de la app.
         </p>

@@ -80,7 +80,7 @@ export default async function ArranquePage() {
     <div className="flex flex-col gap-6">
       <BackLink href="/ajustes" label="Ajustes" />
       <div>
-        <h1 className="text-2xl font-semibold">Arranque de 0</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Arranque de 0</h1>
         <p className="text-sm text-muted-foreground">
           Empezar de nuevo: la historia se archiva y cada cuenta y tarjeta arranca con un
           saldo inicial nuevo.

@@ -55,7 +55,7 @@ export default async function GastosPage() {
       <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Gastos</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
           <p className="text-sm text-muted-foreground">
             Pagos desde una cuenta de débito (incluido SINPE) o cargos a una tarjeta.
           </p>

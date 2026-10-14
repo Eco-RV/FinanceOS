@@ -124,7 +124,7 @@ export default async function FinancingDetailPage({
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold">
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
             {financing.description}
             {cancelled ? (
               <Badge variant="outline">Cancelado el {formatDate(financing.cancelled_on!)}</Badge>
@@ -179,7 +179,7 @@ export default async function FinancingDetailPage({
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-medium">Reparto entre miembros</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Reparto entre miembros</h2>
             <p className="text-sm text-muted-foreground">
               {shareMembers.length === 0
                 ? "Pagás vos todas las cuotas."
@@ -200,7 +200,7 @@ export default async function FinancingDetailPage({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">
+        <h2 className="text-lg font-semibold tracking-tight">
           {withInterest ? "Tabla de amortización" : "Cuotas"}
         </h2>
         <div className="surface overflow-x-auto">

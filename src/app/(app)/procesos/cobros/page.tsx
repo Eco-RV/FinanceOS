@@ -39,7 +39,7 @@ export default async function CobrosPage() {
     <div className="flex flex-col gap-6">
       <BackLink href="/procesos" label="Procesos" />
       <div>
-        <h1 className="text-2xl font-semibold">Cobros a miembros</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Cobros a miembros</h1>
         <p className="text-sm text-muted-foreground">
           Lo que tu familia te paga de las cuotas de tus financiamientos. Los
           avisos dicen a cada uno su parte y cuántas quincenas faltan para la
@@ -59,7 +59,7 @@ export default async function CobrosPage() {
 
       {board.parts.length > 0 ? (
         <section className="flex flex-col gap-3">
-          <h2 className="flex items-center gap-2 text-lg font-medium">
+          <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
             <BellRing className="size-4 text-muted-foreground" /> Avisos por enviar
           </h2>
           {!canEmail ? (
@@ -99,7 +99,7 @@ export default async function CobrosPage() {
 
       {board.receivables.length > 0 ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-medium">Por cobrar</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Por cobrar</h2>
           <p className="text-sm text-muted-foreground">
             Partes de cuotas que ya entraron a la tarjeta y el miembro todavía no te pagó.
           </p>

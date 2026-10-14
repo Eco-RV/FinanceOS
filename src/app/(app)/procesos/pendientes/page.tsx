@@ -53,7 +53,7 @@ export default async function PendientesPage() {
       <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Compras por confirmar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Compras por confirmar</h1>
           <p className="text-sm text-muted-foreground">
             Detectadas en los avisos de tu banco. Confirmá la tarjeta y la
             categoría para registrarlas como gasto.
