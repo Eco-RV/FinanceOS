@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DollarSign, Landmark, LogOut, RotateCcw, Scale, Tags } from "lucide-react";
+import { DollarSign, Landmark, LogOut, RotateCcw, Scale, Tags, Users } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { signOutAction } from "@/lib/session-actions";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,23 @@ export default async function AjustesPage() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               Correos de compras con tarjeta.
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link
+          href="/ajustes/miembros"
+          className="rounded-xl transition-colors hover:bg-muted/40"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="size-4 text-muted-foreground" />
+                Miembros
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Familia que paga parte de tus financiamientos.
             </CardContent>
           </Card>
         </Link>

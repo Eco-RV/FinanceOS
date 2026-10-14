@@ -246,8 +246,7 @@ export type CategoryInput = z.infer<typeof categorySchema>;
 
 // ─────────────────────────────  financiamientos  ─────────────────────────────
 
-export const financingSchema = z.object({
-  card_id: z.string().regex(/^[0-9a-fA-F-]{36}$/, "Tarjeta inválida"),
+const financingText = {
   description: z
     .string()
     .trim()
@@ -258,18 +257,37 @@ export const financingSchema = z.object({
     .trim()
     .min(1, "Elegí una categoría")
     .max(40),
+};
+
+export const financingSchema = z.object({
+  card_id: z.string().regex(/^[0-9a-fA-F-]{36}$/, "Tarjeta inválida"),
+  ...financingText,
   total_amount: z.coerce
     .number()
     .finite("Monto inválido")
     .positive("El monto debe ser mayor que cero"),
+  annual_rate: z.preprocess(
+    (v) => (v === "" || v == null ? 0 : v),
+    z.coerce
+      .number()
+      .finite("Tasa inválida")
+      .min(0, "La tasa no puede ser negativa")
+      .max(100, "Máximo 100 %"),
+  ),
   months: z.coerce
     .number()
     .int()
     .min(2, "Mínimo 2 cuotas")
-    .max(48, "Máximo 48 cuotas"),
+    .max(72, "Máximo 72 cuotas"),
   first_charge_on: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+});
+
+/** F9: lo único que se edita de un financiamiento. */
+export const financingEditSchema = z.object({
+  id: z.string().regex(/^[0-9a-fA-F-]{36}$/, "Financiamiento inválido"),
+  ...financingText,
 });
 
 export type FinancingInput = z.infer<typeof financingSchema>;
@@ -361,3 +379,53 @@ export const bankSchema = z.object({
 });
 
 export type BankInput = z.infer<typeof bankSchema>;
+
+// ─────────────────────────────  miembros (2.3.0)  ─────────────────────────────
+
+/** Teléfono para WhatsApp: solo dígitos; 8 dígitos se toman como de Costa Rica (506). */
+export function normalizePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  return digits.length === 8 ? `506${digits}` : digits;
+}
+
+export const memberSchema = z.object({
+  name: z.string().trim().min(1, "El nombre es obligatorio").max(60, "Máximo 60 caracteres"),
+  email: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((v) => (v ? v : null))
+    .pipe(z.email("Correo inválido").nullable()),
+  phone: z
+    .string()
+    .optional()
+    .transform((v) => (v && v.trim() ? normalizePhone(v) : null))
+    .pipe(
+      z
+        .string()
+        .regex(/^\d{8,15}$/, "Teléfono inválido (8 dígitos, o con código de país)")
+        .nullable(),
+    ),
+});
+
+export const REIMBURSEMENT_CHANNEL_LABELS = {
+  sinpe: "SINPE",
+  efectivo: "Efectivo",
+  transferencia: "Transferencia",
+  otro: "Otro",
+} as const;
+
+export const reimbursementSchema = z.object({
+  financing_id: uuid("Financiamiento inválido"),
+  member_id: uuid("Miembro inválido"),
+  installment_no: z.coerce.number().int().min(1),
+  paid_on: isoDate,
+  channel: z.enum(["sinpe", "efectivo", "transferencia", "otro"]),
+  note: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((v) => (v ? v : null)),
+});

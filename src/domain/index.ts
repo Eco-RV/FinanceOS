@@ -14,6 +14,8 @@ export * from "./cards/statement.ts";
 export * from "./cards/multicurrency.ts";
 export * from "./financing/installments.ts";
 export * from "./financing/amortization.ts";
+export * from "./financing/plan.ts";
+export * from "./financing/members.ts";
 export * from "./coverage/coverage.ts";
 export * from "./importing/merchant.ts";
 export * from "./catalog/lifecycle.ts";

@@ -35,7 +35,8 @@ mi configuración.
     pagos de préstamos. Dejan de verse en todas las listas y de contar en los
     saldos;
   - se **eliminan** los financiamientos y los préstamos (sus cuotas cobradas
-    quedan archivadas, desligadas del plan);
+    quedan archivadas, desligadas del plan), con el reparto, los reembolsos y
+    los avisos a miembros de cada financiamiento;
   - se crean los saldos iniciales nuevos, que son lo **único visible**
     ("Saldo inicial (arranque de 0)").
 - Después lleva al Resumen; la página muestra la fecha del último arranque.
@@ -44,8 +45,11 @@ mi configuración.
 
 - M8: rechaza sin la confirmación escrita y sin un saldo para cada cuenta y
   tarjeta activa. Las cuentas y tarjetas desactivadas no reciben saldo.
-- Se conservan cuentas, tarjetas, bancos, categorías, el correo conectado, las
-  reglas de comercio, los pendientes por confirmar y los tipos de cambio.
+- Se conservan cuentas, tarjetas, bancos, categorías, miembros, el correo
+  conectado, las reglas de comercio, los pendientes por confirmar y los tipos
+  de cambio.
+- El saldo de hoy que se propone para cada tarjeta no incluye el interés de
+  cuotas de financiamiento que todavía no llegan (se borra con el plan).
 - Los movimientos archivados siguen contando como **historia** (G5): una
   cuenta o tarjeta con movimientos archivados se desactiva, no se elimina.
 
@@ -59,3 +63,6 @@ mi configuración.
 
 - **2026-10-12 (v2.2.0, en desarrollo)** — Primera versión
   (`supabase/Versionamiento/2.2.0/00_fresh_start.sql`).
+- **2026-10-14 (v2.3.0, en desarrollo)** — Se borran también el reparto,
+  reembolsos y avisos de los financiamientos; los miembros se conservan. El
+  saldo propuesto de las tarjetas descuenta el interés de cuotas futuras.

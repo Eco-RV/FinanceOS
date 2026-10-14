@@ -16,6 +16,7 @@ import {
   isCurrency,
   nextCutoffDate,
   nextPaymentDate,
+  toISODate,
   type Currency,
 } from "@/domain";
 import { CardBalances, urgentDaysToDue } from "../card-money";
@@ -33,6 +34,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink } from "@/components/back-link";
 import { CardFormDialog } from "../card-form";
 import { cardOpeningsById } from "@/lib/transactions";
+import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
 import { TransactionList } from "../../_transactions/transaction-list";
@@ -98,15 +100,20 @@ export default async function CardDetailPage({
 
   if (!cardData) notFound();
 
-  const card = cardData as CreditCard;
   const transactions = (txData ?? []) as Transaction[];
+  const today = crToday();
+  // F5: el saldo guardado trae el plan completo; solo el capital cuenta desde el día 1.
+  const futureInterest = interestByCard(transactions, toISODate(today)).get(cardData.id) ?? {};
+  const card = withoutScheduledInterest(
+    cardData as CreditCard,
+    new Map([[cardData.id as string, futureInterest]]),
+  );
   // Incluye las desactivadas para nombrar el origen de abonos viejos; el
   // formulario de abono solo recibe las activas (G4).
   const allAccounts = (accData ?? []) as Account[];
   const accounts = allAccounts.filter((a) => !a.archived);
   const categories = categoryNames(catData ?? [], EXPENSE_CATEGORIES);
   const financings = (financingData ?? []) as Financing[];
-  const today = crToday();
 
   const limit = card.credit_limit != null ? Number(card.credit_limit) : null;
   const limitCurrency: Currency = isCurrency(card.currency) ? card.currency : "CRC";
@@ -219,7 +226,17 @@ export default async function CardDetailPage({
 
       {/* Datos del plástico */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat title="Saldo actual" value={<CardBalances card={card} />} />
+        <Stat
+          title="Saldo actual"
+          value={<CardBalances card={card} />}
+          hint={
+            Object.values(futureInterest).some((v) => v > 0)
+              ? `+ ${Object.entries(futureInterest)
+                  .map(([cur, v]) => formatCurrency(v, cur))
+                  .join(" y ")} de interés en cuotas futuras`
+              : undefined
+          }
+        />
         <Stat
           title="Límite"
           value={limit != null ? formatCurrency(limit, limitCurrency) : "—"}
@@ -269,6 +286,7 @@ export default async function CardDetailPage({
             financings={financings}
             transactions={transactions}
             today={today}
+            categories={categories}
           />
         )}
       </div>

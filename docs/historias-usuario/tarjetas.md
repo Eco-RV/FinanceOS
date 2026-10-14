@@ -5,7 +5,8 @@
 ## Resumen
 
 Tarjetas de crédito con su corte, fecha límite de pago, saldo y, sobre cada
-una, financiamientos a tasa 0 (compras a cuotas). El módulo calcula un
+una, financiamientos (compras a cuotas con o sin interés, ver
+[`financiamientos.md`](./financiamientos.md)). El módulo calcula un
 "estado de cuenta" del corte vigente para saber cuánto hay que pagar de
 contado y cuánto es consumo nuevo que entrará al siguiente corte.
 
@@ -101,35 +102,11 @@ calcularlo a mano.
   conversión.
 - El pago resta el mismo monto de la cuenta y del saldo de esa moneda.
 
-### 6. Crear un financiamiento (compra a cuotas sin interés)
-Como usuario quiero registrar una compra a cuotas sobre una tarjeta
-(descripción, categoría, monto total, número de cuotas y fecha de la primera
-cuota), para que la app genere automáticamente el cronograma de pagos.
-
-**Criterios de aceptación**
-- `months` entre 2 y 48. El total se divide en N cuotas iguales, cada una
-  como un gasto (`expense`) con fecha mensual desde `first_charge_on`
-  (mismo día de cada mes, recortado si el mes es más corto).
-- Las cuotas quedan ligadas al financiamiento (`financing_id`,
-  `installment_no`, nota "cuota i/N").
-- El saldo de la tarjeta sube de inmediato por el total completo (el trigger
-  de saldo no espera a que cada cuota "llegue" a su fecha).
-- El consumo de cuotas con fecha futura **no** cuenta todavía como "consumo
-  sin cortar" en el estado de cuenta — solo entra cuando su fecha ya pasó.
-
-### 7. Ver y eliminar financiamientos activos
-Como usuario quiero ver los financiamientos activos de una tarjeta y
-eliminar uno completo si ya no aplica.
-
-**Criterios de aceptación**
-- Eliminar un financiamiento (regla F4) borra solo las cuotas **futuras**
-  (fecha posterior a hoy) y el trigger revierte solo ese monto. Las cuotas que
-  ya ocurrieron se conservan y el plan queda como "Cancelado el <fecha> · N
-  cuota(s) conservada(s)". Si ninguna cuota había ocurrido, el plan se borra
-  completo.
-- Las cuotas conservadas de un plan cancelado se pueden quitar a mano desde el
-  historial de la tarjeta (botón eliminar en la fila).
-- No existe edición de un financiamiento (ver *Pendiente*).
+### 6. Financiamientos
+Las compras a cuotas (tasa 0 o con interés), su reparto entre miembros de la
+familia y los avisos de cuota viven en
+[`financiamientos.md`](./financiamientos.md). En la tarjeta se ven en la
+sección "Financiamientos" y cada cuota aparece en el historial como "Cuota".
 
 ## Reglas de negocio
 
@@ -139,65 +116,20 @@ eliminar uno completo si ya no aplica.
   (antes se registraba como un `expense` anterior al corte, que sigue
   funcionando), y cada consumo nuevo va con su fecha real.
 - Las cuotas de un financiamiento las calcula el dominio
-  (`installmentSchedule`) y la base las guarda tal cual
-  (`create_financing_v2`), validando cantidad y suma.
+  (`financingSchedule`) y la base las guarda tal cual
+  (`create_financing_v3`); ver [`financiamientos.md`](./financiamientos.md).
+- El saldo actual y el disponible no cuentan el interés de cuotas de
+  financiamiento que todavía no llegan (solo el capital cuenta desde el día 1).
 - Tarjeta bimoneda (T1): cada cargo, abono y saldo inicial va al saldo de su
   moneda; `credit_cards.currency` es la **moneda del límite**.
 - Un cargo con tarjeta se registra en CRC o USD (selector "Moneda del cargo").
-- Un financiamiento no tiene interés (tasa 0); los préstamos con interés son
-  un módulo aparte ([`prestamos.md`](./prestamos.md)).
+- Los préstamos bancarios son un módulo aparte ([`prestamos.md`](./prestamos.md)).
 
 ## Pendiente / fuera de alcance
 
-- No hay edición de un financiamiento (solo crear y eliminar/cancelar).
-- Financiamiento con interés sobre tarjeta (propuesta abajo). Los préstamos
-  bancarios ya existen: ver [`prestamos.md`](./prestamos.md).
 - Los saldos en `USD` de las tarjetas no entran en los cálculos de cobertura
   del dashboard (se listan, pero no suman).
 - El tipo de cambio es manual; no se consulta el BCCR todavía.
-
-### Propuesta (2.0.0): financiamiento con interés
-
-> Historia redactada para entender el comportamiento antes de implementarlo.
-> Reglas en [`../dominio/reglas.md`](../dominio/reglas.md) (F5) y términos en
-> [`../dominio/glosario.md`](../dominio/glosario.md).
-
-Como usuario quiero registrar una compra a cuotas **con interés** sobre una
-tarjeta, para saber cuánto me cuesta realmente y qué parte de cada cuota es
-interés.
-
-**Ejemplo**: compra de ₡600 000 a 12 meses, tasa 24 % anual (2 % mensual),
-sistema francés (cuota fija).
-
-- Cuota fija = capital × i / (1 − (1 + i)^−n) = **₡56 735,76**.
-- Total pagado ₡680 829,10 → **₡80 829,10 de interés**.
-
-| Cuota | Interés | Abono al capital | Capital restante |
-|---|---|---|---|
-| 1 | ₡12 000,00 | ₡44 735,76 | ₡555 264,24 |
-| 2 | ₡11 105,28 | ₡45 630,48 | ₡509 633,76 |
-| 3 | ₡10 192,68 | ₡46 543,08 | ₡463 090,68 |
-| … | baja | sube | … |
-| 12 | ₡1 112,47 | ₡55 623,27 | ₡0,00 |
-
-(Interés redondeado a céntimos en cada cuota, como lo calcula
-`frenchAmortization`; la última cuota es ₡56 735,74 para cerrar en 0.)
-
-**Criterios de aceptación (propuestos)**
-- Al crear se piden tarjeta, monto (capital), meses, tasa anual y fecha de
-  la primera cuota.
-- El **capital** resta al disponible de la tarjeta desde el día 1, igual que
-  en tasa 0; a medida que se pagan cuotas, el disponible se libera por el
-  abono al capital.
-- Cada mes la cuota entra al estado de cuenta como cargo, separando
-  **interés** y **abono al capital** (dos líneas o una con desglose), en la
-  sección de cuotas de la tarjeta.
-- Se ve la tabla completa: cuotas pagadas, pendientes, interés pagado y por
-  pagar.
-- Eliminar el plan borra solo las cuotas futuras (regla F4).
-- Préstamos usan la misma tabla de amortización.
-- Cada banco puede tener particularidades (redondeos, cargos extra); antes de
-  implementar se valida contra un estado de cuenta real.
 
 ## Historial
 
@@ -223,3 +155,7 @@ sistema francés (cuota fija).
 - **2026-10-12 (v2.1.0, en desarrollo)** — Eliminar vs. desactivar (G5): una
   tarjeta con movimientos o financiamientos ya no se borra en cascada; se
   desactiva y se puede reactivar (G4).
+- **2026-10-14 (v2.3.0, en desarrollo)** — Los financiamientos pasan a
+  [`financiamientos.md`](./financiamientos.md) (con interés, edición, miembros
+  y avisos); la propuesta de financiamiento con interés se implementó allí. El
+  saldo y el disponible descuentan el interés de cuotas futuras.

@@ -10,10 +10,11 @@
 import type {
   Currency,
   ExchangeRate,
+  FinancingInstallment,
   FreshStartOpening,
   FreshStartProduct,
-  Installment,
   ISODate,
+  MemberShare,
   Movement,
   MovementChannel,
   MovementType,
@@ -142,20 +143,97 @@ export type NewFinancing = {
   card_id: string;
   description: string;
   category: string | null;
+  /** Capital financiado (en tasa 0, el total de la compra). */
   total_amount: number;
+  /** Tasa anual en porcentaje; 0 = sin interés. */
+  annual_rate: number;
   months: number;
   first_charge_on: ISODate;
 };
 
+export type FinancingFields = { description: string; category: string | null };
+
+export type StoredFinancing = {
+  id: string;
+  card_id: string;
+  description: string;
+  months: number;
+  currency: Currency;
+  cancelled_on: ISODate | null;
+};
+
 export interface FinancingRepository {
   /** Guarda el plan y exactamente estas cuotas, de forma atómica. */
-  createWithInstallments(plan: NewFinancing, installments: Installment[]): Promise<{ id: string }>;
+  createWithInstallments(
+    plan: NewFinancing,
+    installments: FinancingInstallment[],
+  ): Promise<{ id: string }>;
+  find(financingId: string): Promise<StoredFinancing | null>;
   cardIdOf(financingId: string): Promise<string | null>;
+  /** F9: cambia descripción y categoría del plan y de sus cuotas. */
+  update(financingId: string, fields: FinancingFields): Promise<void>;
+  /** Cuotas que existen hoy (activas), con su monto. */
+  installments(financingId: string): Promise<{ no: number; amount: number; occurred_on: ISODate }[]>;
   /**
    * F4: borra las cuotas con fecha posterior a `todayISO`, conserva las demás y
    * marca el plan como cancelado (o lo borra si no quedó ninguna cuota).
    */
   cancel(financingId: string, todayISO: ISODate): Promise<"cancelled" | "deleted">;
+  /** F6: parte fija por cuota de cada miembro. */
+  shares(financingId: string): Promise<MemberShare[]>;
+  replaceShares(financingId: string, shares: MemberShare[]): Promise<void>;
+}
+
+export type MemberFields = { name: string; email: string | null; phone: string | null };
+
+export type Member = MemberFields & { id: string; archived: boolean };
+
+export interface MemberRepository extends LifecycleRepository<Member> {
+  /** Un nombre repetido entre los activos lanza `InfrastructureError`. */
+  save(memberId: string | null, fields: MemberFields): Promise<{ id: string }>;
+}
+
+export const REIMBURSEMENT_CHANNELS = ["sinpe", "efectivo", "transferencia", "otro"] as const;
+export type ReimbursementChannel = (typeof REIMBURSEMENT_CHANNELS)[number];
+
+export type NewReimbursement = {
+  financing_id: string;
+  member_id: string;
+  installment_no: number;
+  amount: number;
+  paid_on: ISODate;
+  channel: ReimbursementChannel;
+  note: string | null;
+};
+
+export interface ReimbursementRepository {
+  /** F7: una vez por parte; repetir lanza `InfrastructureError`. */
+  create(reimbursement: NewReimbursement): Promise<{ id: string }>;
+  /** Miembros con algún reembolso en un financiamiento. */
+  membersWithReimbursements(financingId: string): Promise<string[]>;
+  /** Borra un reembolso y devuelve su financiamiento, o `null` si no existía. */
+  delete(reimbursementId: string): Promise<string | null>;
+}
+
+export type NoticeChannel = "email" | "whatsapp";
+
+export type NewNotice = {
+  financing_id: string;
+  member_id: string;
+  installment_no: number;
+  quincenas: number;
+  channel: NoticeChannel;
+};
+
+export interface NoticeRepository {
+  record(notices: NewNotice[]): Promise<void>;
+}
+
+export type OutgoingMail = { to: string; subject: string; text: string };
+
+/** Envío de correo desde la cuenta del usuario (F8). */
+export interface Mailer {
+  send(mail: OutgoingMail): Promise<void>;
 }
 
 export type PendingPurchase = {

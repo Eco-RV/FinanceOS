@@ -97,6 +97,9 @@ export function TransactionList({
           ? `Desde ${originLabel(t, accounts, cards)}`
           : (t.category ?? "Cargo")
         : originLabel(t, accounts, cards);
+    const interest = Number(t.interest_amount ?? 0);
+    const detailWithInterest =
+      interest > 0 ? `${detail} · incluye ${formatCurrency(interest, t.currency)} de interés` : detail;
     const typeBadge = isCard ? (
       <Badge
         variant={
@@ -122,8 +125,13 @@ export function TransactionList({
           confirmLabel="¿Quitar esta cuota de un financiamiento cancelado?"
         />
       </div>
-    ) : isInstallment ? (
-      <span className="text-xs text-muted-foreground">Ver en Financiamientos</span>
+    ) : isInstallment && t.card_id ? (
+      <Link
+        href={`/procesos/tarjetas/${t.card_id}/financiamientos/${t.financing_id}`}
+        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+      >
+        Ver en Financiamientos
+      </Link>
     ) : isOpening ? (
       <span className="text-xs text-muted-foreground">Se edita en la tarjeta</span>
     ) : t.loan_id ? (
@@ -143,7 +151,7 @@ export function TransactionList({
         categories={categories}
       />
     );
-    return { t, amount, isInstallment, detail, typeBadge, actions };
+    return { t, amount, isInstallment, detail: detailWithInterest, typeBadge, actions };
   });
 
   return (

@@ -11,7 +11,7 @@ import { addMonthsClamped, fromISODate, toISODate, type ISODate } from "../share
 import { amountOf, money, splitEvenly, type Currency } from "../shared/money.ts";
 
 export const MIN_FINANCING_MONTHS = 2;
-export const MAX_FINANCING_MONTHS = 48;
+export const MAX_FINANCING_MONTHS = 72;
 
 export type Installment = {
   /** Número de cuota, 1..N. */
