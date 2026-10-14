@@ -119,7 +119,7 @@ export function TransactionForm({
             <Button
               size="icon-lg"
               aria-label={triggerLabel ?? NEW_LABEL[type]}
-              className="fixed right-4 bottom-20 z-30 rounded-full shadow-lg sm:right-6 sm:bottom-6"
+              className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 size-12 rounded-full shadow-lg transition-[background-color,box-shadow,scale] hover:shadow-xl motion-safe:active:scale-90 sm:right-6 sm:bottom-6"
             />
           ) : (
             <Button size="sm" />
