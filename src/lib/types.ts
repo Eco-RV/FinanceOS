@@ -55,6 +55,8 @@ export type Transaction = {
   card_id: string | null;
   financing_id: string | null;
   installment_no: number | null;
+  /** Parte de una cuota de financiamiento que es interés (2.3.0). */
+  interest_amount?: number | null;
   /** Pago de cuota (con `installment_no`) o desembolso de un préstamo (2.1.0). */
   loan_id?: string | null;
   /** Cuenta destino de una transferencia (2.0.0). */
@@ -73,7 +75,10 @@ export type Financing = {
   card_id: string;
   description: string;
   category: string | null;
+  /** Capital financiado; en tasa 0, el total de la compra. */
   total_amount: number;
+  /** Tasa anual en porcentaje; 0 = sin interés (2.3.0). */
+  annual_rate?: number;
   months: number;
   currency: string;
   first_charge_on: string; // "YYYY-MM-DD"
@@ -95,6 +100,18 @@ export type Loan = {
   currency: string;
   first_payment_on: string; // "YYYY-MM-DD"
   account_id: string | null;
+  archived: boolean;
+  created_at: string;
+};
+
+/** Miembro de la familia que paga parte de un financiamiento (2.3.0). */
+export type Member = {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string | null;
+  /** Con código de país, solo dígitos (p. ej. 50688887777). */
+  phone: string | null;
   archived: boolean;
   created_at: string;
 };
@@ -148,6 +165,8 @@ export type MailConnection = {
   user_id: string;
   provider: "gmail";
   email: string;
+  /** Permisos concedidos al conectar (2.3.0: incluye `gmail.send`). */
+  scopes?: string | null;
   last_synced_at: string | null;
   created_at: string;
 };

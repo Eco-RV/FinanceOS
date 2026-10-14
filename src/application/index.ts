@@ -7,6 +7,7 @@ export * from "./ports.ts";
 export * from "./result.ts";
 export * from "./movements.ts";
 export * from "./financings.ts";
+export * from "./members.ts";
 export * from "./pending.ts";
 export * from "./products.ts";
 export * from "./catalog.ts";

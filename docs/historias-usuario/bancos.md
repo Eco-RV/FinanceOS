@@ -30,13 +30,17 @@ los avisos y el formato de esos correos, para que la app sepa cuáles leer.
   activa de nuevo. Un banco desactivado no se edita (G4).
 
 ### 2. Conectar mi correo
-Como usuario quiero conectar mi Gmail con permiso solo de lectura, para que la
-app pueda leer los avisos de mis bancos sin conocer mi contraseña.
+Como usuario quiero conectar mi Gmail, para que la app pueda leer los avisos
+de mis bancos (y enviar desde mi cuenta los avisos de cuota a mis miembros)
+sin conocer mi contraseña.
 
 **Criterios de aceptación**
-- Flujo OAuth de Google con el permiso `gmail.readonly` (no puede enviar ni
-  borrar correos). El token de larga duración se guarda **cifrado**
-  (AES-256-GCM) y nunca viaja al navegador.
+- Flujo OAuth de Google con los permisos `gmail.readonly` y, desde 2.3.0,
+  `gmail.send` (solo para los avisos de cuota que el usuario manda desde
+  Cobros a miembros; no puede borrar correos). El token de larga duración se
+  guarda **cifrado** (AES-256-GCM) y nunca viaja al navegador.
+- Si la conexión no tiene `gmail.send` (conectada antes de 2.3.0), la página
+  muestra "Reconectar para enviar avisos".
 - `/ajustes/bancos` muestra el correo conectado, la fecha de la última lectura
   y permite desconectarlo (borra el token).
 - Solo se descargan correos cuyo remitente esté en un banco activo.
@@ -121,3 +125,8 @@ distinga tarjetas de bancos distintos con los mismos últimos 4 dígitos.
   cualquier tarjeta (bimoneda); va al saldo de la moneda de la compra.
 - **2026-10-12 (v2.1.0, en desarrollo)** — Eliminar vs. desactivar banco (G5).
   Un pendiente no se aprueba con una categoría desactivada (G4).
+- **2026-10-14 (v2.3.0, en desarrollo)** — La conexión de Gmail pide también
+  `gmail.send` para enviar los avisos de cuota a los miembros
+  ([`financiamientos.md`](./financiamientos.md)); una conexión anterior muestra
+  "Reconectar para enviar avisos". Se guardan los permisos concedidos
+  (`mail_connections.scopes`).

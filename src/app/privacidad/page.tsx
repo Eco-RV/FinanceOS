@@ -8,7 +8,7 @@ export default function PrivacidadPage() {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-10 text-sm leading-relaxed">
       <h1 className="text-2xl font-semibold">Política de privacidad</h1>
-      <p className="text-muted-foreground">Última actualización: 8 de octubre de 2026</p>
+      <p className="text-muted-foreground">Última actualización: 14 de octubre de 2026</p>
 
       <p>
         Finance OS es una aplicación personal de finanzas de uso individual. Esta
@@ -22,6 +22,12 @@ export default function PrivacidadPage() {
         los remitentes bancarios que tú registras en Ajustes → Bancos (por
         ejemplo, avisos de compras con tarjeta). No se leen, descargan ni
         procesan los demás correos.
+      </p>
+      <p>
+        Desde la versión 2.3.0 también solicita <code>gmail.send</code>, solo para
+        enviar desde tu cuenta, cuando tú lo pides, el aviso de cuota a los
+        miembros de tu familia que registras (su parte de un financiamiento y la
+        fecha límite). La app no lee ni modifica los correos que envías.
       </p>
 
       <h2 className="text-lg font-medium">Cómo se usan</h2>

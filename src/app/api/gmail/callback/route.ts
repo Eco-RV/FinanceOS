@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         provider: "gmail",
         email,
         refresh_token_enc: encryptToken(tokens.refresh_token),
+        scopes: tokens.scope ?? null,
         last_synced_at: null,
       },
       { onConflict: "user_id,provider" },

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import {
+  BellRing,
   CalendarClock,
   CheckCircle2,
   CreditCard,
@@ -28,6 +29,8 @@ import {
   type CoveragePayment,
 } from "@/domain";
 import { termsOf } from "@/application";
+import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
+import { loadFinancingBoard } from "@/lib/financing-board";
 import type {
   Account,
   CreditCard as CreditCardType,
@@ -67,7 +70,7 @@ type Payment = CoveragePayment<CreditCardType, Loan>;
 
 type CardTxn = Pick<
   Transaction,
-  "card_id" | "type" | "amount" | "occurred_on" | "financing_id" | "currency"
+  "card_id" | "type" | "amount" | "occurred_on" | "financing_id" | "currency" | "interest_amount"
 >;
 
 export default async function DashboardPage() {
@@ -91,7 +94,7 @@ export default async function DashboardPage() {
     supabase.from("credit_cards").select("*").eq("archived", false),
     supabase
       .from("transactions")
-      .select("card_id, type, amount, occurred_on, financing_id, currency")
+      .select("card_id, type, amount, occurred_on, financing_id, currency, interest_amount")
       .eq("archived", false)
       .not("card_id", "is", null),
     supabase
@@ -111,9 +114,20 @@ export default async function DashboardPage() {
       .eq("archived", false),
   ]);
 
+  // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
+  const board = await loadFinancingBoard(supabase, todayISO);
+  const noticesToSend = board.groups.filter((g) => g.needsNotice).length;
+  const receivableCrc = board.receivables
+    .filter((r) => r.currency === "CRC")
+    .reduce((s, r) => s + r.total, 0);
+
   const accounts = (accountsData ?? []) as Account[];
-  const cards = (cardsData ?? []) as CreditCardType[];
   const cardTxns = (cardTxData ?? []) as CardTxn[];
+  // F5: solo el capital de los financiamientos cuenta desde el día 1.
+  const interest = interestByCard(cardTxns, todayISO);
+  const cards = ((cardsData ?? []) as CreditCardType[]).map((c) =>
+    withoutScheduledInterest(c, interest),
+  );
   const financings = (financingData ?? []) as Financing[];
   const loans = (loanData ?? []) as Loan[];
 
@@ -144,9 +158,10 @@ export default async function DashboardPage() {
     (s, t) => s + Number(t.amount),
     0,
   );
+  // Capital por cobrar de los financiamientos (sin el interés futuro).
   const financingPending = cardTxns
-    .filter((t) => t.financing_id && t.occurred_on > todayISO)
-    .reduce((s, t) => s + Number(t.amount), 0);
+    .filter((t) => t.financing_id && t.occurred_on > todayISO && t.currency !== "USD")
+    .reduce((s, t) => s + Number(t.amount) - Number(t.interest_amount ?? 0), 0);
 
   const txByCard = new Map<string, CardTxn[]>();
   for (const t of cardTxns) {
@@ -303,6 +318,27 @@ export default async function DashboardPage() {
             : ""}
         </p>
       </div>
+
+      {noticesToSend > 0 || receivableCrc > 0 ? (
+        <Link
+          href="/procesos/cobros"
+          className="flex items-start gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/40"
+        >
+          <BellRing className="mt-0.5 size-5 shrink-0 text-foreground/70" />
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-medium">
+              {noticesToSend > 0
+                ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} de cuota por enviar`
+                : "Cobros a miembros"}
+            </p>
+            {receivableCrc > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Te deben {formatCurrency(receivableCrc)} de cuotas ya cobradas en la tarjeta.
+              </p>
+            ) : null}
+          </div>
+        </Link>
+      ) : null}
 
       {dueSoon > 0 ? (
         <div

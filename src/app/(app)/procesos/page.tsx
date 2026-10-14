@@ -4,6 +4,7 @@ import {
   ArrowLeftRight,
   Banknote,
   CreditCard,
+  HandHeart,
   HandCoins,
   Inbox,
   Landmark,
@@ -11,6 +12,8 @@ import {
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { crToday, toISODate } from "@/domain";
+import { loadFinancingBoard } from "@/lib/financing-board";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -54,6 +57,12 @@ const ITEMS: Item[] = [
     icon: HandCoins,
   },
   {
+    href: "/procesos/cobros",
+    label: "Cobros a miembros",
+    description: "Avisos de cuota y lo que tu familia te debe de financiamientos.",
+    icon: HandHeart,
+  },
+  {
     href: "/procesos/transferencias",
     label: "Transferencias",
     description: "Entre tus cuentas; no cuentan como gasto.",
@@ -65,14 +74,20 @@ export default async function ProcesosPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const { count } = await supabase
-    .from("pending_transactions")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending")
-    .eq("archived", false);
+  const [{ count }, board] = await Promise.all([
+    supabase
+      .from("pending_transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .eq("archived", false),
+    loadFinancingBoard(supabase, toISODate(crToday())),
+  ]);
+  const noticesToSend = board.groups.filter((g) => g.needsNotice).length;
 
   const items: Item[] = [
-    ...ITEMS,
+    ...ITEMS.map((item) =>
+      item.href === "/procesos/cobros" ? { ...item, badge: noticesToSend } : item,
+    ),
     {
       href: "/procesos/pendientes",
       label: "Por confirmar",
