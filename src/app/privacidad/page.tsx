@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 export default function PrivacidadPage() {
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-10 text-sm leading-relaxed">
-      <h1 className="text-2xl font-semibold">Política de privacidad</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Política de privacidad</h1>
       <p className="text-muted-foreground">Última actualización: 14 de octubre de 2026</p>
 
       <p>
@@ -15,7 +15,7 @@ export default function PrivacidadPage() {
         política explica qué datos de tu cuenta de Google se usan y para qué.
       </p>
 
-      <h2 className="text-lg font-medium">Qué datos se acceden</h2>
+      <h2 className="text-lg font-semibold tracking-tight">Qué datos se acceden</h2>
       <p>
         Si conectas tu Gmail, la app solicita el permiso de solo lectura{" "}
         <code>gmail.readonly</code>. Únicamente se leen los correos enviados por
@@ -30,7 +30,7 @@ export default function PrivacidadPage() {
         fecha límite). La app no lee ni modifica los correos que envías.
       </p>
 
-      <h2 className="text-lg font-medium">Cómo se usan</h2>
+      <h2 className="text-lg font-semibold tracking-tight">Cómo se usan</h2>
       <p>
         De cada aviso se extraen comercio, fecha, monto, moneda, últimos cuatro
         dígitos de la tarjeta, número de autorización y referencia, para
@@ -39,7 +39,7 @@ export default function PrivacidadPage() {
         entrenar modelos de inteligencia artificial.
       </p>
 
-      <h2 className="text-lg font-medium">Dónde se guardan</h2>
+      <h2 className="text-lg font-semibold tracking-tight">Dónde se guardan</h2>
       <p>
         Los datos extraídos se guardan en tu base de datos de Supabase, protegidos
         por reglas de acceso por usuario. El token de acceso a Gmail se guarda
@@ -47,7 +47,7 @@ export default function PrivacidadPage() {
         contenido completo de los correos.
       </p>
 
-      <h2 className="text-lg font-medium">Cómo revocar el acceso</h2>
+      <h2 className="text-lg font-semibold tracking-tight">Cómo revocar el acceso</h2>
       <p>
         Puedes desconectar tu correo en Ajustes → Bancos (se borra el token) o
         revocar el permiso en{" "}

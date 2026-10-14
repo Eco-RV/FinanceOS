@@ -73,7 +73,7 @@ export default async function CuentasPage() {
       <BackLink href="/procesos" label="Procesos" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Cuentas</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Cuentas</h1>
           <p className="text-sm text-muted-foreground">
             Saldos de débito, ahorro y efectivo.
           </p>
@@ -82,7 +82,7 @@ export default async function CuentasPage() {
       </div>
 
       {accounts.length === 0 ? (
-        <div className="rounded-lg border">
+        <div className="surface overflow-hidden">
           <Table>
             <TableBody>
               <TableRow>
@@ -95,7 +95,7 @@ export default async function CuentasPage() {
         </div>
       ) : (
         <>
-          <div className="hidden rounded-lg border sm:block">
+          <div className="surface hidden overflow-hidden sm:block">
             <Table>
               <TableHeader>
                 <TableRow>

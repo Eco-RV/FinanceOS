@@ -61,7 +61,7 @@ export function PayInstallmentDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <dl className="grid grid-cols-3 gap-2 rounded-lg border p-3 text-sm">
+        <dl className="grid grid-cols-3 gap-2 rounded-xl bg-muted/60 p-3 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">Cuota</dt>
             <dd className="font-semibold tabular-nums">{formatCurrency(row.payment, currency)}</dd>

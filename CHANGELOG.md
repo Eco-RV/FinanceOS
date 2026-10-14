@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.4.0 — 2026-10-14
+
+Rediseño visual: superficies más limpias, microinteracciones y tema oscuro.
+
+### Interfaz
+- **Tema claro/oscuro**: sigue al del sistema y se puede fijar con el botón
+  sol/luna de la barra superior (se recuerda en el dispositivo).
+- Fondo gris suave con cards blancas y sombras sutiles; tipografía con más
+  jerarquía en títulos.
+- **Botones** que se hunden al presionarlos (también los que abren
+  formularios y el botón flotante), con transiciones cortas y foco visible.
+- **Procesos y Ajustes**: cada card es clicable en toda su superficie, se
+  eleva al pasar el cursor y muestra un spinner mientras abre la página.
+- **Resumen**: toda la fila de un pago próximo abre su detalle; las filas de
+  **Próximos cortes** ahora abren el detalle de la tarjeta.
+- Pestañas superiores tipo control segmentado; barra inferior con indicador
+  y respuesta al toque; el botón flotante respeta el área segura del iPhone.
+- Eliminar, desactivar, deshacer reembolso y avisos muestran un spinner
+  mientras trabajan.
+- Con "reducir movimiento" del sistema no hay escalas ni desplazamientos.
+
+### Dependencias
+- Se quitó `next-themes` (el tema lo maneja la app).
+
+### Base de datos
+- Sin cambios.
+
+### Configuración
+- Sin cambios.
+
 ## 2.3.0 — 2026-10-14
 
 Financiamientos completos: con interés, edición, miembros, reembolsos y

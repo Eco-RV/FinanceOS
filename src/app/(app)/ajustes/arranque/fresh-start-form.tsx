@@ -50,7 +50,7 @@ export function FreshStartForm({ rows }: { rows: FreshStartRow[] }) {
     >
       <section className="flex flex-col gap-3">
         <div>
-          <h2 className="text-lg font-medium">Saldos iniciales nuevos</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Saldos iniciales nuevos</h2>
           <p className="text-sm text-muted-foreground">
             Vienen con el saldo de hoy. Corregilos con lo que diga el banco; 0 = sin saldo.
             En tarjetas es la deuda.
@@ -62,7 +62,7 @@ export function FreshStartForm({ rows }: { rows: FreshStartRow[] }) {
             No tenés cuentas ni tarjetas activas: el arranque solo archivará la historia.
           </p>
         ) : (
-          <div className="divide-y rounded-lg border">
+          <div className="surface divide-y overflow-hidden">
             {rows.map((r) => (
               <div key={r.field} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">

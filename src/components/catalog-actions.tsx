@@ -65,8 +65,8 @@ export function InactiveList({
 }) {
   if (items.length === 0) return null;
   return (
-    <details className="rounded-lg border p-3 text-sm">
-      <summary className="cursor-pointer text-muted-foreground">
+    <details className="surface p-3 text-sm">
+      <summary className="cursor-pointer rounded-sm text-muted-foreground transition-colors select-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring">
         {title} ({items.length})
       </summary>
       <ul className="mt-2 flex flex-col divide-y">
