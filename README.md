@@ -132,5 +132,7 @@ docs/
   `feature/2.3.0`) y vuelve por PR; `dev_main` pasa a `main` al publicar, con su
   etiqueta y release.
 - Documentación y ajustes menores van directo en `dev_main`.
+- Detalle completo (despliegue, SQL versionado, releases y checklist):
+  [`docs/flujo-de-trabajo.md`](./docs/flujo-de-trabajo.md).
 - El SQL nuevo va en `supabase/Versionamiento/<versión>/` y los cambios de
   comportamiento se documentan en `docs/historias-usuario/` en el mismo cambio.

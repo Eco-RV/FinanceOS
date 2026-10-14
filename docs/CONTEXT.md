@@ -43,6 +43,8 @@ saldos de cuentas de débito y ahorros.
 - Las ramas son **solo para features nuevas**. Lo demás (docs, README,
   CHANGELOG, ajustes menores) se trabaja directo en `dev_main`, sin preguntar
   nombre de rama.
+- Despliegue (Vercel/Supabase), SQL versionado y pasos de release:
+  `docs/flujo-de-trabajo.md`.
 
 ## Stack
 
