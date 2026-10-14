@@ -40,6 +40,9 @@ saldos de cuentas de débito y ahorros.
   Cada feature/versión sale de `dev_main` en su propia rama (p. ej.
   `feature/2.3.0`) y vuelve a `dev_main` por PR; `dev_main` se lleva a `main` al
   publicar.
+- Las ramas son **solo para features nuevas**. Lo demás (docs, README,
+  CHANGELOG, ajustes menores) se trabaja directo en `dev_main`, sin preguntar
+  nombre de rama.
 
 ## Stack
 
