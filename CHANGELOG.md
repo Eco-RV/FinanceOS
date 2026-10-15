@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.5.0 — en desarrollo
+## 2.5.0 — 2026-10-14
 
 Rediseño UI/UX en detalle: Resumen nuevo, gasto rápido tipo billetera y
 listas más limpias.
@@ -62,9 +62,10 @@ listas más limpias.
   entrada, igual que en el carrusel del gasto.
 - **Guía de marca** oficial del logotipo Bloques en `docs/marca/`.
 
-### Base de datos
-- `supabase/Versionamiento/2.5.0/00_category_icons.sql`: columna
-  `categories.icon` y ícono por defecto para las categorías existentes.
+### Base de datos (correr a mano ANTES de desplegar, después de todo 2.3.0)
+1. `supabase/Versionamiento/2.5.0/00_category_icons.sql`: columna
+   `categories.icon` y ícono por defecto para las categorías existentes.
+   Idempotente. Sin correrlo la app funciona, pero no guarda íconos.
 
 ### Configuración
 - Sin cambios.

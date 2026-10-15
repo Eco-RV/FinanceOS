@@ -5,6 +5,7 @@
 -- uno por el nombre. A las categorías que ya existen se les asigna uno por
 -- defecto según el nombre (mismas reglas que defaultIconFor).
 --
+-- Ejecutar ANTES de desplegar el código 2.5.0 (después de todo 2.3.0).
 -- Idempotente: solo llena las que todavía no tienen ícono.
 
 alter table public.categories
