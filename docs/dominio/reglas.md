@@ -49,7 +49,7 @@
 | T6 | Si el día de pago es ≤ al día de corte, la fecha límite cae el mes siguiente. | — | Decidido |
 | T7 | Estado: sin movimientos → sin saldo → al día → atrasada (vencida con saldo pendiente) → pendiente. | — | Decidido |
 | T8 | El pago mínimo lo digita el usuario desde el estado de cuenta; el sistema no lo calcula. | — | Propuesta |
-| T9 | Un seguro genera un gasto mensual en la tarjeta. | — | Decidido |
+| T9 | Un seguro genera un gasto mensual en la tarjeta de crédito; una tarjeta puede tener varios. | — | Decidido · Implementado 2.7.0 |
 
 ## Financiamientos, préstamos y familia
 
@@ -75,10 +75,20 @@
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| P1 | Un salario siempre tiene una cuenta de débito destino y una periodicidad. | Rechaza | Decidido |
-| P2 | Una suscripción siempre tiene una tarjeta (crédito o débito). | Rechaza | Decidido |
-| P3 | Al eliminar un plan (salario, suscripción, seguro) se borran sus movimientos futuros; los ocurridos quedan. | — | Decidido |
-| P4 | Si los gastos fijos de la línea base superan el tope (default 35 % del salario), se advierte. | Advierte | Decidido |
+| P1 | Un salario siempre tiene una cuenta de débito destino (de su moneda) y una periodicidad: semanal, bisemanal (cada 14 días), quincenal (15 y último día) o mensual. | Rechaza | Decidido · Implementado 2.7.0 |
+| P2 | Un gasto fijo (renta, servicios, suscripciones…) es mensual y se paga con una tarjeta de crédito **o** desde una cuenta de débito (de su moneda), no ambas. Sin categoría, se sugiere por el nombre (Alquiler → Vivienda, Luz → Servicios, Netflix → Suscripciones). | Rechaza | Decidido · Implementado 2.7.0 |
+| P3 | Al eliminar un plan (salario, suscripción, seguro) no quedan movimientos futuros; los ocurridos quedan (sin plan). Pausar deja de registrar; al reanudar sigue desde ese día, sin lo pausado. | — | Decidido · Implementado 2.7.0 |
+| P4 | Si los gastos fijos de la línea base superan el tope (default 35 % del salario, configurable entre 1 y 100 %), se advierte. Línea base = salarios vs. gastos fijos, seguros, cuota de préstamos y cuota de financiamientos, en colones y por mes. | Advierte | Decidido · Implementado 2.7.0 |
+| P5 | Un plan tiene monto mayor que 0; la fecha final, si la hay, no es anterior al inicio. | Rechaza | Decidido · Implementado 2.7.0 |
+| P6 | Cada ocurrencia de un plan se registra como movimiento cuando llega su fecha (M7: lo programado no cuenta en los saldos de hoy); las futuras solo se calculan. Un plan nuevo registra desde el día en que se crea, nunca hacia atrás (esa plata ya está en los saldos); nunca se registra dos veces la misma fecha. | — | Decidido · Implementado 2.7.0 |
+
+## Ahorros y metas (2.7.0)
+
+| # | Regla | Tipo | Estado |
+|---|---|---|---|
+| S1 | Una meta se liga a lo sumo a una cuenta activa de su misma moneda, y una cuenta tiene como máximo una meta activa. Lo ahorrado es el saldo de esa cuenta; los aportes son transferencias hacia ella (M2). | Rechaza | Decidido · Implementado 2.7.0 |
+| S2 | Una meta tiene nombre y objetivo mayor que 0; la fecha, opcional, es futura al crearla. | Rechaza | Decidido · Implementado 2.7.0 |
+| S3 | Avance = ahorrado / objetivo (lo ahorrado no baja de 0). Con fecha: aporte mensual sugerido = lo que falta / meses que faltan; si la fecha pasó sin llegar, la meta está atrasada. Archivar o eliminar una meta no toca la cuenta. | — | Decidido · Implementado 2.7.0 |
 
 ## Importación
 

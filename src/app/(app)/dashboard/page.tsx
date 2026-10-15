@@ -39,6 +39,7 @@ import {
 import { termsOf } from "@/application";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
+import { ensurePlansUpToDate } from "@/lib/sync-plans";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import type {
@@ -56,6 +57,10 @@ import { FOCUS_OUTLINE, PRESSABLE_ROW, PRESSABLE_SURFACE } from "@/lib/interacti
 import { cn } from "@/lib/utils";
 import { StatBody, StatDialog, type StatTone } from "./stat-dialog";
 import { ExpenseOverview, type ExpensePoint } from "./expense-overview";
+import { PlansAndGoals } from "./plans-goals";
+import { loadPlansBoard } from "@/lib/plans-board";
+import { repositories } from "@/infrastructure/container";
+import type { Goal } from "@/application";
 
 type Level = "overdue" | "urgent" | "soon" | "ok";
 
@@ -116,6 +121,7 @@ const rise = (i: number) => ({ "--rise-i": i }) as CSSProperties;
 
 export default async function DashboardPage() {
   await requireUser();
+  await ensurePlansUpToDate();
 
   const today = crToday();
   const todayISO = toISODate(today);
@@ -176,7 +182,16 @@ export default async function DashboardPage() {
   ]);
 
   // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
-  const board = await loadFinancingBoard(supabase, todayISO);
+  // 2.7.0: planes (línea base y programados) y metas de ahorro.
+  const [board, plansBoard, { data: goalData }] = await Promise.all([
+    loadFinancingBoard(supabase, todayISO),
+    repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
+    supabase
+      .from("savings_goals")
+      .select("id, name, target_amount, currency, target_date, account_id, icon, archived")
+      .eq("archived", false),
+  ]);
+  const goals = (goalData ?? []) as Goal[];
   const noticesToSend = board.groups.filter((g) => g.needsNotice).length;
   const receivableCrc = board.receivables
     .filter((r) => r.currency === "CRC")
@@ -633,6 +648,14 @@ export default async function DashboardPage() {
             </div>
           )}
         </StatDialog>
+
+        {/* Fila 6 · Línea base y metas (2.7.0) */}
+        <PlansAndGoals
+          board={plansBoard}
+          goals={goals}
+          balances={Object.fromEntries(accounts.map((a) => [a.id, Number(a.current_balance)]))}
+          todayISO={todayISO}
+        />
       </div>
 
       <p className="-mt-4 text-xs text-muted-foreground">

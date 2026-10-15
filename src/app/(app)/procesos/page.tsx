@@ -7,7 +7,9 @@ import {
   HandCoins,
   Inbox,
   Landmark,
+  PiggyBank,
   Receipt,
+  Repeat,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -48,6 +50,18 @@ const ITEMS: Item[] = [
     label: "Ingresos",
     description: "Depósitos y entradas a tus cuentas.",
     icon: Banknote,
+  },
+  {
+    href: "/procesos/planes",
+    label: "Planes",
+    description: "Salario, suscripciones y seguros; línea base de gastos fijos.",
+    icon: Repeat,
+  },
+  {
+    href: "/procesos/ahorros",
+    label: "Ahorros y metas",
+    description: "Metas con objetivo, avance y aportes.",
+    icon: PiggyBank,
   },
   {
     href: "/procesos/prestamos",

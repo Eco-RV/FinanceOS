@@ -7,6 +7,7 @@ import { WelcomeSplash } from "@/components/welcome-splash";
 import { UrlNotice } from "@/components/url-notice";
 import { repositories } from "@/infrastructure/container";
 import { initialsOf } from "@/domain";
+import { ensurePlansUpToDate } from "@/lib/sync-plans";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import type { Account, Category, CreditCard } from "@/lib/types";
@@ -18,6 +19,8 @@ export default async function AppLayout({
   children: ReactNode;
 }) {
   const user = await requireUser();
+  // 2.7.0: salarios, suscripciones y seguros que ya llegaron (M7).
+  await ensurePlansUpToDate();
 
   const supabase = await createClient();
   const [{ data: accData }, { data: cardData }, { data: catData }] =
