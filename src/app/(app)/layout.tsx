@@ -1,9 +1,12 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AppBottomNav, AppTopBar } from "@/components/app-nav";
 import { AppBackdrop } from "@/components/app-backdrop";
 import { WelcomeSplash } from "@/components/welcome-splash";
+import { UrlNotice } from "@/components/url-notice";
+import { repositories } from "@/infrastructure/container";
+import { initialsOf } from "@/domain";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import type { Account, Category, CreditCard } from "@/lib/types";
@@ -29,6 +32,16 @@ export default async function AppLayout({
         .order("name", { ascending: true }),
     ]);
 
+  // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
+  const profile = await (await repositories()).profiles.get().catch(() => null);
+  const email = user.email ?? "";
+  const account = {
+    email,
+    name: profile?.full_name ?? null,
+    avatarUrl: profile?.avatar_url ?? null,
+    initials: initialsOf(profile?.full_name, email),
+  };
+
   const accounts = (accData ?? []) as Account[];
   const cards = (cardData ?? []) as CreditCard[];
   const options = categoryOptions((catData ?? []) as Category[], EXPENSE_CATEGORIES);
@@ -38,8 +51,11 @@ export default async function AppLayout({
   return (
     <div className="flex min-h-full flex-col">
       <AppBackdrop />
-      <WelcomeSplash />
-      <AppTopBar email={user.email ?? ""} />
+      <WelcomeSplash name={account.name?.split(" ")[0] ?? null} />
+      <Suspense fallback={null}>
+        <UrlNotice />
+      </Suspense>
+      <AppTopBar account={account} />
       {/* 2.5.0: el contenido crece con el monitor; en móvil sigue a lo ancho. */}
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-24 sm:px-6 sm:pb-12 lg:px-8 2xl:max-w-[1600px]">
         {children}

@@ -18,6 +18,7 @@ import type {
   Movement,
   MovementChannel,
   MovementType,
+  ProfileFields,
   StoredBalance,
 } from "../domain/index.ts";
 
@@ -314,4 +315,41 @@ export class InfrastructureError extends Error {
     super(message);
     this.name = "InfrastructureError";
   }
+}
+
+// ─────────────────────────────  cuenta del usuario (2.6.0)  ─────────────────────────────
+
+/** Perfil guardado del usuario autenticado (todo opcional). */
+export type Profile = ProfileFields & {
+  avatar_url: string | null;
+  preferences: Record<string, unknown>;
+};
+
+export interface ProfileRepository {
+  /** Perfil del usuario, o `null` si no tiene (o la tabla todavía no existe). */
+  get(): Promise<Profile | null>;
+  /** Crea o actualiza el perfil. Un usuario (@) repetido lanza `InfrastructureError` (U1). */
+  save(fields: ProfileFields): Promise<void>;
+  setAvatarUrl(url: string | null): Promise<void>;
+  /** Mezcla preferencias nuevas con las guardadas. */
+  savePreferences(preferences: Record<string, unknown>): Promise<void>;
+}
+
+/** Correo y contraseña del usuario (proveedor de autenticación). */
+export interface IdentityService {
+  email(): Promise<string | null>;
+  /** Comprueba la contraseña actual sin cambiar la sesión de forma visible. */
+  verifyPassword(password: string): Promise<boolean>;
+  changePassword(next: string): Promise<void>;
+  /** La sesión viene del enlace de "olvidé mi contraseña" (hace menos de una hora). */
+  isRecoverySession(): Promise<boolean>;
+  /** Pide el cambio: el proveedor manda la confirmación al correo nuevo (y al actual). */
+  changeEmail(next: string, redirectTo: string): Promise<void>;
+}
+
+/** Foto de perfil en un almacenamiento de archivos. */
+export interface AvatarStorage {
+  /** Sube la foto y devuelve su URL pública. */
+  upload(file: { bytes: ArrayBuffer; type: string }): Promise<string>;
+  remove(): Promise<void>;
 }

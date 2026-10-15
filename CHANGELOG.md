@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.6.0 — 2026-10-14
+
+Usuarios: acceso más claro, confirmación por correo que funciona en
+producción, perfil y preferencias.
+
+### Acceso
+- **Arreglo**: el enlace de confirmación del correo llevaba a `localhost` en
+  producción. Ahora todo enlace del correo vuelve a la misma app desde donde
+  se pidió, a la ruta nueva `/auth/confirm`.
+- Registro con nombre (opcional), repetir contraseña y requisitos en vivo
+  (8+ caracteres, letras y números).
+- Al crear la cuenta, pantalla **"Revisa tu correo"** (ya no un mensaje rojo)
+  con **Reenviar correo**; al confirmar, entra con la bienvenida.
+- Login con botón para ver la contraseña, avisos claros (correo sin
+  confirmar, demasiados intentos, enlace vencido) y **¿La olvidaste?** para
+  restablecer la contraseña por correo.
+
+### Mi cuenta
+- **Ajustes → Mi cuenta**: foto de perfil, nombre, usuario (@), país, cambiar
+  correo (con confirmación) y cambiar contraseña (pide la actual).
+- La barra muestra la foto o las iniciales; el menú del avatar suma **Mi
+  cuenta** y **Preferencias**; la bienvenida saluda por el nombre.
+
+### Preferencias
+- **Ajustes → Preferencias**: tema Sistema / Claro / Oscuro y accesos a las
+  configuraciones de la app. Lugar listo para moneda base y formato de fecha.
+
+### Base de datos (correr a mano ANTES de desplegar, después de todo 2.5.0)
+1. `supabase/Versionamiento/2.6.0/00_profiles.sql`: tabla `profiles`, trigger
+   que crea el perfil al registrarse y perfiles de los usuarios existentes.
+2. `supabase/Versionamiento/2.6.0/01_avatars_storage.sql`: bucket `avatars` y
+   sus permisos.
+
+### Configuración (Supabase → Authentication → URL Configuration)
+- **Site URL**: `https://financeos-ten-rust.vercel.app` (no `http://localhost:3000`).
+- **Redirect URLs**: `https://financeos-ten-rust.vercel.app/**` y
+  `http://localhost:3000/**` (y la de los Previews de Vercel si se usan).
+- Opcional: `NEXT_PUBLIC_SITE_URL` fija el origen de los enlaces si hiciera
+  falta.
+
 ## 2.5.0 — 2026-10-14
 
 Rediseño UI/UX en detalle: Resumen nuevo, gasto rápido tipo billetera y

@@ -11,7 +11,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UserMenu } from "@/components/user-menu";
+import { UserMenu, type AccountSummary } from "@/components/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FOCUS_OUTLINE } from "@/lib/interactive";
 import { LogoTile } from "@/components/brand-logo";
@@ -92,7 +92,7 @@ function Brand() {
   );
 }
 
-export function AppTopBar({ email }: { email: string }) {
+export function AppTopBar({ account }: { account: AccountSummary }) {
   const isActive = useIsActive();
 
   return (
@@ -124,7 +124,7 @@ export function AppTopBar({ email }: { email: string }) {
         </nav>
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
-          <UserMenu email={email} />
+          <UserMenu account={account} />
         </div>
       </div>
     </header>
