@@ -90,7 +90,8 @@ export interface CardRepository extends LifecycleRepository<CatalogEntry & { ban
 
 export type CategoryKind = "expense" | "income";
 
-export type CategoryFields = { kind: CategoryKind; name: string };
+/** `icon` (2.5.0): clave del kit de íconos; sin definir = no se toca. */
+export type CategoryFields = { kind: CategoryKind; name: string; icon?: string | null };
 
 export interface CategoryRepository extends LifecycleRepository<CatalogEntry & { kind: CategoryKind }> {
   /**

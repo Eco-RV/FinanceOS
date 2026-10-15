@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { Check, LoaderCircle, Mail, MessageCircle, Undo2, Users } from "lucide-react";
 import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import {
   Dialog,
   DialogContent,
@@ -207,8 +208,15 @@ export function ReimbursedBadge({ id, paidOn }: { id: string; paidOn: string }) 
         aria-label="Deshacer reembolso"
         title="Deshacer reembolso"
         disabled={pending}
-        onClick={() => {
-          if (!window.confirm("¿Deshacer este reembolso?")) return;
+        onClick={async () => {
+          const ok = await confirmAction({
+            title: "¿Deshacer este reembolso?",
+            description: "La cuota vuelve a quedar pendiente de cobro para el miembro.",
+            confirmLabel: "Deshacer",
+            tone: "warning",
+            icon: "undo",
+          });
+          if (!ok) return;
           run({ id }, "Reembolso deshecho");
         }}
       >

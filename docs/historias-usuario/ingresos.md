@@ -64,3 +64,5 @@ fecha más reciente primero.
   `src/app/(app)/procesos/_transactions/`.
 - **2026-10-12 (v2.1.0, en desarrollo)** — Categorías desactivables (G4/G5),
   igual que en gastos.
+- **2026-10-14 (v2.5.0, en desarrollo)** — La categoría se elige en una
+  cuadrícula con íconos; la lista va en filas separadas.

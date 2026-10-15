@@ -1,12 +1,8 @@
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Category, CategoryKind } from "@/lib/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
+import { CategoryBadge } from "@/components/category-icon";
+import { iconFor } from "@/lib/category-icon-keys";
 import { Button } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
@@ -93,28 +89,28 @@ function CategorySection({
           </form>
         </div>
       ) : (
-        <div className="surface overflow-hidden">
-          <Table>
-            <TableBody>
-              {items.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="w-24">
-                    <div className="flex justify-end gap-1">
-                      <CategoryFormDialog kind={c.kind} category={c} />
-                      <RemoveOrDeactivate
-                        id={c.id}
-                        label={`la categoría "${c.name}"`}
-                        hasHistory={withHistory.has(c.id)}
-                        onDelete={deleteCategory}
-                        onSetActive={setCategoryActive}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        // 2.5.0: una card por categoría, con su ícono.
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {items.map((c, i) => (
+            <div
+              key={c.id}
+              className="surface rise flex items-center gap-3 py-2.5 pr-2 pl-3"
+              style={{ ["--rise-i" as string]: Math.min(i, 12) }}
+            >
+              <CategoryBadge icon={iconFor(c)} />
+              <span className="min-w-0 flex-1 truncate font-medium">{c.name}</span>
+              <div className="flex shrink-0 justify-end gap-1">
+                <CategoryFormDialog kind={c.kind} category={c} />
+                <RemoveOrDeactivate
+                  id={c.id}
+                  label={`la categoría "${c.name}"`}
+                  hasHistory={withHistory.has(c.id)}
+                  onDelete={deleteCategory}
+                  onSetActive={setCategoryActive}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

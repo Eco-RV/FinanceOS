@@ -2,8 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { INCOME_CATEGORIES } from "@/lib/schema";
-import { categoryNames } from "@/lib/categories";
-import type { Account, Transaction } from "@/lib/types";
+import { categoryOptions, iconsByName } from "@/lib/categories";
+import type { Account, Category, Transaction } from "@/lib/types";
 import { BackLink } from "@/components/back-link";
 import { TransactionForm } from "../_transactions/transaction-form";
 import { TransactionList } from "../_transactions/transaction-list";
@@ -26,7 +26,7 @@ export default async function IngresosPage() {
         .order("created_at", { ascending: true }),
       supabase
         .from("categories")
-        .select("name")
+        .select("*")
         .eq("kind", "income")
         .eq("archived", false)
         .order("name", { ascending: true }),
@@ -37,7 +37,9 @@ export default async function IngresosPage() {
   // formulario solo recibe las activas).
   const allAccounts = (accData ?? []) as Account[];
   const accounts = allAccounts.filter((a) => !a.archived);
-  const categories = categoryNames(catData ?? [], INCOME_CATEGORIES);
+  const options = categoryOptions((catData ?? []) as Category[], INCOME_CATEGORIES);
+  const categories = options.map((o) => o.name);
+  const categoryIcons = iconsByName(options);
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,6 +56,7 @@ export default async function IngresosPage() {
             type="income"
             accounts={accounts}
             categories={categories}
+            categoryIcons={categoryIcons}
           />
         ) : null}
       </div>
@@ -64,6 +67,7 @@ export default async function IngresosPage() {
           accounts={allAccounts}
           cards={[]}
           categories={categories}
+          categoryIcons={categoryIcons}
           emptyLabel="Aún no registrás ingresos."
         />
       ) : (

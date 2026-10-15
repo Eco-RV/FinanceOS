@@ -6,14 +6,7 @@ import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import { crToday, daysUntil, fromISODate, loanProgress, toISODate } from "@/domain";
 import { termsOf } from "@/application";
 import type { Account, Loan } from "@/lib/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { RowActions, RowItem, RowList } from "@/components/row-list";
 import { buttonVariants } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
@@ -112,52 +105,52 @@ export default async function PrestamosPage() {
         </div>
       ) : (
         <>
-          <div className="surface hidden overflow-hidden sm:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Préstamo</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Cuota</TableHead>
-                  <TableHead>Próxima cuota</TableHead>
-                  <TableHead className="text-right">Capital pendiente</TableHead>
-                  <TableHead className="w-32" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map(({ loan, p }) => (
-                  <TableRow key={loan.id}>
-                    <TableCell>
-                      <Link href={`/procesos/prestamos/${loan.id}`} className="font-medium hover:underline">
-                        {loan.name}
-                      </Link>
-                      <div className="text-xs text-muted-foreground">
-                        {[loan.lender, `${p.paidCount}/${loan.months} cuotas`].filter(Boolean).join(" · ")}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <LoanStatusBadge status={p.status} overdue={p.overdue.length} />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(p.schedule.payment, loan.currency)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{nextLabel(p)}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(p.remainingPrincipal, loan.currency)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">{actions(loan)}</div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <RowList
+            columns="minmax(0,1.8fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.4fr) minmax(0,1.2fr) 8rem"
+            headers={[
+              { label: "Préstamo" },
+              { label: "Estado" },
+              { label: "Cuota", align: "right" },
+              { label: "Próxima cuota" },
+              { label: "Capital pendiente", align: "right" },
+              {},
+            ]}
+          >
+            {rows.map(({ loan, p }, i) => (
+              <RowItem
+                key={loan.id}
+                index={i}
+                href={`/procesos/prestamos/${loan.id}`}
+                label={`Ver calendario de ${loan.name}`}
+              >
+                <div className="min-w-0">
+                  <span className="block truncate font-medium">{loan.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {[loan.lender, `${p.paidCount}/${loan.months} cuotas`].filter(Boolean).join(" · ")}
+                  </span>
+                </div>
+                <div>
+                  <LoanStatusBadge status={p.status} overdue={p.overdue.length} />
+                </div>
+                <span className="text-right tabular-nums">
+                  {formatCurrency(p.schedule.payment, loan.currency)}
+                </span>
+                <span className="text-muted-foreground">{nextLabel(p)}</span>
+                <span className="text-right font-medium tabular-nums">
+                  {formatCurrency(p.remainingPrincipal, loan.currency)}
+                </span>
+                <RowActions>{actions(loan)}</RowActions>
+              </RowItem>
+            ))}
+          </RowList>
 
           <MobileList>
-            {rows.map(({ loan, p }) => (
+            {rows.map(({ loan, p }, i) => (
               <MobileCard
                 key={loan.id}
+                index={i}
+                href={`/procesos/prestamos/${loan.id}`}
+                label={`Ver calendario de ${loan.name}`}
                 title={loan.name}
                 meta={loan.lender ?? undefined}
                 actions={actions(loan)}

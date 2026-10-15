@@ -1,5 +1,74 @@
 # Changelog
 
+## 2.5.0 — en desarrollo
+
+Rediseño UI/UX en detalle: Resumen nuevo, gasto rápido tipo billetera y
+listas más limpias.
+
+### Resumen
+- Grilla nueva: **Liquidez** (antes "Disponible en débito") a lo ancho; luego
+  A pagar de contado, Consumo sin cortar y **Financiamientos**; gastos de los
+  últimos 7 días, del mes y del año; gráfico de gastos por categoría; y
+  **Disponible en crédito**, Cobros a miembros y **Faltante**.
+- Cada card abre un **modal con su detalle** (cuentas de la liquidez, pagos,
+  tarjetas con consumo sin cortar, financiamientos con enlace a su detalle,
+  disponible por tarjeta en verde / amarillo / rojo).
+- **Faltante** reemplaza el aviso de cobertura y va en la segunda fila, junto
+  a A pagar de contado y Consumo sin cortar: muestra solo el monto que falta
+  (0 en verde si la liquidez alcanza). Financiamientos pasa a la última fila.
+- El gráfico de gastos abre **Gastos** con el período ya filtrado; cada
+  barra abre Gastos filtrado por esa categoría.
+- En pantallas anchas, Pagos próximos y Próximos cortes van lado a lado.
+
+### Gastos
+- **Formulario rápido**: monto grande con botón de moneda (₡ / $),
+  categorías con ícono en cuadrícula, **Tarjeta** (carrusel tipo billetera
+  que empieza en la primera, con flechas y rueda del ratón) o **Efectivo**, y "Más opciones" para fecha y
+  nota. En computadora el formulario es más ancho, en dos columnas. Ya no
+  se registra un gasto directo sobre una cuenta de débito (para
+  eso están SINPE y Transferencias).
+- Al registrar, confirmación animada **"Gasto registrado"** al centro; los
+  avisos de la app salen arriba y ya no tapan el botón flotante.
+- Lista con **filtros** (texto, fechas, categoría, origen, cuotas
+  programadas), total de lo filtrado y **filas por página** (5, 10, 20, 50 o
+  todas).
+- Botón **Financiamientos** → pantalla nueva con los financiamientos activos
+  de todas las tarjetas.
+
+### Categorías
+- Cada categoría tiene un **ícono** de un kit de la app; las existentes
+  reciben uno por defecto según el nombre.
+
+### Listas
+- Cuentas, Tarjetas, Gastos, Ingresos, Transferencias, Financiamientos,
+  Préstamos y Miembros: en computadora cada fila es una card separada, como
+  en el teléfono.
+- En Tarjetas, Financiamientos y Préstamos **toda la fila abre el detalle**,
+  salvo los botones.
+
+### General
+- Pantalla de **bienvenida** animada al abrir la app; login renovado.
+- **Fondo** con cuadrícula y bloques que flotan; entradas en cascada.
+- En computadora el contenido usa más ancho según el monitor.
+- Pestaña **Trading** con la leyenda *beta* (módulo en construcción).
+- Logo nuevo (bloques en escalera) y cinco propuestas en `docs/logos/`.
+- **Combos propios** en toda la app (en vez del desplegable del sistema):
+  lista flotante con grupos, marca de la opción elegida y buen contraste en
+  claro y oscuro.
+- **Confirmaciones propias** al eliminar, desactivar o deshacer (en vez del
+  aviso del navegador): diálogo con ícono, explicación y botón en rojo cuando
+  borra.
+- **Detalle de tarjeta**: la tarjeta aparece arriba con una animación de
+  entrada, igual que en el carrusel del gasto.
+- **Guía de marca** oficial del logotipo Bloques en `docs/marca/`.
+
+### Base de datos
+- `supabase/Versionamiento/2.5.0/00_category_icons.sql`: columna
+  `categories.icon` y ícono por defecto para las categorías existentes.
+
+### Configuración
+- Sin cambios.
+
 ## 2.4.0 — 2026-10-14
 
 Rediseño visual: superficies más limpias, microinteracciones y tema oscuro.

@@ -4,26 +4,42 @@ import type { ComponentType } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CandlestickChart,
   LayoutDashboard,
   LoaderCircle,
   Settings2,
-  Wallet,
   Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FOCUS_OUTLINE } from "@/lib/interactive";
+import { LogoTile } from "@/components/brand-logo";
 
 type IconType = ComponentType<{ className?: string }>;
 
-type NavItem = { href: string; label: string; icon: IconType };
+type NavItem = { href: string; label: string; icon: IconType; beta?: boolean };
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Resumen", icon: LayoutDashboard },
   { href: "/procesos", label: "Procesos", icon: Workflow },
+  { href: "/trading", label: "Trading", icon: CandlestickChart, beta: true },
   { href: "/ajustes", label: "Ajustes", icon: Settings2 },
 ];
+
+/** Leyenda "beta" (2.5.0) sobre una pestaña nueva, en otro color. */
+function BetaTag({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "pointer-events-none rounded-full bg-violet-500 px-1.5 py-px text-[9px] leading-tight font-semibold tracking-wide text-white uppercase shadow-sm",
+        className,
+      )}
+    >
+      beta
+    </span>
+  );
+}
 
 function useIsActive() {
   const pathname = usePathname();
@@ -68,9 +84,7 @@ function Brand() {
         FOCUS_OUTLINE,
       )}
     >
-      <span className="grid size-7 place-items-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-        <Wallet className="size-4" />
-      </span>
+      <LogoTile />
       <span className="text-sm font-semibold tracking-tight">
         Finance<span className="text-muted-foreground"> OS</span>
       </span>
@@ -83,10 +97,10 @@ export function AppTopBar({ email }: { email: string }) {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl backdrop-saturate-150">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4">
+      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8 2xl:max-w-[1600px]">
         <Brand />
         <nav className="ml-2 hidden items-center gap-0.5 rounded-full bg-muted p-1 sm:flex">
-          {NAV_ITEMS.map(({ href, label }) => {
+          {NAV_ITEMS.map(({ href, label, beta }) => {
             const active = isActive(href);
             return (
               <Link
@@ -102,6 +116,7 @@ export function AppTopBar({ email }: { email: string }) {
                 )}
               >
                 {label}
+                {beta ? <BetaTag className="absolute -top-2 -right-1.5" /> : null}
                 <PendingSpinner className="absolute top-1/2 right-1 size-3 -translate-y-1/2" />
               </Link>
             );
@@ -122,7 +137,7 @@ export function AppBottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 sm:hidden">
       <div className="mx-auto flex max-w-5xl items-stretch justify-around">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {NAV_ITEMS.map(({ href, label, icon: Icon, beta }) => {
           const active = isActive(href);
           return (
             <Link
@@ -143,6 +158,7 @@ export function AppBottomNav() {
               >
                 <BottomIcon Icon={Icon} active={active} />
               </span>
+              {beta ? <BetaTag className="absolute top-0.5 left-1/2 ml-2" /> : null}
               <span
                 className={
                   active ? "font-medium text-foreground" : "text-muted-foreground"

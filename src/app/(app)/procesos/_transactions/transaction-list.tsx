@@ -1,13 +1,8 @@
 import Link from "next/link";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { EmptyRows, RowActions, RowItem, RowList } from "@/components/row-list";
+import { CategoryBadge } from "@/components/category-icon";
+import { defaultIconFor, type CategoryIconKey } from "@/lib/category-icon-keys";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { signedAmount } from "@/domain";
@@ -33,6 +28,8 @@ type Props = {
   emptyLabel?: string;
   /** Financiamientos cancelados: sus cuotas conservadas se pueden quitar a mano (F4). */
   cancelledFinancingIds?: string[];
+  /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
+  categoryIcons?: Record<string, CategoryIconKey>;
 };
 
 /** Monto con signo según el contexto (flujo de caja vs. deuda de la tarjeta). */
@@ -58,25 +55,20 @@ export function TransactionList({
   context = "list",
   emptyLabel = "Aún no hay movimientos.",
   cancelledFinancingIds = [],
+  categoryIcons = {},
 }: Props) {
+  const iconOf = (t: Transaction): CategoryIconKey =>
+    t.type === "transfer"
+      ? "repeat"
+      : t.category
+        ? (categoryIcons[t.category.trim().toLowerCase()] ?? defaultIconFor(t.category))
+        : "tag";
   const isCard = context === "card";
   const activeAccounts = accounts.filter((a) => !a.archived);
   const activeCards = cards.filter((c) => !c.archived);
 
   if (transactions.length === 0) {
-    return (
-      <div className="surface overflow-hidden">
-        <Table>
-          <TableBody>
-            <TableRow>
-              <TableCell className="py-10 text-center text-muted-foreground">
-                {emptyLabel}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-    );
+    return <EmptyRows>{emptyLabel}</EmptyRows>;
   }
 
   const rows = transactions.map((t) => {
@@ -149,6 +141,7 @@ export function TransactionList({
         accounts={activeAccounts}
         cards={activeCards}
         categories={categories}
+        categoryIcons={categoryIcons}
       />
     );
     return { t, amount, isInstallment, detail: detailWithInterest, typeBadge, actions };
@@ -156,75 +149,82 @@ export function TransactionList({
 
   return (
     <>
-      <div className="surface hidden overflow-hidden sm:block">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Fecha</TableHead>
-            <TableHead>{isCard ? "Tipo" : "Concepto"}</TableHead>
-            <TableHead>{isCard ? "Detalle" : "Origen"}</TableHead>
-            <TableHead className="text-right">Monto</TableHead>
-            <TableHead className="w-24" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map(({ t, amount, detail, typeBadge, actions }) => (
-            <TableRow key={t.id}>
-              <TableCell className="whitespace-nowrap text-muted-foreground">
-                {formatDate(t.occurred_on)}
-              </TableCell>
-              <TableCell>
-                {isCard ? (
-                  typeBadge
-                ) : (
-                  <>
-                    <span className="font-medium">{concept(t)}</span>
-                    {t.note ? (
-                      <span className="block text-xs text-muted-foreground">
-                        {t.note}
-                      </span>
-                    ) : null}
-                  </>
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {detail}
-                {isCard && t.note ? (
-                  <span className="block text-xs">{t.note}</span>
-                ) : null}
-              </TableCell>
-              <TableCell
-                className={cn(
-                  "text-right tabular-nums",
-                  amount < 0 && "text-destructive",
-                )}
-              >
-                {formatCurrency(amount, t.currency)}
-              </TableCell>
-              <TableCell>{actions}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      </div>
+      <RowList
+        columns={
+          isCard
+            ? "6.5rem minmax(0,0.8fr) minmax(0,2fr) minmax(0,1fr) 9.5rem"
+            : "6.5rem minmax(0,1.6fr) minmax(0,1.4fr) minmax(0,1fr) 9.5rem"
+        }
+        headers={[
+          { label: "Fecha" },
+          { label: isCard ? "Tipo" : "Concepto" },
+          { label: isCard ? "Detalle" : "Origen" },
+          { label: "Monto", align: "right" },
+          {},
+        ]}
+      >
+        {rows.map(({ t, amount, detail, typeBadge, actions }, i) => (
+          <RowItem key={t.id} index={i}>
+            <span className="whitespace-nowrap text-muted-foreground">
+              {formatDate(t.occurred_on)}
+            </span>
+            {isCard ? (
+              <div>{typeBadge}</div>
+            ) : (
+              <div className="flex min-w-0 items-center gap-2.5">
+                <CategoryBadge icon={iconOf(t)} size="sm" />
+                <div className="min-w-0">
+                  <span className="block truncate font-medium">{concept(t)}</span>
+                  {t.note ? (
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {t.note}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            )}
+            <div className="min-w-0 text-muted-foreground">
+              <span className="line-clamp-2">{detail}</span>
+              {isCard && t.note ? <span className="block truncate text-xs">{t.note}</span> : null}
+            </div>
+            <span
+              className={cn(
+                "text-right font-medium tabular-nums",
+                amount < 0 && "text-destructive",
+              )}
+            >
+              {formatCurrency(amount, t.currency)}
+            </span>
+            <RowActions>{actions}</RowActions>
+          </RowItem>
+        ))}
+      </RowList>
 
       <MobileList>
-        {rows.map(({ t, amount, detail, typeBadge, actions }) => (
+        {rows.map(({ t, amount, detail, typeBadge, actions }, i) => (
           <MobileCard
             key={t.id}
-            title={formatDate(t.occurred_on)}
+            index={i}
+            title={
+              isCard ? (
+                formatDate(t.occurred_on)
+              ) : (
+                <span className="flex items-center gap-2">
+                  <CategoryBadge icon={iconOf(t)} size="sm" />
+                  {concept(t)}
+                </span>
+              )
+            }
+            meta={isCard ? undefined : formatDate(t.occurred_on)}
             actions={actions}
           >
-            <MobileField
-              label={isCard ? "Tipo" : "Concepto"}
-              value={isCard ? typeBadge : concept(t)}
-            />
+            {isCard ? <MobileField label="Tipo" value={typeBadge} /> : null}
             <MobileField label={isCard ? "Detalle" : "Origen"} value={detail} />
             {t.note ? <MobileField label="Nota" value={t.note} /> : null}
             <MobileField
               label="Monto"
               value={
-                <span className={cn(amount < 0 && "text-destructive")}>
+                <span className={cn("font-medium", amount < 0 && "text-destructive")}>
                   {formatCurrency(amount, t.currency)}
                 </span>
               }

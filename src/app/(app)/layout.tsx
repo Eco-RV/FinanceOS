@@ -2,9 +2,11 @@ import type { ReactNode } from "react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AppBottomNav, AppTopBar } from "@/components/app-nav";
+import { AppBackdrop } from "@/components/app-backdrop";
+import { WelcomeSplash } from "@/components/welcome-splash";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
-import { categoryNames } from "@/lib/categories";
-import type { Account, CreditCard } from "@/lib/types";
+import { categoryOptions, iconsByName } from "@/lib/categories";
+import type { Account, Category, CreditCard } from "@/lib/types";
 import { TransactionForm } from "./procesos/_transactions/transaction-form";
 
 export default async function AppLayout({
@@ -21,7 +23,7 @@ export default async function AppLayout({
       supabase.from("credit_cards").select("*").eq("archived", false),
       supabase
         .from("categories")
-        .select("name")
+        .select("*")
         .eq("kind", "expense")
         .eq("archived", false)
         .order("name", { ascending: true }),
@@ -29,13 +31,17 @@ export default async function AppLayout({
 
   const accounts = (accData ?? []) as Account[];
   const cards = (cardData ?? []) as CreditCard[];
-  const categories = categoryNames(catData ?? [], EXPENSE_CATEGORIES);
+  const options = categoryOptions((catData ?? []) as Category[], EXPENSE_CATEGORIES);
+  const categories = options.map((o) => o.name);
   const canRegister = accounts.length > 0 || cards.length > 0;
 
   return (
     <div className="flex min-h-full flex-col">
+      <AppBackdrop />
+      <WelcomeSplash />
       <AppTopBar email={user.email ?? ""} />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-24 sm:pb-12">
+      {/* 2.5.0: el contenido crece con el monitor; en móvil sigue a lo ancho. */}
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-24 sm:px-6 sm:pb-12 lg:px-8 2xl:max-w-[1600px]">
         {children}
       </main>
       {canRegister ? (
@@ -44,6 +50,7 @@ export default async function AppLayout({
           accounts={accounts}
           cards={cards}
           categories={categories}
+          categoryIcons={iconsByName(options)}
           triggerLabel="Nuevo gasto"
           fab
         />
@@ -52,3 +59,4 @@ export default async function AppLayout({
     </div>
   );
 }
+

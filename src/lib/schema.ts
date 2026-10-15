@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { PARSER_KEYS } from "./mail/parsers/index.ts";
 import { CURRENCIES } from "../domain/shared/money.ts";
+import { CATEGORY_ICON_KEYS } from "./category-icon-keys.ts";
 
 export { CURRENCIES };
 export const ACCOUNT_TYPES = ["checking", "savings", "cash"] as const;
@@ -240,6 +241,12 @@ export const categorySchema = z.object({
     .trim()
     .min(1, "El nombre es obligatorio")
     .max(40, "Máximo 40 caracteres"),
+  // 2.5.0: ícono del kit; vacío = el sugerido por el nombre.
+  icon: z
+    .enum(CATEGORY_ICON_KEYS)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
 });
 
 export type CategoryInput = z.infer<typeof categorySchema>;

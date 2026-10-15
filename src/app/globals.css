@@ -23,6 +23,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -50,6 +52,7 @@
   --shadow-card: var(--elevation-card);
   --shadow-card-hover: var(--elevation-card-hover);
   --ease-fluid: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 :root {
@@ -68,14 +71,17 @@
   --accent: oklch(0.955 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  --success: oklch(0.6 0.15 155);
+  --warning: oklch(0.7 0.16 70);
   --border: oklch(0.915 0 0);
   --input: oklch(0.9 0 0);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* Paleta del gráfico de gastos (2.5.0). */
+  --chart-1: oklch(0.62 0.17 162);
+  --chart-2: oklch(0.62 0.15 240);
+  --chart-3: oklch(0.6 0.2 295);
+  --chart-4: oklch(0.72 0.16 70);
+  --chart-5: oklch(0.63 0.2 15);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -87,6 +93,9 @@
   --sidebar-ring: oklch(0.708 0 0);
   --elevation-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 1px 3px oklch(0 0 0 / 0.04);
   --elevation-card-hover: 0 2px 4px oklch(0 0 0 / 0.04), 0 8px 24px oklch(0 0 0 / 0.08);
+  /* Fondo animado (2.5.0): bloques que flotan detrás del contenido. */
+  --backdrop-block: oklch(0.205 0 0 / 0.045);
+  --backdrop-grid: oklch(0.205 0 0 / 0.05);
   color-scheme: light;
 }
 
@@ -106,14 +115,16 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --success: oklch(0.74 0.15 155);
+  --warning: oklch(0.8 0.15 75);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --chart-1: oklch(0.74 0.15 162);
+  --chart-2: oklch(0.72 0.13 240);
+  --chart-3: oklch(0.72 0.16 295);
+  --chart-4: oklch(0.8 0.14 75);
+  --chart-5: oklch(0.72 0.17 15);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -124,6 +135,8 @@
   --sidebar-ring: oklch(0.556 0 0);
   --elevation-card: 0 1px 2px oklch(0 0 0 / 0.3);
   --elevation-card-hover: 0 2px 4px oklch(0 0 0 / 0.3), 0 8px 24px oklch(0 0 0 / 0.35);
+  --backdrop-block: oklch(1 0 0 / 0.035);
+  --backdrop-grid: oklch(1 0 0 / 0.04);
   color-scheme: dark;
 }
 
@@ -145,11 +158,145 @@
   [role="button"] {
     touch-action: manipulation;
   }
+  /*
+   * Opciones de los <select> nativos (2.5.0): en oscuro heredaban el texto
+   * claro sobre la lista blanca del sistema. Fondo y texto del popover.
+   */
+  select option,
+  select optgroup {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
 }
 
 /* Superficie de listas, tablas y bloques (2.4.0): card con borde suave y sombra. */
 @utility surface {
   @apply rounded-xl bg-card text-card-foreground shadow-card ring-1 ring-foreground/6 dark:ring-foreground/10;
+}
+
+/* Sin barra de scroll visible (carruseles horizontales). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/*
+ * Entrada escalonada (2.5.0): `rise` sube y aparece; el retraso sale de
+ * `--rise-i` (índice del bloque), así una grilla entra en cascada.
+ */
+@utility rise {
+  animation: rise 520ms var(--ease-fluid) both;
+  animation-delay: calc(var(--rise-i, 0) * 55ms);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes float-block {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--r, 0deg));
+  }
+  50% {
+    transform: translate3d(var(--dx, 12px), var(--dy, -24px), 0) rotate(calc(var(--r, 0deg) + 8deg));
+  }
+}
+
+@keyframes block-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes splash-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes ring-out {
+  from {
+    opacity: 0.55;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/* Tarjeta del detalle (2.5.0): entra con giro 3D y se asienta; luego un brillo. */
+@keyframes card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(48px) rotateX(38deg) rotateZ(-4deg) scale(0.88);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes card-shine {
+  0% {
+    opacity: 0;
+    transform: translateX(0) skewX(-12deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(320%) skewX(-12deg);
+  }
+}
+
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 /* Movimiento reducido: los popups solo hacen fundido, sin escala ni desplazamiento. */
@@ -161,5 +308,12 @@
     --tw-enter-translate-y: 0 !important;
     --tw-exit-translate-x: 0 !important;
     --tw-exit-translate-y: 0 !important;
+  }
+  .rise {
+    animation: none;
+  }
+  [data-motion] {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
   }
 }

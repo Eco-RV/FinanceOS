@@ -191,3 +191,6 @@ queda, para cobrarle a tiempo.
   salen de `tarjetas.md` (historias 6 y 7) y suman financiamiento con interés
   (F5), edición (F9), 72 meses como máximo, miembros con reparto por cuota
   (F6), reembolsos (F7) y avisos por quincena por WhatsApp y correo (F8).
+- **2026-10-14 (v2.5.0, en desarrollo)** — Pantalla
+  `/procesos/financiamientos` con los activos de todas las tarjetas (botón
+  en Gastos y modal en el Resumen); toda la fila abre el detalle.

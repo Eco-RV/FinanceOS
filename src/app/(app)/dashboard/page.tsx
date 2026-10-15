@@ -1,13 +1,12 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import {
   BellRing,
   CalendarClock,
-  CheckCircle2,
+  CircleGauge,
   CreditCard,
-  HandCoins,
   Layers,
-  Receipt,
+  ShieldAlert,
   TriangleAlert,
   Wallet,
 } from "lucide-react";
@@ -15,35 +14,48 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import {
+  availabilityLevel,
+  cardAvailability,
   cardStatementsByCurrency,
   computeCoverage,
+  coverageShortfall,
+  financingProgress,
   isCurrency,
   crToday,
   daysUntil,
   loanDue,
   loanProgress,
   nextCutoffDate,
+  rateBetween,
+  storedInstallments,
   toISODate,
+  type AvailabilityLevel,
   type CardStatement,
   type CoverageLoan,
   type CoveragePayment,
+  type Currency,
+  type ShortfallLevel,
 } from "@/domain";
 import { termsOf } from "@/application";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
+import { categoryOptions, iconsByName } from "@/lib/categories";
+import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import type {
   Account,
+  Category,
   CreditCard as CreditCardType,
   Financing,
   Loan,
   Transaction,
 } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Panel } from "@/components/panel";
 import { LinkChevron } from "@/components/link-pending";
 import { FOCUS_OUTLINE, PRESSABLE_ROW, PRESSABLE_SURFACE } from "@/lib/interactive";
 import { cn } from "@/lib/utils";
+import { StatBody, StatDialog, type StatTone } from "./stat-dialog";
+import { ExpenseOverview, type ExpensePoint } from "./expense-overview";
 
 type Level = "overdue" | "urgent" | "soon" | "ok";
 
@@ -69,6 +81,24 @@ const LEVEL_BAR: Record<Level, string> = {
   ok: "bg-muted-foreground/30",
 };
 
+/** Semáforo del disponible de crédito (verde / amarillo / rojo). */
+const AVAILABILITY_BAR: Record<AvailabilityLevel, string> = {
+  high: "bg-success",
+  medium: "bg-warning",
+  low: "bg-destructive",
+};
+const AVAILABILITY_TONE: Record<AvailabilityLevel, StatTone> = {
+  high: "positive",
+  medium: "warning",
+  low: "negative",
+};
+
+const SHORTFALL_TONE: Record<ShortfallLevel, StatTone> = {
+  covered: "positive",
+  later: "warning",
+  soon: "negative",
+};
+
 type Payment = CoveragePayment<CreditCardType, Loan>;
 
 type CardTxn = Pick<
@@ -76,22 +106,36 @@ type CardTxn = Pick<
   "card_id" | "type" | "amount" | "occurred_on" | "financing_id" | "currency" | "interest_amount"
 >;
 
+type Installment = Pick<
+  Transaction,
+  "financing_id" | "installment_no" | "occurred_on" | "amount" | "interest_amount"
+>;
+
+/** Retraso de entrada en cascada de cada bloque de la grilla. */
+const rise = (i: number) => ({ "--rise-i": i }) as CSSProperties;
+
 export default async function DashboardPage() {
   await requireUser();
 
   const today = crToday();
-  const monthStartISO = toISODate(new Date(today.getFullYear(), today.getMonth(), 1));
   const todayISO = toISODate(today);
+  const yearStartISO = `${todayISO.slice(0, 4)}-01-01`;
+  // Para "últimos 7 días" a inicios de enero hace falta el final del año anterior.
+  const sinceISO = toISODate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7));
+  const expensesFrom = sinceISO < yearStartISO ? sinceISO : yearStartISO;
 
   const supabase = await createClient();
   const [
     { data: accountsData },
     { data: cardsData },
     { data: cardTxData },
-    { data: monthExpenseData },
+    { data: expenseData },
     { data: financingData },
+    { data: installmentData },
     { data: loanData },
     { data: loanPayData },
+    { data: categoryData },
+    { data: rateData },
   ] = await Promise.all([
     supabase.from("accounts").select("*").eq("archived", false),
     supabase.from("credit_cards").select("*").eq("archived", false),
@@ -102,12 +146,18 @@ export default async function DashboardPage() {
       .not("card_id", "is", null),
     supabase
       .from("transactions")
-      .select("amount")
+      .select("amount, occurred_on, category, currency")
       .eq("type", "expense")
       .eq("archived", false)
-      .gte("occurred_on", monthStartISO)
+      .gte("occurred_on", expensesFrom)
       .lte("occurred_on", todayISO),
-    supabase.from("financings").select("*").eq("archived", false),
+    supabase.from("financings").select("*").eq("archived", false).is("cancelled_on", null),
+    supabase
+      .from("transactions")
+      .select("financing_id, installment_no, occurred_on, amount, interest_amount")
+      .eq("archived", false)
+      .not("financing_id", "is", null)
+      .not("installment_no", "is", null),
     supabase.from("loans").select("*").eq("archived", false),
     supabase
       .from("transactions")
@@ -115,6 +165,14 @@ export default async function DashboardPage() {
       .not("loan_id", "is", null)
       .not("installment_no", "is", null)
       .eq("archived", false),
+    supabase.from("categories").select("*").eq("kind", "expense").eq("archived", false),
+    supabase
+      .from("exchange_rates")
+      .select("rate_on, usd_crc")
+      .eq("archived", false)
+      .order("rate_on", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
@@ -131,8 +189,27 @@ export default async function DashboardPage() {
   const cards = ((cardsData ?? []) as CreditCardType[]).map((c) =>
     withoutScheduledInterest(c, interest),
   );
-  const financings = (financingData ?? []) as Financing[];
+  const cardName = new Map(cards.map((c) => [c.id, c.name]));
   const loans = (loanData ?? []) as Loan[];
+  const rate = rateData
+    ? { rate_on: rateData.rate_on as string, usd_crc: Number(rateData.usd_crc) }
+    : null;
+
+  // Financiamientos activos: los que todavía tienen cuotas por cobrar.
+  const installments = (installmentData ?? []) as Installment[];
+  const financings = ((financingData ?? []) as Financing[])
+    .map((f) => {
+      const cuotas = installments
+        .filter((t) => t.financing_id === f.id)
+        .map((t) => ({ ...t, installment_no: Number(t.installment_no) }));
+      const p = financingProgress(
+        storedInstallments(cuotas, f.months, Number(f.total_amount)),
+        todayISO,
+      );
+      return { f, p };
+    })
+    .filter(({ p }) => p.next)
+    .sort((a, b) => a.p.next!.occurred_on.localeCompare(b.p.next!.occurred_on));
 
   // L6: cuota a cobro de cada préstamo (vencidas, o la próxima dentro de 31 días).
   const paidByLoan = new Map<string, number[]>();
@@ -157,10 +234,18 @@ export default async function DashboardPage() {
     .filter((l) => l.currency === "CRC")
     .reduce((s, l) => s + l.remainingPrincipal, 0);
 
-  const monthlyExpenseTotal = (monthExpenseData ?? []).reduce(
-    (s, t) => s + Number(t.amount),
-    0,
+  // Gastos en colones ya ocurridos (para las cards de período y el gráfico).
+  const expenseRows = (expenseData ?? []) as Pick<
+    Transaction,
+    "amount" | "occurred_on" | "category" | "currency"
+  >[];
+  const expensePoints: ExpensePoint[] = expenseRows
+    .filter((t) => t.currency !== "USD")
+    .map((t) => ({ d: t.occurred_on, a: Number(t.amount), c: t.category }));
+  const categoryIcons = iconsByName(
+    categoryOptions((categoryData ?? []) as Category[], EXPENSE_CATEGORIES),
   );
+
   // Capital por cobrar de los financiamientos (sin el interés futuro).
   const financingPending = cardTxns
     .filter((t) => t.financing_id && t.occurred_on > todayISO && t.currency !== "USD")
@@ -203,6 +288,7 @@ export default async function DashboardPage() {
   });
 
   // Cobertura del débito contra los pagos de contado: regla de dominio.
+  const coverage = computeCoverage(accounts, cardEntries, loanEntries, today);
   const {
     availableDebit,
     netWorth,
@@ -210,12 +296,59 @@ export default async function DashboardPage() {
     overdue,
     overdueTotal,
     totalDue: totalCrcDue,
-    dueSoon,
     newCharges: newChargesCrc,
-    coversSoon,
-    coverageRatio,
     firstUncovered,
-  } = computeCoverage(accounts, cardEntries, loanEntries, today);
+  } = coverage;
+  const shortfall = coverageShortfall(coverage);
+
+  // Liquidez: las cuentas de débito en colones con saldo (sin efectivo ni ahorro).
+  const liquidAccounts = accounts
+    .filter((a) => a.type === "checking" && a.currency === "CRC" && Number(a.current_balance) > 0)
+    .sort((a, b) => Number(b.current_balance) - Number(a.current_balance));
+
+  // Consumo sin cortar por tarjeta y moneda.
+  const unbilled = cardEntries
+    .filter(({ st }) => st.newCharges > 0)
+    .map(({ card, st }) => ({ card, st, cutoff: nextCutoffDate(card.cutoff_day, today) }))
+    .sort((a, b) => b.st.newCharges - a.st.newCharges);
+
+  // T2: disponible real de cada tarjeta (límite − saldos, con financiamientos).
+  const credit = cards
+    .map((card) => {
+      const limit = card.credit_limit != null ? Number(card.credit_limit) : null;
+      const limitCurrency: Currency = isCurrency(card.currency) ? card.currency : "CRC";
+      const av = cardAvailability({
+        creditLimit: limit,
+        limitCurrency,
+        balances: { CRC: Number(card.current_balance), USD: Number(card.usd_balance ?? 0) },
+        rate,
+      });
+      return { card, limit, limitCurrency, av, level: availabilityLevel(av.available, limit) };
+    })
+    .sort((a, b) => (a.level?.ratio ?? 2) - (b.level?.ratio ?? 2));
+  const toCrc = (amount: number, cur: Currency) => {
+    const r = rateBetween(cur, "CRC", rate);
+    return r == null ? null : amount * r;
+  };
+  let creditAvailableCrc = 0;
+  let creditLimitCrc = 0;
+  let creditSkipped = 0;
+  for (const c of credit) {
+    if (c.limit == null || c.av.available == null) {
+      if (c.limit != null) creditSkipped++;
+      continue;
+    }
+    const available = toCrc(c.av.available, c.limitCurrency);
+    const limit = toCrc(c.limit, c.limitCurrency);
+    if (available == null || limit == null) {
+      creditSkipped++;
+      continue;
+    }
+    creditAvailableCrc += available;
+    creditLimitCrc += limit;
+  }
+  const creditLevel = availabilityLevel(creditAvailableCrc, creditLimitCrc);
+  const withLimit = credit.filter((c) => c.limit != null).length;
 
   const cutoffs = cards
     .map((card) => {
@@ -230,13 +363,14 @@ export default async function DashboardPage() {
   const upcoming = payments.filter((p) => !p.overdue);
   const overdueCards = overdue.filter((p) => p.kind === "card").length;
   const overdueLoans = overdue.filter((p) => p.kind === "loan").length;
+  const hasLoanDue = loanEntries.some((l) => l.due);
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-2xl font-semibold tracking-tight">Resumen</h1>
+      <h1 className="rise text-2xl font-semibold tracking-tight">Resumen</h1>
 
       {overdue.length > 0 ? (
-        <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 dark:bg-destructive/10">
+        <div className="rise flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 dark:bg-destructive/10">
           <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
           <div className="flex flex-col gap-1">
             <p className="text-sm font-medium text-destructive">
@@ -274,171 +408,378 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Stat
-            title="Disponible en débito"
-            value={formatCurrency(availableDebit)}
-            icon={<Wallet className="size-4" />}
-          />
-          <Stat
-            title={loanEntries.some((l) => l.due) ? "A pagar (tarjetas y préstamos)" : "A pagar de contado"}
-            value={formatCurrency(totalCrcDue)}
-            negative={totalCrcDue > availableDebit && totalCrcDue > 0}
-            icon={<CalendarClock className="size-4" />}
-          />
-          <Stat
-            title="Consumo sin cortar"
-            value={formatCurrency(newChargesCrc)}
-            icon={<CreditCard className="size-4" />}
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Stat
-            title="Gasto del mes"
-            value={formatCurrency(monthlyExpenseTotal)}
-            icon={<Receipt className="size-4" />}
-          />
-          {financings.length > 0 ? (
-            <Stat
-              title="Financiamientos activos"
-              value={`${financings.length} activo${financings.length === 1 ? "" : "s"}`}
-              icon={<Layers className="size-4" />}
+      {/* 2.5.0: grilla del Resumen. Cada card abre su detalle en un modal. */}
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-3">
+        {/* Fila 1 · Liquidez */}
+        <StatDialog
+          title="Liquidez"
+          description="Cuentas de débito en colones con saldo. No incluye efectivo ni ahorros."
+          icon={<Wallet className="size-4" />}
+          value={formatCurrency(availableDebit)}
+          size="lg"
+          hint={`${liquidAccounts.length} cuenta${liquidAccounts.length === 1 ? "" : "s"} de débito · toca para ver el detalle`}
+          className="rise lg:col-span-3"
+          style={rise(1)}
+        >
+          {liquidAccounts.length === 0 ? (
+            <EmptyDetail>No hay cuentas de débito en colones con saldo.</EmptyDetail>
+          ) : (
+            <DetailList
+              total={formatCurrency(availableDebit)}
+              rows={liquidAccounts.map((a) => ({
+                key: a.id,
+                title: a.name,
+                subtitle: a.institution ?? undefined,
+                amount: formatCurrency(Number(a.current_balance), a.currency),
+                share: availableDebit > 0 ? Number(a.current_balance) / availableDebit : 0,
+              }))}
             />
-          ) : null}
-          {loans.length > 0 ? (
-            <Stat
-              title="Capital pendiente en préstamos"
-              value={formatCurrency(loanPrincipalCrc)}
-              icon={<HandCoins className="size-4" />}
-            />
-          ) : null}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Patrimonio neto (cuentas − tarjetas − préstamos): {formatCurrency(netWorth)}
-          {financings.length > 0
-            ? ` · Pendiente en financiamientos: ${formatCurrency(financingPending)}`
-            : ""}
-        </p>
-      </div>
+          )}
+        </StatDialog>
 
-      {noticesToSend > 0 || receivableCrc > 0 ? (
+        {/* Fila 2 · A pagar de contado · Consumo sin cortar · Faltante */}
+        <StatDialog
+          title={hasLoanDue ? "A pagar (tarjetas y préstamos)" : "A pagar de contado"}
+          description="Pagos de contado de las tarjetas y cuotas de préstamos por vencer o atrasados."
+          icon={<CalendarClock className="size-4" />}
+          value={formatCurrency(totalCrcDue)}
+          tone={totalCrcDue > availableDebit && totalCrcDue > 0 ? "negative" : "default"}
+          hint={`${payments.length} pago${payments.length === 1 ? "" : "s"} pendiente${payments.length === 1 ? "" : "s"}`}
+          className="rise"
+          style={rise(2)}
+        >
+          {payments.length === 0 ? (
+            <EmptyDetail>Sin pagos de contado pendientes. Estás al día.</EmptyDetail>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {overdue.length > 0 ? <PaymentGroup title="Atrasadas" payments={overdue} /> : null}
+              {upcoming.length > 0 ? <PaymentGroup title="Por vencer" payments={upcoming} /> : null}
+              <DetailTotal label="Total en colones" value={formatCurrency(totalCrcDue)} />
+            </div>
+          )}
+        </StatDialog>
+
+        <StatDialog
+          title="Consumo sin cortar"
+          description="Lo que llevas cargado desde el último corte de cada tarjeta."
+          icon={<CreditCard className="size-4" />}
+          value={formatCurrency(newChargesCrc)}
+          hint={`${unbilled.length} tarjeta${unbilled.length === 1 ? "" : "s"} con consumo`}
+          className="rise"
+          style={rise(3)}
+        >
+          {unbilled.length === 0 ? (
+            <EmptyDetail>Ninguna tarjeta tiene consumo después del corte.</EmptyDetail>
+          ) : (
+            <DetailList
+              total={formatCurrency(newChargesCrc)}
+              totalLabel="Total en colones"
+              rows={unbilled.map(({ card, st, cutoff }) => ({
+                key: `${card.id}:${card.currency}`,
+                href: `/procesos/tarjetas/${card.id}`,
+                title: card.name,
+                subtitle: `Corta ${formatDate(cutoff)}`,
+                amount: formatCurrency(st.newCharges, card.currency),
+              }))}
+            />
+          )}
+        </StatDialog>
+
+        <div className="surface rise flex flex-col gap-2 p-4 sm:p-5" style={rise(4)}>
+          <StatBody
+            title="Faltante"
+            icon={<ShieldAlert className="size-4" />}
+            value={formatCurrency(shortfall.amount)}
+            tone={SHORTFALL_TONE[shortfall.level]}
+            hint={
+              shortfall.level === "covered"
+                ? "Tu liquidez cubre todos los pagos de contado"
+                : shortfall.level === "later"
+                  ? "Cubres los próximos 10 días, no todos los pagos"
+                  : "Te falta para los pagos de los próximos 10 días"
+            }
+          />
+        </div>
+
+        {/* Filas 3 y 4 · Gastos por período y gráfico por categoría */}
+        <ExpenseOverview
+          points={expensePoints}
+          todayISO={todayISO}
+          icons={categoryIcons}
+          hasUsd={expenseRows.some((t) => t.currency === "USD")}
+        />
+
+        {/* Fila 5 · Disponible en crédito · Cobros a miembros · Financiamientos */}
+        <StatDialog
+          title="Disponible en crédito"
+          description="Límite menos lo usado en cada tarjeta, incluido el capital de los financiamientos y el consumo sin cortar."
+          icon={<CircleGauge className="size-4" />}
+          value={formatCurrency(creditAvailableCrc)}
+          tone={creditLevel ? AVAILABILITY_TONE[creditLevel.level] : "default"}
+          hint={
+            creditLimitCrc > 0
+              ? `${Math.round((creditLevel?.ratio ?? 0) * 100)} % de ${formatCurrency(creditLimitCrc)} de límite`
+              : "Agrega el límite de tus tarjetas"
+          }
+          className="rise"
+          style={rise(11)}
+        >
+          {withLimit === 0 ? (
+            <EmptyDetail>
+              Ninguna tarjeta tiene límite de crédito. Agrégalo al editar la tarjeta.
+            </EmptyDetail>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-2">
+                {credit.map(({ card, limit, limitCurrency, av, level }) => (
+                  <li key={card.id}>
+                    <Link
+                      href={`/procesos/tarjetas/${card.id}`}
+                      className={cn("flex flex-col gap-2 rounded-xl bg-muted/50 p-3", PRESSABLE_ROW)}
+                    >
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="truncate font-medium">{card.name}</span>
+                        <span
+                          className={cn(
+                            "shrink-0 font-semibold tabular-nums",
+                            level?.level === "high" && "text-success",
+                            level?.level === "medium" && "text-warning",
+                            level?.level === "low" && "text-destructive",
+                          )}
+                        >
+                          {av.available != null ? formatCurrency(av.available, limitCurrency) : "—"}
+                        </span>
+                      </div>
+                      {level ? (
+                        <Bar value={level.ratio} className={AVAILABILITY_BAR[level.level]} />
+                      ) : null}
+                      <span className="text-xs text-muted-foreground">
+                        {limit == null
+                          ? "Sin límite registrado"
+                          : av.missingRate
+                            ? "Falta el tipo de cambio para calcularlo"
+                            : `${Math.round((level?.ratio ?? 0) * 100)} % disponible de ${formatCurrency(limit, limitCurrency)}`}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <DetailTotal label="Total disponible (en colones)" value={formatCurrency(creditAvailableCrc)} />
+              {creditSkipped > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {creditSkipped} tarjeta{creditSkipped === 1 ? "" : "s"} sin tipo de cambio no
+                  suma{creditSkipped === 1 ? "" : "n"} al total.
+                </p>
+              ) : null}
+            </div>
+          )}
+        </StatDialog>
+
         <Link
           href="/procesos/cobros"
-          className={cn(
-            "flex items-center gap-3 rounded-xl bg-card p-4 shadow-card ring-1 ring-foreground/6 dark:ring-foreground/10",
-            PRESSABLE_SURFACE,
-            FOCUS_OUTLINE,
-          )}
+          className={cn("surface rise flex flex-col gap-2 p-4 sm:p-5", PRESSABLE_SURFACE, FOCUS_OUTLINE)}
+          style={rise(12)}
         >
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-foreground/80">
-            <BellRing className="size-[18px]" />
-          </span>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <p className="text-sm font-medium">
-              {noticesToSend > 0
+          <StatBody
+            title="Cobros a miembros"
+            icon={<BellRing className="size-4" />}
+            value={formatCurrency(receivableCrc)}
+            hint={
+              noticesToSend > 0
                 ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} de cuota por enviar`
-                : "Cobros a miembros"}
-            </p>
-            {receivableCrc > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Te deben {formatCurrency(receivableCrc)} de cuotas ya cobradas en la tarjeta.
-              </p>
-            ) : null}
-          </div>
-          <LinkChevron />
+                : receivableCrc > 0
+                  ? "De cuotas ya cobradas en la tarjeta"
+                  : "Nadie te debe cuotas cobradas"
+            }
+            trailing={<LinkChevron />}
+          />
         </Link>
-      ) : null}
 
-      {dueSoon > 0 ? (
-        <div
-          className={cn(
-            "flex items-start gap-3 rounded-xl p-4",
-            coversSoon
-              ? "bg-card shadow-card ring-1 ring-foreground/6 dark:ring-foreground/10"
-              : "border border-destructive/30 bg-destructive/5 dark:bg-destructive/10",
-          )}
+        <StatDialog
+          title="Financiamientos"
+          description="Planes de cuotas con cuotas por cobrar. Toca uno para ver su detalle."
+          icon={<Layers className="size-4" />}
+          value={`${financings.length} activo${financings.length === 1 ? "" : "s"}`}
+          hint={
+            financingPending > 0
+              ? `${formatCurrency(financingPending)} de capital por cobrar`
+              : "Sin capital por cobrar"
+          }
+          className="rise"
+          style={rise(13)}
         >
-          {coversSoon ? (
-            <CheckCircle2 className="mt-0.5 size-5 text-foreground/70" />
+          {financings.length === 0 ? (
+            <EmptyDetail>No tienes financiamientos activos.</EmptyDetail>
           ) : (
-            <TriangleAlert className="mt-0.5 size-5 text-destructive" />
+            <div className="flex flex-col gap-3">
+              <DetailList
+                rows={financings.map(({ f, p }) => ({
+                  key: f.id,
+                  href: `/procesos/tarjetas/${f.card_id}/financiamientos/${f.id}`,
+                  title: f.description,
+                  subtitle: [cardName.get(f.card_id), `${p.scheduled.length} cuota${p.scheduled.length === 1 ? "" : "s"} por cobrar`]
+                    .filter(Boolean)
+                    .join(" · "),
+                  amount: formatCurrency(p.next!.amount, f.currency),
+                  amountHint: formatDate(p.next!.occurred_on),
+                }))}
+              />
+              <Link
+                href="/procesos/financiamientos"
+                className="self-end text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Ver todos los financiamientos
+              </Link>
+            </div>
           )}
-          <div className="flex flex-1 flex-col gap-2">
-            <p className="text-sm font-medium">
-              {coversSoon
-                ? "Tu débito cubre los pagos de los próximos 10 días."
-                : `Con tu débito te faltan ${formatCurrency(
-                    dueSoon - availableDebit,
-                  )} para los pagos de los próximos 10 días.`}
-            </p>
-            <Bar
-              value={coverageRatio}
-              className={coversSoon ? "bg-foreground/70" : "bg-destructive"}
-            />
-            <p className="text-xs tabular-nums text-muted-foreground">
-              A pagar {formatCurrency(dueSoon)} · Disponible{" "}
-              {formatCurrency(availableDebit)}
-            </p>
-          </div>
-        </div>
-      ) : null}
+        </StatDialog>
+      </div>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Pagos próximos</h2>
-        {cards.length === 0 && loans.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No hay tarjetas ni préstamos registrados.{" "}
-            <Link href="/procesos/tarjetas" className="underline">
-              Agrega una tarjeta
-            </Link>
-            .
-          </p>
-        ) : payments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Sin pagos de contado ni cuotas pendientes. Estás al día.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {overdue.length > 0 ? (
-              <PaymentGroup title="Atrasadas" payments={overdue} />
-            ) : null}
-            {upcoming.length > 0 ? (
-              <PaymentGroup
-                title="Por vencer"
-                payments={upcoming}
-                dividerAt={
-                  firstUncovered >= 0
-                    ? firstUncovered - overdue.length
-                    : undefined
-                }
-              />
-            ) : null}
-          </div>
-        )}
-      </section>
+      <p className="-mt-4 text-xs text-muted-foreground">
+        Patrimonio neto (cuentas − tarjetas − préstamos): {formatCurrency(netWorth)}
+        {loans.length > 0
+          ? ` · Capital pendiente en préstamos: ${formatCurrency(loanPrincipalCrc)}`
+          : ""}
+      </p>
 
-      {cutoffs.length > 0 ? (
+      <div className="grid gap-8 xl:grid-cols-2 xl:items-start">
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">Próximos cortes</h2>
-          <p className="text-sm text-muted-foreground">
-            El corte fija el saldo de contado que vas a tener que pagar.
-          </p>
-          <Panel className="divide-y">
-            {cutoffs.map(({ card, st, cutoff, days }) => (
-              <CutoffRow
-                key={card.id}
-                card={card}
-                st={st}
-                cutoff={cutoff}
-                days={days}
-              />
-            ))}
-          </Panel>
+          <h2 className="text-lg font-semibold tracking-tight">Pagos próximos</h2>
+          {cards.length === 0 && loans.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No hay tarjetas ni préstamos registrados.{" "}
+              <Link href="/procesos/tarjetas" className="underline">
+                Agrega una tarjeta
+              </Link>
+              .
+            </p>
+          ) : payments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Sin pagos de contado ni cuotas pendientes. Estás al día.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {overdue.length > 0 ? (
+                <PaymentGroup title="Atrasadas" payments={overdue} />
+              ) : null}
+              {upcoming.length > 0 ? (
+                <PaymentGroup
+                  title="Por vencer"
+                  payments={upcoming}
+                  dividerAt={
+                    firstUncovered >= 0
+                      ? firstUncovered - overdue.length
+                      : undefined
+                  }
+                />
+              ) : null}
+            </div>
+          )}
         </section>
-      ) : null}
+
+        {cutoffs.length > 0 ? (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-lg font-semibold tracking-tight">Próximos cortes</h2>
+            <p className="-mt-1 text-sm text-muted-foreground">
+              El corte fija el saldo de contado que vas a tener que pagar.
+            </p>
+            <Panel className="divide-y">
+              {cutoffs.map(({ card, st, cutoff, days }) => (
+                <CutoffRow
+                  key={card.id}
+                  card={card}
+                  st={st}
+                  cutoff={cutoff}
+                  days={days}
+                />
+              ))}
+            </Panel>
+          </section>
+        ) : null}
+      </div>
     </div>
   );
+}
+
+type DetailRow = {
+  key: string;
+  title: string;
+  subtitle?: string;
+  amount: string;
+  amountHint?: string;
+  href?: string;
+  /** Parte del total (0..1): barra fina debajo. */
+  share?: number;
+};
+
+/** Filas del detalle de un modal del Resumen, con total opcional. */
+function DetailList({
+  rows,
+  total,
+  totalLabel = "Total",
+}: {
+  rows: DetailRow[];
+  total?: string;
+  totalLabel?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-2">
+        {rows.map((r) => {
+          const body = (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{r.title}</p>
+                  {r.subtitle ? (
+                    <p className="truncate text-xs text-muted-foreground">{r.subtitle}</p>
+                  ) : null}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <div className="text-right">
+                    <p className="font-semibold tabular-nums">{r.amount}</p>
+                    {r.amountHint ? (
+                      <p className="text-xs text-muted-foreground">{r.amountHint}</p>
+                    ) : null}
+                  </div>
+                  {r.href ? <LinkChevron /> : null}
+                </div>
+              </div>
+              {r.share != null ? <Bar value={r.share} className="bg-foreground/70" /> : null}
+            </>
+          );
+          return (
+            <li key={r.key}>
+              {r.href ? (
+                <Link
+                  href={r.href}
+                  className={cn("flex flex-col gap-2 rounded-xl bg-muted/50 p-3", PRESSABLE_ROW)}
+                >
+                  {body}
+                </Link>
+              ) : (
+                <div className="flex flex-col gap-2 rounded-xl bg-muted/50 p-3">{body}</div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {total ? <DetailTotal label={totalLabel} value={total} /> : null}
+    </div>
+  );
+}
+
+function DetailTotal({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-t pt-3 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+function EmptyDetail({ children }: { children: ReactNode }) {
+  return <p className="py-6 text-center text-sm text-muted-foreground">{children}</p>;
 }
 
 function paymentName(p: Payment): string {
@@ -620,38 +961,5 @@ function Bar({ value, className }: { value: number; className?: string }) {
         style={{ width: `${Math.round(value * 100)}%` }}
       />
     </div>
-  );
-}
-
-function Stat({
-  title,
-  value,
-  negative,
-  icon,
-}: {
-  title: string;
-  value: string;
-  negative?: boolean;
-  icon?: ReactNode;
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-1.5 text-sm font-medium tracking-normal text-muted-foreground">
-          {icon}
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p
-          className={cn(
-            "text-2xl font-semibold tracking-tight tabular-nums",
-            negative && "text-destructive",
-          )}
-        >
-          {value}
-        </p>
-      </CardContent>
-    </Card>
   );
 }

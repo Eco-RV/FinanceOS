@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { FormResult } from "@/lib/forms";
+import { confirmAction, splitQuestion } from "@/lib/confirm";
 
 const MODES = {
   delete: { icon: Trash2, label: "Eliminar", done: "Eliminado" },
@@ -40,8 +41,17 @@ export function LifecycleButton({
       title={label}
       disabled={pending}
       aria-busy={pending}
-      onClick={() => {
-        if (confirmLabel && !window.confirm(confirmLabel)) return;
+      onClick={async () => {
+        if (
+          confirmLabel &&
+          !(await confirmAction({
+            ...splitQuestion(confirmLabel),
+            confirmLabel: label,
+            tone: mode === "delete" ? "danger" : "warning",
+            icon: mode === "delete" ? "delete" : "archive",
+          }))
+        )
+          return;
         const formData = new FormData();
         formData.set("id", id);
         formData.set("active", String(mode === "activate"));

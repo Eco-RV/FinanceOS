@@ -4,32 +4,54 @@
 
 ## Resumen
 
-Registro de gastos, ya sea pagados desde una cuenta de débito o cargados a
-una tarjeta de crédito. Comparte formulario y lista con Ingresos y con los
-pagos de tarjeta (`TransactionForm` / `TransactionList`).
+Registro de gastos: cargos a una tarjeta de crédito, pagos en efectivo y
+pagos por SINPE desde una cuenta de débito. Desde 2.5.0 el gasto con tarjeta
+o en efectivo usa un formulario rápido propio (`ExpenseForm`); SINPE,
+ingresos y pagos de tarjeta siguen con `TransactionForm`. La lista es
+compartida (`TransactionList`).
 
 ## Historias de usuario
 
 ### 1. Registrar un gasto
-Como usuario quiero registrar un gasto indicando monto, fecha, categoría,
-una nota opcional y si salió de una cuenta o fue un cargo a una tarjeta, para
-llevar el detalle de en qué se me va el dinero.
+Como usuario quiero registrar un gasto rápido —monto, categoría y si lo pagué
+con tarjeta o en efectivo— para llevar el detalle de en qué se me va el
+dinero sin perder tiempo en el día a día.
 
 **Criterios de aceptación**
-- Campos: `amount` (> 0), `occurred_on` (fecha), `category` (obligatoria para
-  gastos), `note` (opcional, hasta 200 caracteres), `origin`
-  (`account:<id>` o `card:<id>`).
-- La moneda del movimiento se copia automáticamente de la cuenta o tarjeta
-  elegida como origen; el usuario no la escribe.
+- El formulario va en este orden (2.5.0):
+  1. **Monto** (> 0) en un solo campo grande, con un botón de moneda que
+     alterna **CRC / USD**. Se aceptan coma o punto como decimal.
+  2. **Categoría** (obligatoria): cuadrícula de botones con el ícono de cada
+     categoría, cómoda para el dedo.
+  3. **Tarjeta o Efectivo** (selector arriba; por defecto Tarjeta):
+     - Tarjeta: carrusel tipo billetera (Android/iPhone) con las tarjetas
+       activas dibujadas como tarjetas. Siempre empieza en la **primera**
+       (a la izquierda). Se cambia con las **flechas** ‹ ›, tocando una
+       tarjeta, con la rueda del ratón o deslizando con el dedo; la elegida
+       queda al centro. No se arrastra con el cursor. El cargo va en la moneda
+       elegida (bimoneda, T1).
+     - Efectivo: las cuentas de tipo **Efectivo** de la moneda elegida (si hay
+       una sola, queda elegida). Si no hay, se invita a crearla en Cuentas.
+  4. **Más opciones** (botón +): despliega **fecha** (por defecto hoy) y
+     **nota** opcional (hasta 200 caracteres).
+- Ya **no** se registra un gasto directo sobre una cuenta de débito o ahorro:
+  para eso están SINPE y Transferencias. Al editar un gasto viejo hecho desde
+  una cuenta, esa cuenta se sigue ofreciendo.
+- En efectivo la moneda del movimiento la manda la cuenta.
+- Al guardar aparece al centro una confirmación animada "Gasto registrado"
+  con el monto (no tapa el botón flotante).
 - Al guardar, el saldo de la cuenta (resta) o el saldo de la tarjeta (suma,
   más deuda) se ajusta automáticamente vía trigger — la action no toca el
   saldo directamente.
 
 ### 2. Elegir categoría
 Como usuario quiero elegir la categoría del gasto entre las que configuré en
-Ajustes, para poder clasificar mis gastos a mi manera.
+Ajustes, con su ícono, para poder clasificar mis gastos a mi manera y
+reconocerlas de un vistazo.
 
 **Criterios de aceptación**
+- Cada categoría tiene un ícono del kit de la app (2.5.0, ver Ajustes →
+  Categorías). Sin ícono guardado se usa uno sugerido por el nombre.
 - Si el usuario no tiene categorías propias de tipo `expense` configuradas,
   se le ofrece la lista sugerida (`EXPENSE_CATEGORIES` en `schema.ts`:
   Comida, Transporte, Servicios, Vivienda, Salud, Entretenimiento, Compras,
@@ -52,10 +74,20 @@ que el saldo de la cuenta o tarjeta quede correcto.
   (trigger), sin que el usuario tenga que ajustar nada a mano.
 
 ### 4. Ver mis gastos
-Como usuario quiero ver el listado de todos mis gastos, ordenado por fecha
-más reciente primero, con su categoría y origen visibles.
+Como usuario quiero ver el listado de mis gastos, ordenado por fecha más
+reciente primero, con su categoría y origen visibles, y poder filtrarlo.
 
 **Criterios de aceptación**
+- Filtros (2.5.0): texto (nota, categoría, destinatario), desde / hasta,
+  categoría y origen (cada tarjeta, cada cuenta o "Solo SINPE"); botón
+  "Limpiar".
+- Las cuotas de financiamientos con fecha futura **no** se muestran por
+  defecto; "Ver cuotas programadas" las incluye.
+- Se ve cuántos gastos coinciden y su total por moneda.
+- Filas por página: 5, 10, 20, 50 o todas, con paginación.
+- Se puede llegar ya filtrado por la URL (`?desde=`, `?hasta=`,
+  `?categoria=`), como desde el gráfico del Resumen.
+- Cada gasto es una fila separada (card) con el ícono de su categoría.
 - Si todavía no hay ninguna cuenta ni tarjeta creada, en vez del listado se
   muestra un mensaje guiando a crear una primero (no se puede registrar un
   gasto sin un origen posible).
@@ -81,10 +113,20 @@ hice y a qué teléfono, para saber después a quién le pagué y en qué.
 - En la lista de gastos aparece como "<cuenta> · SINPE a <nombre> · <teléfono>".
 - Se edita y elimina como cualquier gasto; el saldo de la cuenta se ajusta igual.
 
+### 7. Ver todos los financiamientos
+Como usuario quiero, desde Gastos, ir a una pantalla con todos mis
+financiamientos activos de todas las tarjetas.
+
+**Criterios de aceptación**
+- Botón "Financiamientos" a la izquierda de "Nuevo SINPE" (2.5.0) →
+  `/procesos/financiamientos`: cantidad, próximas cuotas y cuotas por
+  cobrar; cada fila abre el detalle del financiamiento.
+
 ## Reglas de negocio
 
 - Un gasto puede tener como origen una cuenta **o** una tarjeta — no ambas ni
-  ninguna.
+  ninguna. Desde 2.5.0 el formulario rápido solo ofrece tarjetas y cuentas de
+  efectivo (la regla de datos no cambia).
 - `category` es texto libre guardado en el movimiento, no una referencia a
   `categories`.
 - Un SINPE es un gasto con `channel = 'sinpe'`; solo desde cuenta (S1).
@@ -108,3 +150,8 @@ hice y a qué teléfono, para saber después a quién le pagué y en qué.
 - **2026-10-12 (v2.1.0, en desarrollo)** — Categorías: eliminar solo si
   ningún gasto la usa, si no se desactiva (G5); no se registra con una
   desactivada (G4).
+- **2026-10-14 (v2.5.0, en desarrollo)** — Formulario rápido de gasto (monto
+  con moneda, categorías con ícono, Tarjeta en carrusel o Efectivo, "Más
+  opciones" para fecha y nota) y confirmación animada al centro. Ya no se
+  registra un gasto sobre una cuenta de débito. Lista con filtros y filas
+  por página; botón y pantalla de Financiamientos.

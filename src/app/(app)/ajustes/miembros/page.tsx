@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Member } from "@/lib/types";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { RowActions, RowItem, RowList } from "@/components/row-list";
 import { BackLink } from "@/components/back-link";
 import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
@@ -25,7 +25,7 @@ export default async function MiembrosPage() {
   const inactive = all.filter((m) => m.archived);
 
   const actions = (m: Member) => (
-    <div className="flex justify-end gap-1">
+    <div className="relative z-10 flex justify-end gap-1">
       <MemberFormDialog member={m} />
       <RemoveOrDeactivate
         id={m.id}
@@ -58,33 +58,22 @@ export default async function MiembrosPage() {
         </p>
       ) : (
         <>
-          <div className="surface hidden overflow-hidden sm:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Correo</TableHead>
-                  <TableHead>WhatsApp</TableHead>
-                  <TableHead className="w-24" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((m) => (
-                  <TableRow key={m.id}>
-                    <TableCell className="font-medium">{m.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{m.email ?? "—"}</TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
-                      {phoneLabel(m.phone)}
-                    </TableCell>
-                    <TableCell>{actions(m)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <RowList
+            columns="minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1fr) 5.5rem"
+            headers={[{ label: "Nombre" }, { label: "Correo" }, { label: "WhatsApp" }, {}]}
+          >
+            {members.map((m, i) => (
+              <RowItem key={m.id} index={i}>
+                <span className="truncate font-medium">{m.name}</span>
+                <span className="truncate text-muted-foreground">{m.email ?? "—"}</span>
+                <span className="tabular-nums text-muted-foreground">{phoneLabel(m.phone)}</span>
+                <RowActions>{actions(m)}</RowActions>
+              </RowItem>
+            ))}
+          </RowList>
           <MobileList>
-            {members.map((m) => (
-              <MobileCard key={m.id} title={m.name} actions={actions(m)}>
+            {members.map((m, i) => (
+              <MobileCard key={m.id} index={i} title={m.name} actions={actions(m)}>
                 <MobileField label="Correo" value={m.email ?? "—"} />
                 <MobileField label="WhatsApp" value={phoneLabel(m.phone)} />
               </MobileCard>

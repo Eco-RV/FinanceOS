@@ -2,14 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/format";
 import type { Account, AccountType } from "@/lib/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { EmptyRows, RowActions, RowItem, RowList } from "@/components/row-list";
 import { BackLink } from "@/components/back-link";
 import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
 import { idsWithHistory } from "@/lib/catalog-history";
@@ -82,60 +75,42 @@ export default async function CuentasPage() {
       </div>
 
       {accounts.length === 0 ? (
-        <div className="surface overflow-hidden">
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell className="py-10 text-center text-muted-foreground">
-                  Aún no tienes cuentas. Agrega la primera.
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
+        <EmptyRows>Aún no tienes cuentas. Agrega la primera.</EmptyRows>
       ) : (
         <>
-          <div className="surface hidden overflow-hidden sm:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Institución</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
-                  <TableHead className="w-24" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accounts.map((account) => (
-                  <TableRow key={account.id}>
-                    <TableCell className="font-medium">{account.name}</TableCell>
-                    <TableCell>{TYPE_LABELS[account.type]}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {account.institution ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(
-                        Number(account.current_balance),
-                        account.currency,
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <AccountFormDialog account={account} opening={openings.get(account.id)} />
-                        {removeAction(account)}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <RowList
+            columns="minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 5.5rem"
+            headers={[
+              { label: "Nombre" },
+              { label: "Tipo" },
+              { label: "Institución" },
+              { label: "Saldo", align: "right" },
+              {},
+            ]}
+          >
+            {accounts.map((account, i) => (
+              <RowItem key={account.id} index={i}>
+                <span className="truncate font-medium">{account.name}</span>
+                <span>{TYPE_LABELS[account.type]}</span>
+                <span className="truncate text-muted-foreground">
+                  {account.institution ?? "—"}
+                </span>
+                <span className="text-right font-medium tabular-nums">
+                  {formatCurrency(Number(account.current_balance), account.currency)}
+                </span>
+                <RowActions>
+                  <AccountFormDialog account={account} opening={openings.get(account.id)} />
+                  {removeAction(account)}
+                </RowActions>
+              </RowItem>
+            ))}
+          </RowList>
 
           <MobileList>
-            {accounts.map((account) => (
+            {accounts.map((account, i) => (
               <MobileCard
                 key={account.id}
+                index={i}
                 title={account.name}
                 meta={account.institution ?? undefined}
                 actions={
