@@ -116,3 +116,20 @@ export function cardAvailability(params: {
     creditLimit == null ? null : amountOf(money(creditLimit - used, limitCurrency));
   return { used, available, missingRate: false };
 }
+
+/** Semáforo del disponible de una tarjeta respecto a su límite (2.5.0). */
+export type AvailabilityLevel = "high" | "medium" | "low";
+
+/**
+ * Verde con la mitad o más del límite disponible, amarillo desde el 20 %,
+ * rojo por debajo (o sobregirada). `null` si no hay límite o no se puede
+ * calcular el disponible.
+ */
+export function availabilityLevel(
+  available: number | null,
+  creditLimit: number | null,
+): { ratio: number; level: AvailabilityLevel } | null {
+  if (available == null || creditLimit == null || !(creditLimit > 0)) return null;
+  const ratio = Math.max(0, Math.min(1, available / creditLimit));
+  return { ratio, level: ratio >= 0.5 ? "high" : ratio >= 0.2 ? "medium" : "low" };
+}

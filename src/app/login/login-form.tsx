@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Wallet } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LogoTile } from "@/components/brand-logo";
 import { login, signUp, type AuthState } from "./actions";
 
 type Mode = "login" | "signup";
@@ -24,16 +24,16 @@ export function LoginForm() {
   );
 
   return (
-    <Card className="w-full max-w-sm motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-98 motion-safe:duration-300">
+    <Card className="w-full max-w-sm bg-card/90 shadow-2xl backdrop-blur-xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-98 motion-safe:duration-300 [--card-spacing:--spacing(6)]">
       <CardHeader className="gap-1.5">
-        <span className="mb-2 grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-          <Wallet className="size-5" />
-        </span>
-        <CardTitle className="text-xl">FinanceOS</CardTitle>
+        <LogoTile animated className="mb-3 size-11 rounded-xl" />
+        <CardTitle className="text-2xl">
+          {mode === "login" ? "Hola de nuevo" : "Crea tu cuenta"}
+        </CardTitle>
         <CardDescription>
           {mode === "login"
-            ? "Inicia sesión con tu correo"
-            : "Crea tu cuenta para empezar"}
+            ? "Inicia sesión en Finance OS con tu correo."
+            : "Empieza a ordenar tus finanzas en Finance OS."}
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
@@ -66,7 +66,7 @@ export function LoginForm() {
             <p className="text-sm text-destructive">{state.error}</p>
           ) : null}
 
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button type="submit" size="lg" className="w-full" disabled={pending}>
             {pending
               ? "Un momento…"
               : mode === "login"

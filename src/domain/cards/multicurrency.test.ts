@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { DomainError } from "../shared/errors.ts";
 import { fromISODate } from "../shared/calendar.ts";
 import {
+  availabilityLevel,
   cardAvailability,
   cardStatementsByCurrency,
   rateBetween,
@@ -69,4 +70,12 @@ test("rateBetween y validación del tipo de cambio", () => {
   assert.equal(rateBetween("CRC", "USD", rate), 1 / 500);
   assert.equal(rateBetween("CRC", "CRC", null), 1);
   assert.throws(() => validateExchangeRate(0), DomainError);
+});
+
+test("semáforo del disponible: verde ≥ 50 %, amarillo ≥ 20 %, rojo debajo", () => {
+  assert.deepEqual(availabilityLevel(600, 1000), { ratio: 0.6, level: "high" });
+  assert.deepEqual(availabilityLevel(200, 1000), { ratio: 0.2, level: "medium" });
+  assert.deepEqual(availabilityLevel(-50, 1000), { ratio: 0, level: "low" });
+  assert.equal(availabilityLevel(null, 1000), null);
+  assert.equal(availabilityLevel(500, null), null);
 });

@@ -123,6 +123,8 @@ export type Category = {
   user_id: string;
   kind: CategoryKind;
   name: string;
+  /** Clave del ícono (2.5.0, `category-icon-keys.ts`); null = sugerido por el nombre. */
+  icon?: string | null;
   archived: boolean;
   created_at: string;
 };

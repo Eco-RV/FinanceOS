@@ -1,15 +1,34 @@
 import Link from "next/link";
+import { Layers } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
-import { categoryNames } from "@/lib/categories";
-import type { Account, CreditCard, Transaction } from "@/lib/types";
+import { categoryOptions, iconsByName } from "@/lib/categories";
+import { crToday, toISODate } from "@/domain";
+import type { Account, Category, CreditCard, Transaction } from "@/lib/types";
 import { BackLink } from "@/components/back-link";
+import { buttonVariants } from "@/components/ui/button";
 import { TransactionForm } from "../_transactions/transaction-form";
-import { TransactionList } from "../_transactions/transaction-list";
+import { ExpenseExplorer } from "./expense-explorer";
 
-export default async function GastosPage() {
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Filtros que llegan por la URL (p. ej. desde el gráfico del Resumen). */
+function initialFilters(params: { desde?: string; hasta?: string; categoria?: string }) {
+  return {
+    from: params.desde && ISO_DATE.test(params.desde) ? params.desde : "",
+    to: params.hasta && ISO_DATE.test(params.hasta) ? params.hasta : "",
+    category: params.categoria?.slice(0, 40) ?? "",
+  };
+}
+
+export default async function GastosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ desde?: string; hasta?: string; categoria?: string }>;
+}) {
   await requireUser();
+  const filters = initialFilters(await searchParams);
 
   const supabase = await createClient();
   const [
@@ -36,7 +55,7 @@ export default async function GastosPage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("categories")
-      .select("name")
+      .select("*")
       .eq("kind", "expense")
       .eq("archived", false)
       .order("name", { ascending: true }),
@@ -47,27 +66,36 @@ export default async function GastosPage() {
   const allCards = (cardData ?? []) as CreditCard[];
   const accounts = allAccounts.filter((a) => !a.archived);
   const cards = allCards.filter((c) => !c.archived);
-  const categories = categoryNames(catData ?? [], EXPENSE_CATEGORIES);
+  const options = categoryOptions((catData ?? []) as Category[], EXPENSE_CATEGORIES);
+  const categories = options.map((o) => o.name);
+  const categoryIcons = iconsByName(options);
   const canRegister = accounts.length > 0 || cards.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
       <BackLink href="/procesos" label="Procesos" />
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
           <p className="text-sm text-muted-foreground">
-            Pagos desde una cuenta de débito (incluido SINPE) o cargos a una tarjeta.
+            Cargos a tarjeta, en efectivo y pagos por SINPE.
           </p>
         </div>
         {canRegister ? (
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex flex-wrap gap-2 sm:justify-end">
+            <Link
+              href="/procesos/financiamientos"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <Layers className="size-4" /> Financiamientos
+            </Link>
             {accounts.length > 0 ? (
               <TransactionForm
                 type="expense"
                 sinpe
                 accounts={accounts}
                 categories={categories}
+                categoryIcons={categoryIcons}
                 triggerLabel="Nuevo SINPE"
               />
             ) : null}
@@ -76,18 +104,22 @@ export default async function GastosPage() {
               accounts={accounts}
               cards={cards}
               categories={categories}
+              categoryIcons={categoryIcons}
             />
           </div>
         ) : null}
       </div>
 
       {canRegister ? (
-        <TransactionList
+        <ExpenseExplorer
+          key={`${filters.from}:${filters.to}:${filters.category}`}
           transactions={transactions}
           accounts={allAccounts}
           cards={allCards}
           categories={categories}
-          emptyLabel="Aún no registrás gastos."
+          categoryIcons={categoryIcons}
+          todayISO={toISODate(crToday())}
+          initial={filters}
         />
       ) : (
         <p className="text-sm text-muted-foreground">

@@ -157,3 +157,26 @@ export function computeCoverage<C extends CoverageCard, L = never>(
     firstUncovered: payments.findIndex((p) => !p.covered),
   };
 }
+
+/** Semáforo del faltante (2.5.0): verde cubierto, amarillo más adelante, rojo próximo. */
+export type ShortfallLevel = "covered" | "later" | "soon";
+
+export type Shortfall = {
+  /** Lo que el débito no alcanza a cubrir de los pagos de contado (0 si alcanza). */
+  amount: number;
+  level: ShortfallLevel;
+};
+
+/**
+ * Faltante para pagar de contado: lo que falta al débito disponible para
+ * todos los pagos pendientes. Rojo si ya no alcanza para los de los próximos
+ * `DUE_SOON_DAYS` días; amarillo si alcanza para esos pero no para todos.
+ */
+export function coverageShortfall(
+  coverage: Pick<Coverage<unknown, unknown>, "availableDebit" | "totalDue" | "dueSoon">,
+): Shortfall {
+  const { availableDebit, totalDue, dueSoon } = coverage;
+  const amount = Math.max(0, Math.round((totalDue - availableDebit) * 100) / 100);
+  if (amount === 0) return { amount, level: "covered" };
+  return { amount, level: dueSoon > availableDebit ? "soon" : "later" };
+}

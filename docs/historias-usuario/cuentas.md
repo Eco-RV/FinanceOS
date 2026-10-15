@@ -96,3 +96,8 @@ colones, para tener una vista rápida de mi liquidez.
 - **2026-10-12 (v2.1.0, en desarrollo)** — Eliminar vs. desactivar (G5): una
   cuenta con movimientos ya no se borra en cascada; se desactiva y se puede
   reactivar. Sobre una desactivada no se registra (G4).
+- **2026-10-14 (v2.5.0, en desarrollo)** — Lista en filas separadas. Las
+  cuentas de **efectivo** son el origen de los gastos "Efectivo" del
+  formulario rápido; un gasto ya no se registra sobre una cuenta de débito
+  (para eso están SINPE y Transferencias). En el Resumen, el disponible en
+  débito se llama **Liquidez**.

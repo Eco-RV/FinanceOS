@@ -15,6 +15,7 @@ import {
   type BalanceRepository,
   type BankRepository,
   type CardRepository,
+  type CategoryFields,
   type CategoryKind,
   type CategoryRepository,
   type Loan,
@@ -41,6 +42,8 @@ function check(error: PgError, message: string): void {
 
 /** Violación de un índice único (p. ej. categoría repetida). */
 const UNIQUE_VIOLATION = "23505";
+/** PostgREST: la columna no existe en el esquema (SQL de una versión sin correr). */
+const MISSING_COLUMN = "PGRST204";
 
 /** Patrón `ilike` que compara el texto completo, sin comodines del usuario. */
 function exactILike(text: string): string {
@@ -198,9 +201,15 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       check(error, "No se pudo actualizar la categoría");
     },
     async save(id, fields) {
-      const { data, error } = id
-        ? await supabase.from("categories").update(fields).eq("id", id).select("id").single()
-        : await supabase.from("categories").insert(fields).select("id").single();
+      const write = (row: CategoryFields) =>
+        id
+          ? supabase.from("categories").update(row).eq("id", id).select("id").single()
+          : supabase.from("categories").insert(row).select("id").single();
+      let { data, error } = await write(fields);
+      // Sin la columna `icon` (SQL 2.5.0 sin correr) se guarda igual, sin ícono.
+      if (error?.code === MISSING_COLUMN && "icon" in fields) {
+        ({ data, error } = await write({ kind: fields.kind, name: fields.name }));
+      }
       if (error?.code === UNIQUE_VIOLATION) throw new InfrastructureError("Ya existe esa categoría");
       check(error, "No se pudo guardar la categoría");
       return { id: data!.id as string };

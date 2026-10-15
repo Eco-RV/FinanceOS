@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { Undo2 } from "lucide-react";
 import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import {
   Dialog,
   DialogContent,
@@ -121,8 +122,15 @@ export function UndoLastPaymentButton({ loanId, installmentNo }: { loanId: strin
       variant="outline"
       size="sm"
       disabled={pending}
-      onClick={() => {
-        if (!window.confirm(`¿Deshacer el pago de la cuota ${installmentNo}? Se borra ese gasto y vuelve el saldo de la cuenta.`)) return;
+      onClick={async () => {
+        const ok = await confirmAction({
+          title: `¿Deshacer el pago de la cuota ${installmentNo}?`,
+          description: "Se borra ese gasto y vuelve el saldo de la cuenta.",
+          confirmLabel: "Deshacer",
+          tone: "warning",
+          icon: "undo",
+        });
+        if (!ok) return;
         const formData = new FormData();
         formData.set("id", loanId);
         start(async () => {

@@ -6,7 +6,7 @@ transferencias, financiamientos con o sin interés, préstamos bancarios y cobro
 a la familia. Pensada para el celular (web) e **instalable** en la pantalla de
 inicio. Colones (₡) por defecto, con dólares en tarjetas bimoneda.
 
-**Versión actual:** 2.3.0 — ver [`CHANGELOG.md`](./CHANGELOG.md) y los
+**Versión actual:** 2.5.0 — ver [`CHANGELOG.md`](./CHANGELOG.md) y los
 [releases](https://github.com/Eco-RV/FinanceOS/releases).
 
 **Stack:** Next.js 16 (App Router, Turbopack) · React 19 · TypeScript ·
@@ -58,6 +58,7 @@ en [`docs/dominio/`](./docs/dominio/).
    | 2.1.0 | `00_drop_create_financing.sql`, `01_loans.sql` |
    | 2.2.0 | `00_fresh_start.sql` |
    | 2.3.0 | `00_financing_interest.sql`, `01_members.sql`, `02_mail_send_scope.sql` |
+   | 2.5.0 | `00_category_icons.sql` |
 
    Al actualizar una base existente, corré solo las carpetas de las versiones
    nuevas, **antes** de desplegar el código.

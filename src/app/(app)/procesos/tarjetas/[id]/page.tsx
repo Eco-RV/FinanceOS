@@ -32,6 +32,7 @@ import type {
 } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink } from "@/components/back-link";
+import { WalletCardHero } from "@/components/wallet-card";
 import { CardFormDialog } from "../card-form";
 import { cardOpeningsById } from "@/lib/transactions";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
@@ -147,9 +148,12 @@ export default async function CardDetailPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <BackLink href="/procesos/tarjetas" label="Tarjetas" />
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
+        {/* 2.5.0: la tarjeta animada arriba del todo, como en la billetera. */}
+        <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-end sm:gap-6">
+          <WalletCardHero card={card} />
+        <div className="flex w-full flex-1 items-start justify-between gap-4">
+          <div className="rise flex flex-col gap-1" style={{ ["--rise-i" as string]: 4 }}>
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">{card.name}</h1>
               <CardStatusBadge status={multi.status} daysToDue={urgentDaysToDue(multi)} />
             </div>
@@ -166,6 +170,7 @@ export default async function CardDetailPage({
             ).get(card.id)}
             banks={(bankData ?? []) as Pick<Bank, "id" | "name" | "archived">[]}
           />
+        </div>
         </div>
       </div>
 

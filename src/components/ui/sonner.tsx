@@ -10,6 +10,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme}
+      // 2.5.0: arriba al centro, para no tapar el botón flotante de "Nuevo gasto".
+      position="top-center"
       className="toaster group"
       icons={{
         success: (

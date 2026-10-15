@@ -12,14 +12,7 @@ import {
   type Currency,
 } from "@/domain";
 import type { Bank, CreditCard, Transaction } from "@/lib/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { EmptyRows, RowActions, RowItem, RowList } from "@/components/row-list";
 import { buttonVariants } from "@/components/ui/button";
 import { BackLink } from "@/components/back-link";
 import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
@@ -128,110 +121,75 @@ export default async function TarjetasPage() {
       </div>
 
       {cards.length === 0 ? (
-        <div className="surface overflow-hidden">
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell className="py-10 text-center text-muted-foreground">
-                  Aún no tienes tarjetas. Agrega la primera.
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
+        <EmptyRows>Aún no tienes tarjetas. Agrega la primera.</EmptyRows>
       ) : (
         <>
-          <div className="surface hidden overflow-hidden sm:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tarjeta</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Saldo actual</TableHead>
-                  <TableHead className="text-right">Falta pagar</TableHead>
-                  <TableHead>Próximo corte</TableHead>
-                  <TableHead className="w-32" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map(({ card, m, cutoff }) => (
-                  <TableRow key={card.id}>
-                    <TableCell>
-                      <Link
-                        href={`/procesos/tarjetas/${card.id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {card.name}
-                      </Link>
-                      <span className="block text-xs text-muted-foreground">
-                        {[
-                          card.institution,
-                          card.last_four && `•••• ${card.last_four}`,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <CardStatusBadge status={m.status} daysToDue={urgentDaysToDue(m)} />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      <CardBalances card={card} />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      <CardOwed m={m} />
-                    </TableCell>
-                    <TableCell>
-                      día {card.cutoff_day}
-                      <span className="block text-xs text-muted-foreground">
-                        {formatDate(cutoff)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Link
-                          href={`/procesos/tarjetas/${card.id}`}
-                          aria-label="Ver detalle"
-                          className={buttonVariants({
-                            variant: "ghost",
-                            size: "icon",
-                          })}
-                        >
-                          <Eye className="size-4" />
-                        </Link>
-                        <CardFormDialog card={card} openings={openings.get(card.id)} banks={banks} />
-                        {removeAction(card)}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {/* 2.5.0: toda la fila abre el detalle; los botones hacen lo suyo. */}
+          <RowList
+            columns="minmax(0,1.6fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr) 8rem"
+            headers={[
+              { label: "Tarjeta" },
+              { label: "Estado" },
+              { label: "Saldo actual", align: "right" },
+              { label: "Falta pagar", align: "right" },
+              { label: "Próximo corte" },
+              {},
+            ]}
+          >
+            {rows.map(({ card, m, cutoff }, i) => (
+              <RowItem
+                key={card.id}
+                index={i}
+                href={`/procesos/tarjetas/${card.id}`}
+                label={`Ver detalle de ${card.name}`}
+              >
+                <div className="min-w-0">
+                  <span className="block truncate font-medium">{card.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {cardMeta(card) ?? "—"}
+                  </span>
+                </div>
+                <div>
+                  <CardStatusBadge status={m.status} daysToDue={urgentDaysToDue(m)} />
+                </div>
+                <div className="text-right font-medium tabular-nums">
+                  <CardBalances card={card} />
+                </div>
+                <div className="text-right tabular-nums">
+                  <CardOwed m={m} />
+                </div>
+                <div>
+                  día {card.cutoff_day}
+                  <span className="block text-xs text-muted-foreground">
+                    {formatDate(cutoff)}
+                  </span>
+                </div>
+                <RowActions>
+                  <Link
+                    href={`/procesos/tarjetas/${card.id}`}
+                    aria-label="Ver detalle"
+                    className={buttonVariants({ variant: "ghost", size: "icon" })}
+                  >
+                    <Eye className="size-4" />
+                  </Link>
+                  <CardFormDialog card={card} openings={openings.get(card.id)} banks={banks} />
+                  {removeAction(card)}
+                </RowActions>
+              </RowItem>
+            ))}
+          </RowList>
 
           <MobileList>
-            {rows.map(({ card, m, cutoff }) => (
+            {rows.map(({ card, m, cutoff }, i) => (
               <MobileCard
                 key={card.id}
-                title={
-                  <Link href={`/procesos/tarjetas/${card.id}`} className="hover:underline">
-                    {card.name}
-                  </Link>
-                }
-                meta={
-                  [card.institution, card.last_four && `•••• ${card.last_four}`]
-                    .filter(Boolean)
-                    .join(" · ") || undefined
-                }
+                index={i}
+                href={`/procesos/tarjetas/${card.id}`}
+                label={`Ver detalle de ${card.name}`}
+                title={card.name}
+                meta={cardMeta(card) ?? undefined}
                 actions={
                   <>
-                    <Link
-                      href={`/procesos/tarjetas/${card.id}`}
-                      aria-label="Ver detalle"
-                      className={buttonVariants({ variant: "ghost", size: "icon" })}
-                    >
-                      <Eye className="size-4" />
-                    </Link>
                     <CardFormDialog card={card} openings={openings.get(card.id)} banks={banks} />
                     {removeAction(card)}
                   </>
@@ -265,5 +223,12 @@ export default async function TarjetasPage() {
         onSetActive={setCardActive}
       />
     </div>
+  );
+}
+
+function cardMeta(card: CreditCard): string | null {
+  return (
+    [card.institution, card.last_four && `•••• ${card.last_four}`].filter(Boolean).join(" · ") ||
+    null
   );
 }

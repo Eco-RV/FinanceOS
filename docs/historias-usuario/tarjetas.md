@@ -159,3 +159,9 @@ sección "Financiamientos" y cada cuota aparece en el historial como "Cuota".
   [`financiamientos.md`](./financiamientos.md) (con interés, edición, miembros
   y avisos); la propuesta de financiamiento con interés se implementó allí. El
   saldo y el disponible descuentan el interés de cuotas futuras.
+- **2026-10-14 (v2.5.0, en desarrollo)** — La lista de tarjetas pasa a filas
+  separadas (como en móvil) y **toda la fila abre el detalle**, salvo los
+  botones de editar y desactivar. El detalle muestra arriba la tarjeta
+  dibujada (mismo degradado que en el gasto) con animación de entrada. El
+  Resumen suma el disponible de todas las
+  tarjetas con semáforo (ver [`resumen.md`](./resumen.md)).

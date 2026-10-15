@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#f5f5f5"/>
+  <circle cx="256" cy="256" r="132" fill="none" stroke="#0a0a0a" stroke-width="34"/>
+  <ellipse cx="256" cy="256" rx="200" ry="70" fill="none" stroke="#0a0a0a" stroke-width="16" opacity=".35" transform="rotate(-24 256 256)"/>
+  <circle cx="420" cy="182" r="34" fill="#f59e0b"/>
+  <text x="256" y="292" text-anchor="middle" font-family="Geist, Inter, Segoe UI, sans-serif" font-size="104" font-weight="700" fill="#0a0a0a">₡</text>
+</svg>

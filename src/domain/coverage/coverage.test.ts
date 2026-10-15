@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { CardStatement } from "../cards/statement.ts";
-import { computeCoverage } from "./coverage.ts";
+import { computeCoverage, coverageShortfall } from "./coverage.ts";
 import type { LoanDue } from "../loans/loan.ts";
 
 const st = (over: Partial<CardStatement>): CardStatement => ({
@@ -121,4 +121,25 @@ test("L6: una cuota en otra moneda se lista pero no suma", () => {
   assert.equal(cov.payments.length, 1);
   assert.equal(cov.totalDue, 0);
   assert.equal(cov.payments[0].covered, true);
+});
+
+test("faltante: 0 y verde si el débito cubre todos los pagos de contado", () => {
+  assert.deepEqual(coverageShortfall({ availableDebit: 100, totalDue: 100, dueSoon: 80 }), {
+    amount: 0,
+    level: "covered",
+  });
+});
+
+test("faltante: amarillo si cubre los próximos 10 días pero no todo", () => {
+  assert.deepEqual(coverageShortfall({ availableDebit: 100, totalDue: 150.5, dueSoon: 90 }), {
+    amount: 50.5,
+    level: "later",
+  });
+});
+
+test("faltante: rojo si ya no alcanza para los próximos 10 días", () => {
+  assert.deepEqual(coverageShortfall({ availableDebit: 88_794.75, totalDue: 152_585, dueSoon: 152_585 }), {
+    amount: 63_790.25,
+    level: "soon",
+  });
 });

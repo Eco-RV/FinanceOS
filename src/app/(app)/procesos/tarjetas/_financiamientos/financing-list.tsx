@@ -1,12 +1,4 @@
-import Link from "next/link";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { RowActions, RowItem, RowList } from "@/components/row-list";
 import { DeleteButton } from "@/components/delete-button";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -23,6 +15,8 @@ type Props = {
   transactions: Transaction[];
   today: Date;
   categories?: string[];
+  /** Vista de todas las tarjetas (2.5.0): id de tarjeta → nombre, para mostrarla. */
+  cardNames?: Record<string, string>;
 };
 
 export function rateLabel(rate: number | undefined): string {
@@ -30,7 +24,13 @@ export function rateLabel(rate: number | undefined): string {
   return r > 0 ? `${r.toLocaleString("es-CR")} % anual` : "Tasa 0";
 }
 
-export function FinancingList({ financings, transactions, today, categories = [] }: Props) {
+export function FinancingList({
+  financings,
+  transactions,
+  today,
+  categories = [],
+  cardNames,
+}: Props) {
   if (financings.length === 0) return null;
   const todayISO = toISODate(today);
 
@@ -54,72 +54,63 @@ export function FinancingList({ financings, transactions, today, categories = []
 
   const actions = (f: Financing) =>
     f.cancelled_on ? null : (
-      <div className="flex justify-end gap-1">
+      <>
         <FinancingEditDialog financing={f} categories={categories} />
         <DeleteButton id={f.id} action={deleteFinancing} confirmLabel={CONFIRM} />
-      </div>
+      </>
     );
+
+  const meta = (f: Financing) =>
+    [cardNames?.[f.card_id], f.category, rateLabel(f.annual_rate)].filter(Boolean).join(" · ");
 
   return (
     <>
-      <div className="surface hidden overflow-hidden sm:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Descripción</TableHead>
-              <TableHead className="text-right">Capital</TableHead>
-              <TableHead className="text-right">Cuota</TableHead>
-              <TableHead className="text-right">Restantes</TableHead>
-              <TableHead>Próxima cuota</TableHead>
-              <TableHead className="w-24" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map(({ f, p, payment, status, href }) => (
-              <TableRow key={f.id}>
-                <TableCell>
-                  <Link href={href} className="font-medium hover:underline">
-                    {f.description}
-                  </Link>
-                  <span className="block text-xs text-muted-foreground">
-                    {[f.category, rateLabel(f.annual_rate)].filter(Boolean).join(" · ")}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatCurrency(f.total_amount, f.currency)}
-                  {p.totalInterest > 0 ? (
-                    <span className="block text-xs text-muted-foreground">
-                      + {formatCurrency(p.totalInterest, f.currency)} interés
-                    </span>
-                  ) : null}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatCurrency(payment, f.currency)}
-                  <span className="block text-xs text-muted-foreground">
-                    / {f.months} meses
-                  </span>
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {p.scheduled.length}
-                </TableCell>
-                <TableCell className="text-muted-foreground">{status}</TableCell>
-                <TableCell>{actions(f)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {/* 2.5.0: toda la fila abre el detalle del financiamiento. */}
+      <RowList
+        columns="minmax(0,2fr) minmax(0,1.1fr) minmax(0,1fr) 5.5rem minmax(0,1.2fr) 5.5rem"
+        headers={[
+          { label: "Descripción" },
+          { label: "Capital", align: "right" },
+          { label: "Cuota", align: "right" },
+          { label: "Restantes", align: "right" },
+          { label: "Próxima cuota" },
+          {},
+        ]}
+      >
+        {rows.map(({ f, p, payment, status, href }, i) => (
+          <RowItem key={f.id} index={i} href={href} label={`Ver ${f.description}`}>
+            <div className="min-w-0">
+              <span className="block truncate font-medium">{f.description}</span>
+              <span className="block truncate text-xs text-muted-foreground">{meta(f)}</span>
+            </div>
+            <div className="text-right tabular-nums">
+              {formatCurrency(f.total_amount, f.currency)}
+              {p.totalInterest > 0 ? (
+                <span className="block text-xs text-muted-foreground">
+                  + {formatCurrency(p.totalInterest, f.currency)} interés
+                </span>
+              ) : null}
+            </div>
+            <div className="text-right tabular-nums">
+              {formatCurrency(payment, f.currency)}
+              <span className="block text-xs text-muted-foreground">/ {f.months} meses</span>
+            </div>
+            <span className="text-right tabular-nums">{p.scheduled.length}</span>
+            <span className="text-muted-foreground">{status}</span>
+            <RowActions>{actions(f)}</RowActions>
+          </RowItem>
+        ))}
+      </RowList>
 
       <MobileList>
-        {rows.map(({ f, p, payment, status, href }) => (
+        {rows.map(({ f, p, payment, status, href }, i) => (
           <MobileCard
             key={f.id}
-            title={
-              <Link href={href} className="hover:underline">
-                {f.description}
-              </Link>
-            }
-            meta={[f.category, rateLabel(f.annual_rate)].filter(Boolean).join(" · ")}
+            index={i}
+            href={href}
+            label={`Ver ${f.description}`}
+            title={f.description}
+            meta={meta(f)}
             actions={actions(f) ?? undefined}
           >
             <MobileField

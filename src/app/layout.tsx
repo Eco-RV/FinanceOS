@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { Celebration } from "@/components/celebration";
+import { ConfirmHost } from "@/components/confirm-host";
 import { THEME_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
 
@@ -49,6 +51,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
         {children}
         <Toaster />
+        <Celebration />
+        <ConfirmHost />
       </body>
     </html>
   );

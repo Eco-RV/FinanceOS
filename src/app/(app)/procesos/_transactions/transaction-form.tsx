@@ -14,12 +14,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
+import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
 import { CURRENCIES } from "@/lib/schema";
 import type { Account, CreditCard, Transaction, TransactionType } from "@/lib/types";
 import { saveTransaction } from "./actions";
+import { CategoryPicker } from "./category-picker";
+import { ExpenseForm } from "./expense-form";
 
 /**
  * Tipos que se registran con este formulario. El saldo inicial va en el de
@@ -41,6 +44,8 @@ type Props = {
   fab?: boolean;
   /** Gasto por SINPE Móvil: solo desde cuentas, con destinatario y teléfono. */
   sinpe?: boolean;
+  /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
+  categoryIcons?: Record<string, CategoryIconKey>;
 };
 
 const NEW_LABEL: Record<FormTransactionType, string> = {
@@ -61,7 +66,30 @@ const DIALOG_TITLE: Record<FormTransactionType, string> = {
   card_payment: "pago",
 };
 
-export function TransactionForm({
+/**
+ * Registrar o editar un movimiento. Desde 2.5.0 el gasto (con tarjeta o en
+ * efectivo) usa el formulario rápido `ExpenseForm`; SINPE, ingresos y pagos
+ * de tarjeta siguen con este.
+ */
+export function TransactionForm(props: Props) {
+  const isSinpe = props.sinpe || props.transaction?.channel === "sinpe";
+  if (props.type === "expense" && !isSinpe) {
+    return (
+      <ExpenseForm
+        accounts={props.accounts}
+        cards={props.cards ?? []}
+        categories={props.categories ?? []}
+        categoryIcons={props.categoryIcons}
+        transaction={props.transaction}
+        triggerLabel={props.triggerLabel}
+        fab={props.fab}
+      />
+    );
+  }
+  return <MovementForm {...props} />;
+}
+
+function MovementForm({
   type,
   accounts,
   cards = [],
@@ -72,6 +100,7 @@ export function TransactionForm({
   triggerLabel,
   fab = false,
   sinpe: sinpeProp = false,
+  categoryIcons,
 }: Props) {
   const editing = Boolean(transaction);
   const sinpe = sinpeProp || transaction?.channel === "sinpe";
@@ -83,6 +112,7 @@ export function TransactionForm({
   const [amount, setAmount] = useState(
     transaction ? String(transaction.amount) : "",
   );
+  const [category, setCategory] = useState(transaction?.category ?? "");
 
   const categories =
     transaction?.category && !categoryOptions.includes(transaction.category)
@@ -137,7 +167,7 @@ export function TransactionForm({
         )}
       </DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="max-h-[92dvh] grid-cols-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
             {editing
@@ -209,24 +239,16 @@ export function TransactionForm({
           ) : null}
 
           {type !== "card_payment" ? (
-            <FormField
-              label="Categoría"
-              htmlFor="category"
-              error={errors?.category}
-            >
-              <Select
-                id="category"
-                name="category"
-                defaultValue={transaction?.category ?? ""}
-              >
-                <option value="">Elegí una categoría…</option>
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium">Categoría</p>
+              <CategoryPicker
+                categories={categories}
+                icons={categoryIcons}
+                value={category}
+                onChange={setCategory}
+                error={errors?.category}
+              />
+            </div>
           ) : null}
 
           {showOrigin ? (

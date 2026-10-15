@@ -26,18 +26,5 @@ export function FormField({
   );
 }
 
-/** Bare <select> styled to match the shadcn inputs. */
-export function Select({
-  className = "",
-  ...props
-}: React.ComponentProps<"select">) {
-  return (
-    <select
-      className={
-        "h-9 w-full rounded-lg border border-input bg-card px-3 text-base transition-[color,background-color,border-color,box-shadow] duration-150 ease-fluid outline-none hover:border-ring/60 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 " +
-        className
-      }
-      {...props}
-    />
-  );
-}
+/** Combo de los formularios (2.5.0): ver `src/components/ui/select.tsx`. */
+export { Select } from "@/components/ui/select";
