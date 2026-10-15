@@ -1,0 +1,96 @@
+/**
+ * Casos de uso de la cuenta del usuario (2.6.0): perfil, foto, preferencias,
+ * correo y contraseña. Reglas U1–U6 del dominio.
+ */
+
+import {
+  assertValidAvatar,
+  assertValidPassword,
+  normalizeNewEmail,
+  validateProfile,
+  type ProfileFields,
+} from "../domain/index.ts";
+import type { AvatarStorage, IdentityService, ProfileRepository } from "./ports.ts";
+import { fail, ok, run, type UseCaseResult } from "./result.ts";
+
+/** Guarda nombre, usuario (@) y país. */
+export function saveProfile(
+  profiles: ProfileRepository,
+  input: ProfileFields,
+): Promise<UseCaseResult<ProfileFields>> {
+  return run(async () => {
+    const fields = validateProfile(input);
+    await profiles.save(fields);
+    return ok(fields);
+  });
+}
+
+/** U6: sube la foto y la deja como foto de perfil. */
+export function updateAvatar(
+  profiles: ProfileRepository,
+  storage: AvatarStorage,
+  file: { bytes: ArrayBuffer; type: string; size: number },
+): Promise<UseCaseResult<{ url: string }>> {
+  return run(async () => {
+    assertValidAvatar(file);
+    const url = await storage.upload({ bytes: file.bytes, type: file.type });
+    await profiles.setAvatarUrl(url);
+    return ok({ url });
+  });
+}
+
+export function removeAvatar(
+  profiles: ProfileRepository,
+  storage: AvatarStorage,
+): Promise<UseCaseResult> {
+  return run(async () => {
+    await storage.remove();
+    await profiles.setAvatarUrl(null);
+    return ok();
+  });
+}
+
+export function savePreferences(
+  profiles: ProfileRepository,
+  preferences: Record<string, unknown>,
+): Promise<UseCaseResult> {
+  return run(async () => {
+    await profiles.savePreferences(preferences);
+    return ok();
+  });
+}
+
+/**
+ * U4: cambia la contraseña. Pide la actual, salvo al restablecerla desde el
+ * enlace del correo (`current` = null: la sesión es de recuperación).
+ */
+export function changePassword(
+  identity: IdentityService,
+  input: { current: string | null; next: string },
+): Promise<UseCaseResult> {
+  return run(async () => {
+    assertValidPassword(input.next, input.current ?? undefined);
+    if (input.current === null) {
+      // Sin la actual solo desde el enlace de recuperación.
+      if (!(await identity.isRecoverySession())) {
+        return fail("El enlace para restablecer venció. Pide uno nuevo.", "U4");
+      }
+    } else if (!(await identity.verifyPassword(input.current))) {
+      return fail("La contraseña actual no es correcta", "U4");
+    }
+    await identity.changePassword(input.next);
+    return ok();
+  });
+}
+
+/** U5: pide el cambio de correo; se confirma desde el enlace que llega por correo. */
+export function changeEmail(
+  identity: IdentityService,
+  input: { email: string; redirectTo: string },
+): Promise<UseCaseResult<{ email: string }>> {
+  return run(async () => {
+    const email = normalizeNewEmail(input.email, await identity.email());
+    await identity.changeEmail(email, input.redirectTo);
+    return ok({ email });
+  });
+}

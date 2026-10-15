@@ -89,3 +89,15 @@
 | I3 | Un aviso se importa una sola vez (idempotente). | — | Decidido |
 | I4 | Un pendiente no toca saldos hasta aprobarse. | — | Decidido |
 | I5 | Un pendiente se aprueba contra cualquier tarjeta (bimoneda, T1) y va al saldo de su moneda; se rechaza una moneda no soportada. | Rechaza | Decidido · Cambiado 2.0.0 |
+
+## Cuenta del usuario (2.6.0)
+
+| # | Regla | Tipo | Estado |
+|---|---|---|---|
+| U1 | El usuario (@) es opcional; si se pone, lleva de 3 a 30 caracteres (letras minúsculas, números, punto o guion bajo, sin empezar ni terminar en signo) y es único entre todos los usuarios sin importar mayúsculas. | Rechaza | Decidido · Implementado 2.6.0 |
+| U2 | El nombre es opcional, hasta 80 caracteres. | Rechaza | Decidido · Implementado 2.6.0 |
+| U3 | El país es opcional, un código ISO de dos letras. | Rechaza | Decidido · Implementado 2.6.0 |
+| U4 | Contraseña de 8 caracteres o más, con letras y números. Para cambiarla se pide la actual; sin la actual solo desde el enlace de recuperación (sesión de recuperación de hace menos de una hora). | Rechaza | Decidido · Implementado 2.6.0 |
+| U5 | El correo nuevo es válido y distinto del actual; el cambio se completa desde el enlace que llega al correo nuevo. Hasta entonces se sigue entrando con el actual. | Rechaza | Decidido · Implementado 2.6.0 |
+| U6 | La foto de perfil es JPG, PNG o WebP de hasta 2 MB (la app la recorta a 512 px). | Rechaza | Decidido · Implementado 2.6.0 |
+| U7 | Una cuenta nueva se confirma por correo antes de poder entrar. Los enlaces del correo vuelven a la misma app desde donde se pidió (producción o local). | — | Decidido · Implementado 2.6.0 |

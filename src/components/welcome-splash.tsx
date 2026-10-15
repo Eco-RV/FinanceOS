@@ -24,7 +24,7 @@ function greeting(): string {
  * carga; luego se desvanece. Al navegar dentro de la app no vuelve a salir
  * porque el layout se conserva. Tocarla la cierra.
  */
-export function WelcomeSplash() {
+export function WelcomeSplash({ name = null }: { name?: string | null }) {
   const [phase, setPhase] = useState<"in" | "out" | "gone">("in");
 
   useEffect(() => {
@@ -56,6 +56,7 @@ export function WelcomeSplash() {
         <div className="flex flex-col items-center gap-1 text-center rise" style={{ ["--rise-i" as string]: 5 }}>
           <p className="text-sm text-muted-foreground" suppressHydrationWarning>
             {greeting()}
+            {name ? `, ${name}` : ""}
           </p>
           <p className="text-2xl font-semibold tracking-tight">
             Bienvenido a Finance<span className="text-muted-foreground"> OS</span>

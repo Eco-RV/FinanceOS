@@ -8,7 +8,12 @@ const POINTS = [
   "Liquidez y gastos del mes de un vistazo",
 ];
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ aviso?: string; next?: string }>;
+}) {
+  const { aviso, next } = await searchParams;
   return (
     <div className="relative flex flex-1 items-stretch">
       <AppBackdrop />
@@ -42,11 +47,11 @@ export default function LoginPage() {
           className="pointer-events-none absolute -right-16 -bottom-16 size-80 opacity-[0.07]"
           animated
         />
-        <p className="text-xs opacity-50">Un solo usuario · tus datos en tu Supabase</p>
+        <p className="text-xs opacity-50">Privado: cada usuario ve solo sus datos</p>
       </aside>
 
       <div className="flex flex-1 items-center justify-center p-6">
-        <LoginForm />
+        <LoginForm aviso={aviso} next={next} />
       </div>
     </div>
   );

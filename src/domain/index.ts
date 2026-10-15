@@ -21,3 +21,4 @@ export * from "./importing/merchant.ts";
 export * from "./catalog/lifecycle.ts";
 export * from "./loans/loan.ts";
 export * from "./ledger/fresh-start.ts";
+export * from "./account/profile.ts";

@@ -16,7 +16,9 @@
 
 | Término | Definición | Estado |
 |---|---|---|
-| **Usuario** | La persona dueña de los datos. Entra con correo y contraseña o con Google; puede cambiar su contraseña y cerrar sesión. | Decidido |
+| **Usuario** | La persona dueña de los datos. Entra con correo y contraseña (confirmado por correo) o con Google; puede cambiar su correo y su contraseña, restablecerla si la olvida y cerrar sesión. | Decidido · correo y contraseña implementados 2.6.0 |
+| **Perfil** | Datos opcionales del usuario: nombre, usuario (@), país y foto. | Decidido · Implementado 2.6.0 |
+| **Preferencias** | Ajustes de cómo se ve y se comporta la app (tema hoy; moneda base y formato de fecha a futuro). | Decidido · Implementado 2.6.0 |
 | **Familia** | Grupo de **contactos** del usuario (nombre, correo, WhatsApp) con quienes divide cuotas. **No** tienen login ni ven la app. | Decidido |
 | **Miembro** | Un contacto de la familia que paga parte de las cuotas de un financiamiento. Tiene nombre y correo y/o WhatsApp (Ajustes → Miembros). | Decidido · Implementado 2.3.0 |
 

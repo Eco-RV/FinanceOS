@@ -25,6 +25,7 @@ function storedTheme(): Theme | null {
 }
 
 export function setTheme(theme: Theme) {
+  queueMicrotask(() => window.dispatchEvent(new Event("financeos:theme-choice")));
   document.documentElement.classList.toggle("dark", theme === "dark");
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
@@ -56,4 +57,40 @@ function subscribe(onChange: () => void) {
 /** Tema efectivo; en el servidor se asume claro. */
 export function useTheme(): Theme {
   return useSyncExternalStore(subscribe, currentTheme, () => "light");
+}
+
+/** Elección del usuario (2.6.0): seguir al sistema, claro u oscuro. */
+export type ThemeChoice = "system" | Theme;
+
+const CHOICE_EVENT = "financeos:theme-choice";
+
+export function setThemeChoice(choice: ThemeChoice) {
+  if (choice === "system") {
+    try {
+      localStorage.removeItem(THEME_STORAGE_KEY);
+    } catch {
+      // Sin almacenamiento: solo se aplica en esta visita.
+    }
+    document.documentElement.classList.toggle(
+      "dark",
+      matchMedia("(prefers-color-scheme: dark)").matches,
+    );
+  } else {
+    setTheme(choice);
+  }
+  window.dispatchEvent(new Event(CHOICE_EVENT));
+}
+
+function subscribeChoice(onChange: () => void) {
+  window.addEventListener(CHOICE_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(CHOICE_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+/** La elección guardada en este dispositivo ("system" si no hay). */
+export function useThemeChoice(): ThemeChoice {
+  return useSyncExternalStore(subscribeChoice, () => storedTheme() ?? "system", () => "system");
 }

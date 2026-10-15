@@ -35,6 +35,7 @@ pierden. Esta carpeta es ese lugar fijo:
 | [`prestamos.md`](./prestamos.md) | Préstamos bancarios a cuota fija |
 | [`arranque.md`](./arranque.md) | Arranque de 0 (empezar de nuevo) |
 | [`resumen.md`](./resumen.md) | Resumen (pantalla de inicio) |
+| [`cuenta.md`](./cuenta.md) | Acceso, perfil, correo, contraseña y preferencias |
 
 Cuando aparezca un nuevo proceso principal (p. ej. "Préstamos" o "Ahorros y
 metas" del roadmap), se agrega un archivo nuevo a esta tabla siguiendo el
