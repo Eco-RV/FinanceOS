@@ -36,6 +36,8 @@ pierden. Esta carpeta es ese lugar fijo:
 | [`arranque.md`](./arranque.md) | Arranque de 0 (empezar de nuevo) |
 | [`resumen.md`](./resumen.md) | Resumen (pantalla de inicio) |
 | [`cuenta.md`](./cuenta.md) | Acceso, perfil, correo, contraseña y preferencias |
+| [`planes.md`](./planes.md) | Salario, suscripciones, seguros y línea base |
+| [`ahorros.md`](./ahorros.md) | Ahorros y metas |
 
 Cuando aparezca un nuevo proceso principal (p. ej. "Préstamos" o "Ahorros y
 metas" del roadmap), se agrega un archivo nuevo a esta tabla siguiendo el

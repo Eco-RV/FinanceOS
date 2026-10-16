@@ -18,6 +18,8 @@ import type {
   Movement,
   MovementChannel,
   MovementType,
+  Frequency,
+  PlanKind,
   ProfileFields,
   StoredBalance,
 } from "../domain/index.ts";
@@ -38,6 +40,8 @@ export type NewMovement = {
   /** Pago de cuota (con `installment_no`) o desembolso (sin) de un préstamo. */
   loan_id?: string | null;
   installment_no?: number | null;
+  /** Ocurrencia de un plan recurrente (2.7.0). */
+  plan_id?: string | null;
 };
 
 export type AccountFields = {
@@ -352,4 +356,59 @@ export interface AvatarStorage {
   /** Sube la foto y devuelve su URL pública. */
   upload(file: { bytes: ArrayBuffer; type: string }): Promise<string>;
   remove(): Promise<void>;
+}
+
+// ─────────────────────────────  planes y metas (2.7.0)  ─────────────────────────────
+
+export type PlanFields = {
+  kind: PlanKind;
+  name: string;
+  amount: number;
+  currency: Currency;
+  frequency: Frequency;
+  starts_on: ISODate;
+  ends_on: ISODate | null;
+  account_id: string | null;
+  card_id: string | null;
+  category: string | null;
+  note: string | null;
+};
+
+export type Plan = PlanFields & {
+  id: string;
+  /** Última fecha ya registrada como movimiento (M7). */
+  generated_through: ISODate | null;
+  archived: boolean;
+};
+
+export interface PlanRepository {
+  list(): Promise<Plan[]>;
+  find(planId: string): Promise<Plan | null>;
+  /** Crea (id `null`, con `generated_through`) o actualiza los datos del plan. */
+  save(planId: string | null, fields: PlanFields, generatedThrough?: ISODate | null): Promise<{ id: string }>;
+  /** Pausa o reanuda; al reanudar se fija desde dónde vuelve a registrar. */
+  setArchived(planId: string, archived: boolean, generatedThrough?: ISODate | null): Promise<void>;
+  /** P3: borra el plan; sus movimientos ya registrados quedan sin plan. */
+  delete(planId: string): Promise<void>;
+  /** Registra ocurrencias (idempotente por fecha) y avanza `generated_through`. */
+  materialize(planId: string, through: ISODate, rows: NewMovement[]): Promise<number>;
+}
+
+export type GoalFields = {
+  name: string;
+  target_amount: number;
+  currency: Currency;
+  target_date: ISODate | null;
+  account_id: string | null;
+  icon: string | null;
+};
+
+export type Goal = GoalFields & { id: string; archived: boolean };
+
+export interface GoalRepository {
+  find(goalId: string): Promise<Goal | null>;
+  /** Una cuenta con otra meta activa lanza `InfrastructureError` (S1). */
+  save(goalId: string | null, fields: GoalFields): Promise<{ id: string }>;
+  setArchived(goalId: string, archived: boolean): Promise<void>;
+  delete(goalId: string): Promise<void>;
 }

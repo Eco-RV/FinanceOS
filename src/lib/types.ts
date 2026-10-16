@@ -59,6 +59,8 @@ export type Transaction = {
   interest_amount?: number | null;
   /** Pago de cuota (con `installment_no`) o desembolso de un préstamo (2.1.0). */
   loan_id?: string | null;
+  /** Ocurrencia de un plan recurrente: salario, suscripción o seguro (2.7.0). */
+  plan_id?: string | null;
   /** Cuenta destino de una transferencia (2.0.0). */
   to_account_id?: string | null;
   /** "sinpe" en gastos por SINPE Móvil (2.0.0). */
