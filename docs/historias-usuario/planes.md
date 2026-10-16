@@ -84,6 +84,6 @@ controlar mi liquidez.
 
 ## Historial
 
-- **2026-10-14 (v2.7.0, en desarrollo)** — Archivo nuevo: salario,
+- **2026-10-14 (v2.7.0)** — Archivo nuevo: salario,
   gastos fijos (renta, servicios, suscripciones), seguros de tarjeta, línea
   base y programados.

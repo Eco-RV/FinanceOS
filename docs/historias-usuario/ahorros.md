@@ -49,4 +49,4 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 
 ## Historial
 
-- **2026-10-14 (v2.7.0, en desarrollo)** — Archivo nuevo.
+- **2026-10-14 (v2.7.0)** — Archivo nuevo.

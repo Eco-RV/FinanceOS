@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.7.0 — sin publicar
+## 2.7.0 — 2026-10-16
 
 Planes recurrentes, línea base y Ahorros y metas.
 

@@ -213,10 +213,10 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 | 2.2 | Arranque de 0 (M8) | ✅ v2.2.0 (en `main`) |
 | 2.3 | Financiamientos completos: con interés (F5), edición (F9), miembros con reparto por cuota (F6), reembolsos (F7) y avisos por quincena por WhatsApp/correo (F8) | ✅ v2.3.0 (en `main`) |
 | 2.4 | Rediseño UI/UX: superficies, microinteracciones, cards/filas clicables enteras y tema claro/oscuro | ✅ v2.4.0 (en `main`) |
-| 2.7 | Planes recurrentes (salario, suscripciones, seguros), línea base (P4) y Ahorros y metas | 🚧 v2.7.0 (en `feature/2.7.0`) |
-| 2.6 | Usuarios: registro con confirmación por correo, recuperar contraseña, perfil con foto, cambio de correo y contraseña, preferencias | ✅ v2.6.0 (en `main`) |
 | 2.5 | Rediseño UI/UX detallado: listas separadas, Resumen con grilla y modales, gráfico de gastos, gasto rápido tipo billetera, íconos de categoría, filtros de gastos, bienvenida, fondo animado, Trading (beta) | ✅ v2.5.0 (en `main`) |
-| 4 | Ahorros y metas | 🚧 v2.7.0 |
+| 2.6 | Usuarios: registro con confirmación por correo, recuperar contraseña, perfil con foto, cambio de correo y contraseña, preferencias | ✅ v2.6.0 (en `main`) |
+| 2.7 | Planes recurrentes (salario, gastos fijos, seguros), línea base (P4) y Ahorros y metas | ✅ v2.7.0 (en `main`) |
+| 4 | Ahorros y metas | ✅ v2.7.0 |
 
 ## Gotchas
 
