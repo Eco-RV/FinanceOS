@@ -436,3 +436,54 @@ export const reimbursementSchema = z.object({
     .optional()
     .transform((v) => (v ? v : null)),
 });
+
+// ─────────────────────────────  planes y metas (2.7.0)  ─────────────────────────────
+
+const planDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida");
+const optionalDate = planDate
+  .optional()
+  .or(z.literal(""))
+  .transform((v) => (v ? v : null));
+
+export const PLAN_KIND_VALUES = ["salary", "subscription", "insurance"] as const;
+export const FREQUENCY_VALUES = ["weekly", "biweekly", "semimonthly", "monthly"] as const;
+
+export const planSchema = z.object({
+  kind: z.enum(PLAN_KIND_VALUES),
+  name: z.string().trim().min(1, "Ponle un nombre").max(60, "Hasta 60 caracteres"),
+  amount: z.coerce.number().finite("Monto inválido").positive("El monto debe ser mayor que cero"),
+  currency: z.enum(CURRENCIES),
+  frequency: z.enum(FREQUENCY_VALUES).optional().default("monthly"),
+  starts_on: planDate,
+  ends_on: optionalDate,
+  target: z.string().regex(/^(account|card):[0-9a-fA-F-]{36}$/, "Elige dónde entra o se cobra"),
+  category: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .transform((v) => (v ? v : null)),
+  note: optionalNote,
+});
+
+export type PlanInput = z.infer<typeof planSchema>;
+
+export const goalSchema = z.object({
+  name: z.string().trim().min(1, "Ponle un nombre").max(60, "Hasta 60 caracteres"),
+  target_amount: z.coerce.number().finite("Monto inválido").positive("El objetivo debe ser mayor que cero"),
+  currency: z.enum(CURRENCIES),
+  target_date: optionalDate,
+  account_id: z
+    .string()
+    .regex(/^[0-9a-fA-F-]{36}$/)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
+  icon: z
+    .enum(CATEGORY_ICON_KEYS)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
+});
+
+export type GoalInput = z.infer<typeof goalSchema>;

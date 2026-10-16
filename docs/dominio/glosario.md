@@ -73,10 +73,12 @@
 | Término | Definición | Estado |
 |---|---|---|
 | **Salario** | Plan de ingresos periódicos (semanal, bisemanal, quincenal, mensual) hacia una cuenta de débito. Genera ingresos programados. | Decidido |
-| **Suscripción** | Plan de gasto mensual fijo con una tarjeta (crédito o débito). Genera gastos programados. Al eliminarla se borran los cargos futuros. | Decidido |
+| **Gasto fijo** | Plan de gasto mensual que se repite: renta, agua, luz, internet, suscripciones… Se paga con una tarjeta de crédito o desde una cuenta de débito. Genera gastos programados. Al eliminarlo no quedan cargos futuros. (Antes "Suscripción"; las suscripciones son un tipo de gasto fijo.) | Decidido · Implementado 2.7.0 |
 | **Seguro de tarjeta** | Cargo mensual fijo asociado a una tarjeta de crédito. Genera gastos en la tarjeta. Una tarjeta puede tener varios. | Decidido |
 | **Línea base financiera** | Lista de gastos fijos del usuario, repartidos por periodo (semana, quincena, mes), para controlar liquidez. Muestra qué porcentaje del salario ocupa cada gasto. | Decidido |
-| **Tope de línea base** | Porcentaje máximo del salario que deberían sumar los gastos fijos. Default 35 %, configurable. | Decidido |
+| **Tope de línea base** | Porcentaje máximo del salario que deberían sumar los gastos fijos. Default 35 %, configurable. | Decidido · Implementado 2.7.0 |
+| **Ocurrencia programada** | Fecha futura de un plan. No es un movimiento todavía: se registra cuando llega su día. | Decidido · 2.7.0 |
+| **Meta de ahorro** | Objetivo (monto, moneda y fecha opcional) ligado a una cuenta. Lo ahorrado es el saldo de la cuenta; aportar es transferirle. | Decidido · Implementado 2.7.0 |
 
 ## Financiamientos y préstamos
 

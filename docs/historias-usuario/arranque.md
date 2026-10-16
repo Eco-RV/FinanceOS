@@ -56,8 +56,6 @@ mi configuración.
 ## Pendiente / fuera de alcance
 
 - No hay forma de ver ni restaurar los movimientos archivados desde la app.
-- Los planes futuros (salario, suscripciones, seguros) todavía no existen; al
-  existir, se conservarán (decisión del glosario).
 
 ## Historial
 
@@ -66,3 +64,6 @@ mi configuración.
 - **2026-10-14 (v2.3.0, en desarrollo)** — Se borran también el reparto,
   reembolsos y avisos de los financiamientos; los miembros se conservan. El
   saldo propuesto de las tarjetas descuenta el interés de cuotas futuras.
+- **2026-10-14 (v2.7.0)** — Los planes (salario, suscripciones,
+  seguros) y las metas de ahorro se conservan; los planes siguen registrando
+  desde el día del arranque.

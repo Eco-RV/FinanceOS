@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.7.0 — 2026-10-16
+
+Planes recurrentes, línea base y Ahorros y metas.
+
+### Planes (Procesos → Planes)
+- **Salario** (semanal, bisemanal, quincenal o mensual) hacia una cuenta,
+  **gastos fijos** mes a mes (renta, agua, luz, internet, suscripciones…;
+  con tarjeta o desde una cuenta, categoría sugerida por el nombre) y
+  **seguros de tarjeta**.
+- Cada fecha se **registra sola** cuando llega (al abrir la app); las que
+  vienen se ven como programadas. Un plan nuevo no registra hacia atrás.
+- Pausar, reanudar, editar y eliminar (lo ya registrado se conserva).
+- **Línea base**: gastos fijos (los del plan, seguros, cuotas de préstamos y
+  de financiamientos) contra el salario, con tope configurable (35 % por
+  defecto) y aviso si se pasa. Próximos 30 días.
+
+### Ahorros y metas (Procesos → Ahorros y metas)
+- Metas con ícono, objetivo, fecha opcional y cuenta ligada: avance, lo que
+  falta, aporte mensual sugerido y estado.
+- **Aportar** = transferencia hacia la cuenta de la meta.
+
+### Resumen
+- Cards de **Línea base** (con lo próximo programado) y **Metas de ahorro**.
+
+### Base de datos (correr a mano ANTES de desplegar, después de todo 2.6.0)
+1. `supabase/Versionamiento/2.7.0/00_plans.sql`
+2. `supabase/Versionamiento/2.7.0/01_savings_goals.sql`
+
+### Configuración
+- Sin cambios.
+
 ## 2.6.0 — 2026-10-14
 
 Usuarios: acceso más claro, confirmación por correo que funciona en
