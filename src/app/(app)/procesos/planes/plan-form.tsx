@@ -18,7 +18,7 @@ import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
 import { CURRENCIES } from "@/lib/schema";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
-import type { Account, CreditCard } from "@/lib/types";
+import type { Account, CreditCard, DebitCard } from "@/lib/types";
 import type { Plan } from "@/application";
 import { cn } from "@/lib/utils";
 import { CategoryPicker } from "../_transactions/category-picker";
@@ -41,6 +41,7 @@ export function PlanFormDialog({
   initialKind = "salary",
   accounts,
   cards,
+  debitCards = [],
   incomeCategories,
   expenseCategories,
 }: {
@@ -48,6 +49,8 @@ export function PlanFormDialog({
   initialKind?: Kind;
   accounts: Account[];
   cards: CreditCard[];
+  /** Tarjetas de débito activas: un gasto fijo se puede pagar con ellas (2.8.0). */
+  debitCards?: DebitCard[];
   incomeCategories: Categories;
   expenseCategories: Categories;
 }) {
@@ -58,16 +61,23 @@ export function PlanFormDialog({
   );
   const [kind, setKind] = useState<Kind>(plan?.kind ?? initialKind);
   const [currency, setCurrency] = useState(plan?.currency ?? "CRC");
-  const [payWith, setPayWith] = useState<"card" | "account">(
-    plan ? (plan.card_id ? "card" : "account") : "card",
+  const [payWith, setPayWith] = useState<"card" | "debit" | "account">(
+    plan ? (plan.card_id ? "card" : plan.debit_card_id ? "debit" : "account") : "card",
   );
   const [category, setCategory] = useState(plan?.category ?? "");
   const [name, setName] = useState(plan?.name ?? "");
 
   const usesAccount = kind === "salary" || (kind === "subscription" && payWith === "account");
+  const usesDebit = kind === "subscription" && payWith === "debit";
   const accountOptions = accounts.filter((a) => a.currency === currency);
+  // Tarjetas de débito cuya cuenta es de la moneda del plan.
+  const debitOptions = debitCards.filter((d) =>
+    accountOptions.some((a) => a.id === d.account_id),
+  );
   const defaultTarget = plan
-    ? plan.account_id
+    ? plan.debit_card_id
+      ? `debit:${plan.debit_card_id}`
+      : plan.account_id
       ? `account:${plan.account_id}`
       : plan.card_id
         ? `card:${plan.card_id}`
@@ -225,11 +235,12 @@ export function PlanFormDialog({
           </div>
 
           {kind === "subscription" ? (
-            <div role="tablist" aria-label="Cómo se paga" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+            <div role="tablist" aria-label="Cómo se paga" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
               {(
                 [
-                  ["card", "Tarjeta de crédito"],
-                  ["account", "Cuenta de débito"],
+                  ["card", "Crédito"],
+                  ["debit", "Tarjeta de débito"],
+                  ["account", "Cuenta"],
                 ] as const
               ).map(([k, label]) => (
                 <button
@@ -239,7 +250,7 @@ export function PlanFormDialog({
                   aria-selected={payWith === k}
                   onClick={() => setPayWith(k)}
                   className={cn(
-                    "h-8 rounded-lg text-sm transition-[background-color,color,box-shadow] duration-200",
+                    "h-8 min-w-0 truncate rounded-lg px-1 text-xs transition-[background-color,color,box-shadow] duration-200 sm:text-sm",
                     payWith === k
                       ? "bg-card font-medium text-foreground shadow-sm dark:bg-background"
                       : "text-muted-foreground hover:text-foreground",
@@ -252,7 +263,15 @@ export function PlanFormDialog({
           ) : null}
 
           <FormField
-            label={kind === "salary" ? "Cuenta donde entra" : usesAccount ? "Cuenta que paga" : "Tarjeta"}
+            label={
+              kind === "salary"
+                ? "Cuenta donde entra"
+                : usesAccount
+                  ? "Cuenta que paga"
+                  : usesDebit
+                    ? "Tarjeta de débito"
+                    : "Tarjeta"
+            }
             hint={kind === "subscription" ? "Si el monto varía (luz, agua), edita el movimiento cuando llegue." : undefined}
             htmlFor="plan-target"
             error={errors?.target}
@@ -265,6 +284,14 @@ export function PlanFormDialog({
                       {a.name}
                     </option>
                   ))
+                : usesDebit
+                  ? debitOptions.map((d) => (
+                      <option key={d.id} value={`debit:${d.id}`}>
+                        {d.name}
+                        {d.last_four ? ` •••• ${d.last_four}` : ""} ·{" "}
+                        {accounts.find((a) => a.id === d.account_id)?.name}
+                      </option>
+                    ))
                 : cards.map((c) => (
                     <option key={c.id} value={`card:${c.id}`}>
                       {c.name}
@@ -274,6 +301,13 @@ export function PlanFormDialog({
             </Select>
             {usesAccount && accountOptions.length === 0 ? (
               <p className="text-xs text-muted-foreground">No tienes cuentas en {currency}.</p>
+            ) : null}
+            {usesDebit && debitOptions.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No tienes tarjetas de débito en {currency}. Agrégala desde su cuenta en Cuentas.
+              </p>
+            ) : usesDebit ? (
+              <p className="text-xs text-muted-foreground">El cargo sale del saldo de su cuenta.</p>
             ) : null}
           </FormField>
 

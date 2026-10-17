@@ -29,6 +29,11 @@ export type Movement = {
    * bimoneda). Si falta se asume CRC.
    */
   currency?: Currency;
+  /**
+   * Abono en otra moneda (M5, 2.8.0): lo que sale de la cuenta, en la moneda
+   * de la cuenta. Sin él, la cuenta baja `amount`.
+   */
+  account_amount?: number | null;
   archived?: boolean;
 };
 
@@ -91,7 +96,8 @@ export function balanceEffects(m: Movement): BalanceEffect[] {
       return [account(m.account_id, -amount), account(m.to_account_id, amount)];
     case "card_payment": {
       const effects: BalanceEffect[] = [];
-      if (m.account_id) effects.push(account(m.account_id, -amount));
+      // M5: en otra moneda, la cuenta paga el equivalente convertido.
+      if (m.account_id) effects.push(account(m.account_id, -(Number(m.account_amount) || amount)));
       if (m.card_id) effects.push(card(m.card_id, -amount));
       return effects;
     }
@@ -203,7 +209,46 @@ export type MovementDraft = {
   /** Gasto por SINPE. */
   channel?: MovementChannel | null;
   counterpartyPhone?: string | null;
+  /** Abono en otra moneda (M5): colones por dólar del último tipo de cambio. */
+  usdCrc?: number | null;
+  /** Gasto con tarjeta de débito (2.8.0). */
+  debitCard?: boolean;
 };
+
+export type CardPaymentConversion = {
+  /** Lo que sale de la cuenta, en su moneda (`null` si no hay conversión). */
+  account_amount: number | null;
+  /** Colones por dólar usados (`null` si no hay conversión). */
+  exchange_rate: number | null;
+};
+
+/**
+ * M5 (2.8.0): un abono baja el saldo de la tarjeta en `paymentCurrency`; si la
+ * cuenta es de otra moneda, paga el equivalente con el tipo de cambio
+ * (colones por dólar), redondeado a céntimos.
+ */
+export function cardPaymentConversion(input: {
+  amount: number;
+  paymentCurrency: Currency;
+  accountCurrency: Currency;
+  usdCrc: number | null | undefined;
+}): CardPaymentConversion {
+  const { amount, paymentCurrency, accountCurrency, usdCrc } = input;
+  if (paymentCurrency === accountCurrency) return { account_amount: null, exchange_rate: null };
+  if (!(Number(usdCrc) > 0)) {
+    throw new DomainError(
+      "M5",
+      "Para abonar en otra moneda registra primero el tipo de cambio (Ajustes → Tipo de cambio)",
+    );
+  }
+  const rate = Number(usdCrc);
+  const cents = toCents(amount);
+  // USD → CRC multiplica; CRC → USD divide.
+  const converted =
+    paymentCurrency === "USD" ? Math.round(cents * rate) : Math.round(cents / rate);
+  if (converted <= 0) throw new DomainError("G2", "El monto convertido debe ser mayor que 0");
+  return { account_amount: fromCents(converted), exchange_rate: rate };
+}
 
 /**
  * Teléfono de SINPE Móvil: 8 dígitos (Costa Rica). Acepta espacios, guiones y
@@ -267,9 +312,29 @@ export function validateMovement(d: MovementDraft): Currency {
     if (!d.accountCurrency || !d.cardCurrency) {
       throw new DomainError("M3", "Un abono necesita una cuenta de origen y una tarjeta");
     }
-    // M5: el abono baja el saldo de la tarjeta en la moneda de la cuenta (T1),
-    // sin conversión.
-    return d.accountCurrency;
+    // M5 (2.8.0): el abono baja el saldo de la tarjeta en la moneda elegida
+    // (T1); por defecto la de la cuenta. En otra moneda se convierte con el
+    // tipo de cambio (`cardPaymentConversion`), que debe existir.
+    const paymentCurrency = d.currency ?? d.accountCurrency;
+    if (paymentCurrency !== d.accountCurrency) {
+      cardPaymentConversion({
+        amount: d.amount,
+        paymentCurrency,
+        accountCurrency: d.accountCurrency,
+        usdCrc: d.usdCrc,
+      });
+    }
+    return paymentCurrency;
+  }
+
+  if (d.debitCard) {
+    // C3 (2.8.0): un gasto con tarjeta de débito sale de la cuenta de la tarjeta.
+    if (d.type !== "expense" || !d.accountCurrency || d.cardCurrency) {
+      throw new DomainError("C3", "Un gasto con tarjeta de débito sale de su cuenta");
+    }
+    if (d.channel === "sinpe") {
+      throw new DomainError("S1", "Un SINPE no se paga con tarjeta de débito");
+    }
   }
 
   // M1: gasto e ingreso exigen categoría.

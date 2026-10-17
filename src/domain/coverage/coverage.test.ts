@@ -11,6 +11,7 @@ const st = (over: Partial<CardStatement>): CardStatement => ({
   paidAfterCutoff: 0,
   dueAmount: 0,
   newCharges: 0,
+  prepaid: 0,
   balanceByMovements: 0,
   status: "sin-saldo",
   daysToDue: 0,

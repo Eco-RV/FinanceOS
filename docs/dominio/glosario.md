@@ -31,7 +31,7 @@
 | **Tipo de cuenta** | Clasificación de una cuenta bancaria de débito: ahorros, corriente… (en el documento de negocio aparece como "categorías de débito"; **no** son categorías de gasto). | Decidido |
 | **Cuenta bancaria de débito** | Cuenta en un banco, con tipo de cuenta y moneda. | Decidido |
 | **Efectivo** | Cuenta sin banco que representa la plata física. | Decidido |
-| **Tarjeta de débito** | Medio de pago de **una** cuenta bancaria de débito (máximo una por cuenta). No tiene saldo propio: sus movimientos afectan la cuenta. Sirve para identificar compras (últimos 4 dígitos). | Decidido (una por cuenta) · Propuesta (sin saldo propio) |
+| **Tarjeta de débito** | Medio de pago de **una** cuenta bancaria (corriente o ahorro; máximo una activa por cuenta). No tiene saldo propio: un gasto con ella resta de su cuenta y recuerda la tarjeta. Sirve para identificar compras (últimos 4 dígitos). | Decidido · Implementado 2.8.0 |
 | **Tarjeta de crédito** | Producto donde el usuario **debe** dinero. Su saldo es deuda. Puede tener saldo en CRC y en USD a la vez (bimoneda). | Decidido |
 | **Límite de crédito** | Tope de deuda de la tarjeta, expresado **en colones**. | Decidido |
 | **Disponible** | Límite − deuda total (saldo real CRC + saldo real USD convertido a CRC + capital de financiamientos pendiente). | Decidido |
@@ -46,6 +46,8 @@
 | **Fecha límite de pago** | Hasta cuándo se puede pagar el saldo al corte sin intereses. | Decidido |
 | **Saldo al corte** | Por moneda: cargos − pagos con fecha hasta el último corte. Es lo que hay que pagar de contado. | Decidido |
 | **Pago de contado** | Lo que falta pagar del saldo al corte antes de la fecha límite (saldo al corte − abonos posteriores al corte). | Decidido |
+| **Abono anticipado** | Lo abonado después del corte por encima del pago de contado (o un saldo a favor al corte): se descuenta del consumo sin cortar. | Decidido · Implementado 2.8.0 |
+| **Día de corte al siguiente corte** | Opción de una tarjeta para bancos que cortan por fecha de proceso (BAC): lo comprado el mismo día del corte entra al corte siguiente. | Decidido · Implementado 2.8.0 |
 | **Pago mínimo** | Monto mínimo que exige el banco para no caer en mora. Lo calcula el banco con su fórmula; el usuario lo **digita** del estado de cuenta. | Propuesta |
 | **Consumo sin cortar** | Cargos posteriores al último corte que ya ocurrieron. Entran al siguiente estado de cuenta. | Decidido |
 | **Saldo real** | Por moneda: saldo al corte + consumo sin cortar (− abonos posteriores). | Decidido |
@@ -62,7 +64,7 @@
 | **Ingreso** | Entrada de dinero a una cuenta. Lleva **categoría de ingreso**. Puede tener fecha futura (p. ej. salario). | Decidido |
 | **Transferencia** | Movimiento de dinero **entre cuentas propias**. Tiene dos lados (sale de una, entra a otra) y **no es gasto**. | Decidido |
 | **SINPE** | Salida de dinero desde una cuenta de débito hacia un tercero vía SINPE Móvil. **Es un gasto** y lleva categoría. | Decidido |
-| **Abono** | Pago a una tarjeta de crédito. Sale **siempre** de una cuenta de débito: baja la cuenta y baja la deuda. Puede superar la deuda. | Decidido |
+| **Abono** | Pago a una tarjeta de crédito. Sale **siempre** de una cuenta de débito: baja la cuenta y baja la deuda. Puede superar la deuda. Puede abonar el saldo en la otra moneda de la tarjeta: la cuenta paga el equivalente con el último tipo de cambio (M5, 2.8.0). | Decidido |
 | **Categoría de gasto** / **de ingreso** | Clasificación de un gasto (comida, transporte…) o un ingreso. El usuario parte de una lista sugerida y puede editar, deshabilitar y consultar. | Decidido |
 | **Movimiento programado** | Movimiento con fecha futura que nace de un plan (salario, suscripción, seguro, cuota). Se muestra como **proyección** y no se confunde con lo ocurrido hasta que llega su fecha. | Propuesta |
 | **Archivar** | Sacar movimientos de la vista y de los saldos sin borrarlos. | Propuesta |

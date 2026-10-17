@@ -141,6 +141,23 @@ export function CardFormDialog({
             </FormField>
           </div>
 
+          {/* T3 (2.8.0): bancos que cortan por fecha de proceso (BAC). */}
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="cutoff_day_rolls_over"
+              defaultChecked={Boolean(card?.cutoff_day_rolls_over)}
+              className="mt-0.5 size-4 accent-primary"
+            />
+            <span>
+              Las compras del día de corte pasan al siguiente corte
+              <span className="block text-xs text-muted-foreground">
+                Así cortan bancos como BAC: la compra cuenta cuando se procesa, normalmente al día
+                siguiente.
+              </span>
+            </span>
+          </label>
+
           <div className="grid grid-cols-2 gap-3">
             <FormField
               label="Límite de crédito"

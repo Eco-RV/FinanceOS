@@ -20,7 +20,7 @@
 |---|---|---|---|
 | C1 | Cada cuenta y tarjeta arranca con un **saldo inicial** oficial, que es un movimiento visible (`opening_balance`, monto con signo ≠ 0, máximo uno activo por cuenta/tarjeta). | Rechaza 0 o duplicado | Decidido · Implementado 2.0.0 |
 | C2 | Un gasto puede dejar una cuenta en negativo. | Advierte | Decidido |
-| C3 | Una cuenta bancaria de débito tiene como máximo **una** tarjeta de débito. | Rechaza | Decidido |
+| C3 | Una cuenta bancaria (corriente o ahorro, no efectivo) tiene como máximo **una** tarjeta de débito activa. La tarjeta no tiene saldo propio: un gasto con ella sale de su cuenta y recuerda la tarjeta. Un gasto fijo (P2) también se puede pagar con ella. | Rechaza | Decidido · Implementado 2.8.0 |
 | C4 | Una cuenta tiene una sola moneda. | — | Decidido |
 
 ## Movimientos
@@ -32,7 +32,7 @@
 | S1 | Un SINPE es un gasto desde una cuenta de débito (no tarjeta), con categoría; destinatario y teléfono (8 dígitos) opcionales. | Rechaza | Decidido · Implementado 2.0.0 |
 | M3 | Un abono sale siempre de una cuenta de débito hacia una tarjeta de crédito. | Rechaza | Decidido |
 | M4 | Un abono puede superar la deuda. | Advierte | Decidido |
-| M5 | Un abono afecta el saldo de la tarjeta **en la moneda de la cuenta origen** (no hay conversión en un abono). | — | Decidido · Implementado 2.0.0 |
+| M5 | Un abono baja el saldo de la tarjeta en la moneda que se elige (por defecto la de la cuenta). Si la cuenta es de otra moneda, sale de ella el equivalente con el **último tipo de cambio** digitado, que queda guardado en el movimiento; sin tipo de cambio se rechaza. | Rechaza (sin tipo de cambio) | Decidido · Cambiado 2.8.0 (antes: sin conversión) |
 | M6 | Un ingreso puede tener fecha futura. | — | Decidido |
 | M7 | Un movimiento con fecha futura es **programado**: no cuenta en saldos "de hoy" ni en el pago de contado hasta que llega su fecha. Sí cuenta en el disponible de la tarjeta si es cuota de un financiamiento. | — | Propuesta (amplía la regla actual de cuotas) |
 | M8 | El Arranque de 0 pide confirmación escrita (`ARRANCAR`) y un saldo inicial nuevo (puede ser 0) por cada cuenta y tarjeta activa (tarjetas: CRC y USD). De forma atómica: borra las cuotas pendientes (fecha > hoy) de los financiamientos, **archiva** todos los movimientos (no visibles), elimina financiamientos y préstamos (sus cuotas cobradas quedan archivadas) y crea los saldos iniciales nuevos, que son lo único visible. | Rechaza sin confirmación o sin saldos | Decidido 2026-10-12 · Implementado 2.2.0 |
@@ -43,7 +43,7 @@
 |---|---|---|---|
 | T1 | La tarjeta lleva saldos y estados de cuenta separados por moneda (CRC y USD); el estado de la tarjeta es el más grave. | — | Decidido · Implementado 2.0.0 |
 | T2 | El límite está en la moneda del límite de la tarjeta (normalmente colones). Disponible = límite − (saldo CRC + saldo USD convertido con el último tipo de cambio manual). El capital de financiamientos ya está dentro del saldo. Sin tipo de cambio y con saldo en otra moneda, el disponible no se calcula. | — | Decidido · Implementado 2.0.0 |
-| T3 | Saldo al corte (por moneda) = cargos − abonos con fecha ≤ último corte. Pago de contado = saldo al corte − abonos posteriores al corte (mínimo 0). | — | Decidido |
+| T3 | Saldo al corte (por moneda) = cargos − abonos con fecha ≤ último corte. Pago de contado = saldo al corte − abonos posteriores al corte (mínimo 0). Si la tarjeta tiene la opción "las compras del día de corte pasan al siguiente corte" (bancos que cortan por fecha de proceso, como BAC), cuenta solo lo anterior al día de corte. Lo abonado de más (por encima del pago de contado, o un saldo a favor al corte) se descuenta del consumo sin cortar (abono anticipado). | — | Decidido · Cambiado 2.8.0 (opción de corte y abono anticipado) |
 | T4 | Los cargos posteriores al corte entran al siguiente estado de cuenta. | — | Decidido |
 | T5 | Si el día de corte o de pago no existe en el mes, se usa el último día del mes. | — | Decidido |
 | T6 | Si el día de pago es ≤ al día de corte, la fecha límite cae el mes siguiente. | — | Decidido |

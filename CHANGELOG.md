@@ -1,5 +1,51 @@
 # Changelog
 
+## 2.8.0 — 2026-10-17
+
+Correcciones de tarjetas, SINPE y débito en el gasto rápido, abonos en dólares
+y tarjetas de débito en las cuentas.
+
+### Tarjetas de crédito
+- **Corte por tarjeta**: opción "Las compras del día de corte pasan al
+  siguiente corte" (así corta BAC, por fecha de proceso). Con ella, el pago de
+  contado no incluye lo comprado el mismo día del corte.
+- **Abonos anticipados**: lo que pagas después del corte por encima del pago
+  de contado baja el **consumo sin cortar** (gastar ₡20 000 y abonar ₡20 000
+  el mismo día deja la tarjeta igual). El detalle muestra cuánto se descontó.
+- **Abono en otra moneda**: al registrar un pago eliges qué saldo de la
+  tarjeta abonas (colones o dólares). Si la cuenta es de otra moneda, sale de
+  ella el equivalente con el **último tipo de cambio** (Ajustes → Tipo de
+  cambio), que queda guardado en el movimiento.
+- **Arreglo**: Tarjetas y el Resumen leían como máximo 1000 movimientos de
+  tarjeta; con muchas cuotas de financiamientos podían faltar gastos recientes
+  en el estado de cuenta. Ahora se leen todos.
+
+### Gastos
+- El **gasto rápido** (botón + y Gastos) tiene cuatro formas de pago:
+  **Crédito**, **Débito**, **SINPE** (desde una cuenta bancaria, con
+  destinatario y teléfono opcionales) y **Efectivo**. "Nuevo SINPE" abre el
+  mismo formulario en la pestaña SINPE.
+
+### Cuentas
+- **Tarjeta de débito** por cuenta bancaria (corriente o ahorro; una activa
+  por cuenta). Se agrega, edita, elimina o desactiva desde la cuenta.
+- **Detalle de cuenta** (toca una cuenta en la lista): saldo, su tarjeta de
+  débito y todos sus movimientos (gastos, ingresos, transferencias y abonos,
+  con el signo desde la cuenta).
+
+### Planes
+- Un gasto fijo se puede pagar con **tarjeta de débito** (sale de su cuenta).
+
+### Base de datos (correr a mano ANTES de desplegar, después de todo 2.7.0)
+1. `supabase/Versionamiento/2.8.0/00_card_cutoff_rollover.sql`
+2. `supabase/Versionamiento/2.8.0/01_debit_cards.sql`
+3. `supabase/Versionamiento/2.8.0/02_card_payment_exchange.sql` (al final
+   verifica los saldos: debe devolver 0 filas)
+
+### Configuración
+- Sin cambios. Para la opción de corte, edita cada tarjeta BAC y marca la
+  casilla.
+
 ## 2.7.0 — 2026-10-16
 
 Planes recurrentes, línea base y Ahorros y metas.

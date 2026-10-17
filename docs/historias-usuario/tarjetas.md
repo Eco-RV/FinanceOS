@@ -74,6 +74,16 @@ contado y antes de qué fecha.
   hasta el último corte), pagos aplicados después del corte
   (`paidAfterCutoff`), lo que falta pagar antes del vencimiento (`dueAmount`)
   y el consumo nuevo que todavía no corta (`newCharges`).
+- **Abono anticipado** (2.8.0): lo pagado después del corte por encima de lo
+  que faltaba del corte (o un saldo a favor al corte) se descuenta del
+  consumo sin cortar; la card lo indica ("ya descuenta ₡X de abono
+  anticipado"). Gastar ₡20 000 y abonar ₡20 000 el mismo día deja la tarjeta
+  igual.
+- **Día de corte al siguiente corte** (2.8.0): si la tarjeta tiene marcada la
+  opción "Las compras del día de corte pasan al siguiente corte" (en su
+  formulario), lo comprado el mismo día del corte no entra al pago de
+  contado: queda como consumo sin cortar. Es como corta BAC (por fecha de
+  proceso). El próximo corte lo recuerda en su pista.
 - Si la tarjeta está `atrasada`, se muestra una alerta indicando los días de
   atraso, la fecha en que venció y el monto pendiente (y que ya genera
   intereses).
@@ -97,10 +107,16 @@ calcularlo a mano.
 **Criterios de aceptación**
 - El monto sugerido al abrir el formulario es `dueAmount` (lo que falta pagar
   del corte) si es mayor que cero; si no, el saldo total de la tarjeta.
-- El abono baja el saldo de la tarjeta **en la moneda de la cuenta origen**
-  (T1/M5): desde una cuenta en dólares se abona el saldo en dólares; no hay
-  conversión.
-- El pago resta el mismo monto de la cuenta y del saldo de esa moneda.
+- Se elige qué **saldo de la tarjeta** se abona: colones o dólares (por
+  defecto, la moneda de la cuenta). El monto va en esa moneda y "Usar saldo
+  total" precarga lo de esa moneda.
+- Misma moneda: el pago resta el mismo monto de la cuenta y de la tarjeta.
+- **Otra moneda** (M5, 2.8.0): p. ej. una suscripción cobrada en dólares que
+  se paga desde una cuenta en colones. El formulario muestra cuánto sale de la
+  cuenta con el **último tipo de cambio** (Ajustes → Tipo de cambio); el monto
+  convertido y el tipo de cambio quedan guardados en el movimiento. Sin tipo
+  de cambio no deja guardar. Al editar, se convierte con el último tipo de
+  cambio.
 
 ### 6. Financiamientos
 Las compras a cuotas (tasa 0 o con interés), su reparto entre miembros de la
@@ -159,6 +175,10 @@ sección "Financiamientos" y cada cuota aparece en el historial como "Cuota".
   [`financiamientos.md`](./financiamientos.md) (con interés, edición, miembros
   y avisos); la propuesta de financiamiento con interés se implementó allí. El
   saldo y el disponible descuentan el interés de cuotas futuras.
+- **2026-10-17 (v2.8.0, en desarrollo)** — Opción por tarjeta para que las
+  compras del día de corte pasen al siguiente corte (BAC), abono anticipado
+  sobre el consumo sin cortar, abono en otra moneda con tipo de cambio (M5) y
+  lectura completa de los movimientos (antes se cortaba en 1000).
 - **2026-10-14 (v2.5.0, en desarrollo)** — La lista de tarjetas pasa a filas
   separadas (como en móvil) y **toda la fila abre el detalle**, salvo los
   botones de editar y desactivar. El detalle muestra arriba la tarjeta

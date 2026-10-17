@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { DomainError } from "../shared/errors.ts";
 import {
   balanceEffects,
+  cardPaymentConversion,
   deriveBalances,
   findBalanceDrift,
   normalizeSinpePhone,
@@ -227,5 +228,56 @@ test("T1: un cargo de tarjeta puede ser en otra moneda que la del límite", () =
   assert.equal(
     validateMovement({ ...charge, cardCurrency: null, accountCurrency: "CRC", currency: "USD" }),
     "CRC",
+  );
+});
+
+test("M5 (2.8.0): abono en otra moneda con tipo de cambio", () => {
+  // Pagar $20 del saldo en dólares desde una cuenta en colones a ₡505,5.
+  assert.deepEqual(
+    cardPaymentConversion({ amount: 20, paymentCurrency: "USD", accountCurrency: "CRC", usdCrc: 505.5 }),
+    { account_amount: 10_110, exchange_rate: 505.5 },
+  );
+  // De colones a dólares divide.
+  assert.deepEqual(
+    cardPaymentConversion({ amount: 10_110, paymentCurrency: "CRC", accountCurrency: "USD", usdCrc: 505.5 }),
+    { account_amount: 20, exchange_rate: 505.5 },
+  );
+  // Misma moneda: sin conversión.
+  assert.deepEqual(
+    cardPaymentConversion({ amount: 5, paymentCurrency: "CRC", accountCurrency: "CRC", usdCrc: null }),
+    { account_amount: null, exchange_rate: null },
+  );
+  assert.throws(
+    () => cardPaymentConversion({ amount: 20, paymentCurrency: "USD", accountCurrency: "CRC", usdCrc: null }),
+    /tipo de cambio/,
+  );
+  // validateMovement devuelve la moneda del saldo de la tarjeta que baja.
+  assert.equal(
+    validateMovement({ type: "card_payment", amount: 20, accountCurrency: "CRC", cardCurrency: "CRC", currency: "USD", usdCrc: 505.5 }),
+    "USD",
+  );
+  assert.throws(
+    () => validateMovement({ type: "card_payment", amount: 20, accountCurrency: "CRC", cardCurrency: "CRC", currency: "USD" }),
+    /tipo de cambio/,
+  );
+  // La cuenta baja el monto convertido; la tarjeta, el monto en dólares.
+  assert.deepEqual(
+    balanceEffects({ type: "card_payment", amount: 20, currency: "USD", account_id: "a", card_id: "c", account_amount: 10_110 }).map((e) => e.delta),
+    [-10_110, -20],
+  );
+});
+
+test("C3 (2.8.0): gasto con tarjeta de débito solo desde su cuenta y sin SINPE", () => {
+  assert.equal(
+    validateMovement({ type: "expense", amount: 1, category: "Comida", accountCurrency: "CRC", debitCard: true }),
+    "CRC",
+  );
+  assert.throws(
+    () => validateMovement({ type: "expense", amount: 1, category: "Comida", accountCurrency: "CRC", debitCard: true, channel: "sinpe" }),
+    /SINPE/,
+  );
+  assert.throws(
+    () => validateMovement({ type: "income", amount: 1, category: "Salario", accountCurrency: "CRC", debitCard: true }),
+    /débito/,
   );
 });
