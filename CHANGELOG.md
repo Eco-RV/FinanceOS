@@ -17,8 +17,25 @@ sobre Stellar testnet, por fases. Ver `docs/constelacion/plan-3.0.0.md`.
   (`contracts/Versionamiento/3.0.0/`), ya hecho por el usuario.
 - Cliente TS del contrato sin generar código (`contract.Client.from`).
 
-### Base de datos
-- Sin SQL todavía.
+### Fase 3 — Dominio y casos de uso
+- `src/domain/constellation/family.ts`: espejo de K3–K7 para avisar antes de
+  firmar (quién agrega o quita, aprobaciones requeridas, bloqueos de un
+  retiro, cancelar), avance de la meta y brillo de cada estrella.
+- `src/domain/constellation/directory.ts`: agenda de estrellas (apodo, emoji,
+  parentesco; K2), invitaciones de 72 h y Academia (lecciones y puntaje).
+- `src/application/constellation.ts`: ligar la wallet, agenda, invitar,
+  canjear (con sesión, D2), revocar, marcar agregada y completar lecciones.
+
+### Fase 4 — Supabase
+- Wallet ligada (solo la dirección pública), agenda de estrellas por usuario,
+  invitaciones (solo el hash del token; canje con función `security definer`)
+  y progreso de la Academia. Adaptador `src/infrastructure/supabase/constellation.ts`.
+
+### Base de datos (correr a mano ANTES de desplegar, después de todo 2.9.0)
+1. `supabase/Versionamiento/3.0.0/00_stellar_wallets.sql`
+2. `supabase/Versionamiento/3.0.0/01_constellation_stars.sql`
+3. `supabase/Versionamiento/3.0.0/02_family_invites.sql` (activa `pgcrypto`)
+4. `supabase/Versionamiento/3.0.0/03_academy_progress.sql`
 
 ### Contratos (los corre el usuario, testnet)
 1. `contracts/Versionamiento/3.0.0/00_despliegue_family_testnet.md` ✅

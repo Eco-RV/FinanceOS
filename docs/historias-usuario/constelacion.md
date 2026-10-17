@@ -125,3 +125,4 @@ palabras sencillas.
   (enviar y recibir USDC de persona a persona).
 - **2026-10-17 (v3.0.0, en desarrollo)** — Historias 3–8 (familia, bóveda,
   retiros, administración, apoyos y academia); contrato `family` desplegado.
+- **2026-10-17 (v3.0.0, en desarrollo)** — Fases 3 y 4: dominio, casos de uso y tablas de Supabase (wallet ligada, agenda, invitaciones y Academia).

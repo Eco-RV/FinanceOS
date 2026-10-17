@@ -62,6 +62,7 @@ en [`docs/dominio/`](./docs/dominio/).
    | 2.6.0 | `00_profiles.sql`, `01_avatars_storage.sql` |
    | 2.7.0 | `00_plans.sql`, `01_savings_goals.sql` |
    | 2.8.0 | `00_card_cutoff_rollover.sql`, `01_debit_cards.sql`, `02_card_payment_exchange.sql` |
+   | 3.0.0 | `00_stellar_wallets.sql`, `01_constellation_stars.sql`, `02_family_invites.sql`, `03_academy_progress.sql` |
 
    Al actualizar una base existente, corré solo las carpetas de las versiones
    nuevas, **antes** de desplegar el código.

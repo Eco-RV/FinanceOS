@@ -8,6 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAccount } from "./account";
 import { supabasePlans } from "./plans";
+import { supabaseConstellation } from "./constellation";
 import { isCurrency, type Currency, type Movement } from "@/domain";
 import { decryptToken } from "@/lib/mail/crypto";
 import { GmailPermissionError, refreshAccessToken, SEND_SCOPE, sendMessage } from "@/lib/mail/gmail";
@@ -859,6 +860,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     freshStart,
     ...supabaseAccount(supabase),
     ...supabasePlans(supabase),
+    ...supabaseConstellation(supabase),
   };
 }
 
