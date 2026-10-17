@@ -27,7 +27,7 @@ sobre Stellar testnet, por fases. Ver `docs/constelacion/plan-3.0.0.md`.
 - `NEXT_PUBLIC_FAMILY_CONTRACT_ID` (id público del contrato `family`;
   ya cargada en `.env.local` y Vercel).
 
-## 2.9.0 — sin publicar
+## 2.9.0 — 2026-10-17
 
 Mi bolsillo en Stellar: dólares digitales (USDC) de persona a persona, en la
 red de prueba (testnet).
