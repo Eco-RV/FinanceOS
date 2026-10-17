@@ -1,0 +1,28 @@
+# Contratos Soroban de Finance OS (3.0.0). Ver contracts/Versionamiento/.
+[workspace]
+members = ["contracts/family"]
+resolver = "2"
+
+[workspace.package]
+authors = ["Oswald Reid"]
+edition = "2024"
+license = "UNLICENSED"
+repository = "https://github.com/Eco-RV/FinanceOS"
+version = "3.0.0"
+
+[workspace.dependencies]
+soroban-sdk = "26.1.0"
+
+[profile.release]
+opt-level = "z"
+debug = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = "abort"
+overflow-checks = true
+strip = true
+
+[profile.release-with-logs]
+debug-assertions = true
+inherits = "release"

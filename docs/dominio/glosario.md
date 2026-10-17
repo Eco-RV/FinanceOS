@@ -123,3 +123,17 @@ testnet), no los movimientos de Finance OS.
 | **Wallet / bolsillo** | La cuenta Stellar `G…` del usuario, con su saldo en USDC. Solo él la controla (Cavos con su correo o Google, o una extensión). Enviar a otra persona es un pago directo de wallet a wallet, sin contrato. | Decidido · Implementado 2.9.0 |
 | **USDC** | Dólar digital (Circle) en Stellar, con 7 decimales. Para tenerlo hace falta una **trustline** ("abrir el bolsillo de dólares"). | Decidido · Implementado 2.9.0 |
 | **XLM de prueba** | La moneda de la red, que paga las comisiones. En testnet la regala Friendbot. | Decidido · Implementado 2.9.0 |
+
+## Constelación familiar (3.0.0)
+
+| Término | Definición | Estado |
+|---|---|---|
+| **Constelación** | La familia vista como estrellas unidas: cada persona es una **estrella** y la bóveda es un planeta. La familia (direcciones y roles) vive en el contrato `family`; apodos, emoji y parentesco viven en Finance OS. No confundir con **Familia (cobros)** de los financiamientos. | Decidido 2026-10-17 |
+| **Estrella** | Una persona de la constelación, identificada en la cadena solo por su dirección `G…`. Tiene cuenta en Finance OS y su propia wallet. | Decidido 2026-10-17 |
+| **Núcleo** | Quien crea la familia. Siempre es guardián, no sale ni se quita, cambia roles y aprueba los retiros de los demás. | Decidido 2026-10-17 |
+| **Estrella gestionada** | Familiar (p. ej. una abuela) a quien el núcleo invita y cuida: el núcleo pone su apodo y su rol, pero ella tiene su propia wallet y su propia cuenta. | Decidido 2026-10-17 |
+| **Guardián** | Estrella que puede aprobar retiros de la bóveda (de otros), agregar estrellas y fijar la meta. | Decidido 2026-10-17 |
+| **Bóveda** | Ahorro común de una familia, guardado en el contrato `family`, con una **meta**. Todos depositan; retirar necesita aprobación (K4). | Decidido 2026-10-17 |
+| **Retiro (de la bóveda)** | Pedido de sacar USDC de la bóveda hacia una estrella de la familia. Queda pendiente hasta tener las aprobaciones; vence a los 7 días. | Decidido 2026-10-17 |
+| **Apoyo** | Pago con condición sobre un escrow de Trustless Work (p. ej. la matrícula se libera cuando un guardián confirma). | Decidido 2026-10-17 |
+| **Academia** | Lecciones cortas con quiz sobre wallet, blockchain, USDC, enviar sin miedo y la bóveda. | Decidido 2026-10-17 |

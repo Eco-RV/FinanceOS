@@ -1,5 +1,32 @@
 # Changelog
 
+## 3.0.0 — sin publicar
+
+Constelación familiar: familia y bóveda de ahorro en USDC con aprobaciones,
+sobre Stellar testnet, por fases. Ver `docs/constelacion/plan-3.0.0.md`.
+
+### Fase 0 — Lenguaje y decisiones
+- Plan con las decisiones cerradas (D1–D13), reglas **K3–K7** (familia y
+  bóveda), glosario y contexto (separado del libro) e historias de usuario.
+
+### Fase 1 — Contrato `family` (Soroban)
+- Familia con núcleo, guardianes y miembros (solo direcciones y roles);
+  bóveda de USDC con depósitos, meta y retiros aprobados por guardianes
+  distintos de quien pide, solo hacia la familia y con vencimiento de 7 días.
+- Tests (`cargo test -p family`) y despliegue en testnet
+  (`contracts/Versionamiento/3.0.0/`), ya hecho por el usuario.
+- Cliente TS del contrato sin generar código (`contract.Client.from`).
+
+### Base de datos
+- Sin SQL todavía.
+
+### Contratos (los corre el usuario, testnet)
+1. `contracts/Versionamiento/3.0.0/00_despliegue_family_testnet.md` ✅
+
+### Configuración
+- `NEXT_PUBLIC_FAMILY_CONTRACT_ID` (id público del contrato `family`;
+  ya cargada en `.env.local` y Vercel).
+
 ## 2.9.0 — sin publicar
 
 Mi bolsillo en Stellar: dólares digitales (USDC) de persona a persona, en la

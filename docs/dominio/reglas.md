@@ -123,3 +123,13 @@ La familia y la bóveda (K3–K7) llegan en la 3.0.0.
 | K8 | Antes de mover dinero siempre hay una pantalla de revisión con destino, monto y "no se puede deshacer". | — | Decidido · Implementado 2.9.0 |
 | K9 | Enviar a una dirección que no está en la Constelación se advierte de forma destacada (posible estafa). En 2.9.0, sin familia todavía, toda dirección se advierte. | Advierte | Decidido · Implementado 2.9.0 |
 | K10 | Los montos USDC tienen 7 decimales en la cadena; se muestran en céntimos, truncados hacia abajo. Un envío acepta hasta 7 decimales y no supera el saldo. | Rechaza | Decidido · Implementado 2.9.0 |
+
+## Constelación familiar (3.0.0, Stellar testnet)
+
+| # | Regla | Tipo | Estado |
+|---|---|---|---|
+| K3 | Solo una estrella de la familia deposita en su bóveda; monto mayor que 0 (USDC). | Rechaza | Decidido 2026-10-17 |
+| K4 | Un retiro de la bóveda necesita `min(aprobaciones configuradas, guardianes distintos de quien pide)` aprobaciones de guardianes **distintos de quien pide**. Si quien pide es el núcleo y es el único guardián, se ejecuta directo. Al ejecutarse, la bóveda debe tener saldo. | Rechaza | Decidido 2026-10-17 |
+| K5 | El destino de un retiro es una estrella de la misma familia (protege de estafas). | Rechaza | Decidido 2026-10-17 |
+| K6 | La familia tiene un **núcleo** (quien la crea): siempre guardián, no sale ni se quita. Solo el núcleo nombra o quita guardianes, cambia roles y fija las aprobaciones; cualquier guardián agrega miembros, quita miembros y fija la meta. Máximo 12 estrellas por familia y 5 familias por dirección. | Rechaza | Decidido 2026-10-17 |
+| K7 | Un retiro pendiente vence a los **7 días**: ya no se aprueba (se puede cancelar). Máximo 10 retiros pendientes por familia. Cancela quien pidió o un guardián. | Rechaza | Decidido 2026-10-17 |
