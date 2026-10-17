@@ -147,6 +147,7 @@ en ninguno. La regla (qué se exige) sigue en el dominio.
 |---|---|---|
 | Base de datos | Supabase se mantiene por ahora, **siempre detrás de repositorios**. La meta de privacidad (cifrado de extremo a extremo o local-first) se decide al terminar la Fase 1. Por eso el dominio debe poder correr igual en el servidor y en el dispositivo. | 2026-10-11 |
 | Login | Supabase Auth: correo + contraseña (con cambio de contraseña) y **Google**. | 2026-10-11 |
-| Blockchain (Stellar, Cavos/Starknet) | Fuera de alcance: los datos viven en bancos tradicionales, un ledger público expone montos y comercios, y el negocio exige editar y eliminar. Si algún día aplica, entra como un adaptador más. | 2026-10-11 |
+| Blockchain en el libro | El **libro** (cuentas, tarjetas, movimientos) sigue fuera de la cadena: los datos viven en bancos tradicionales, un ledger público expondría montos y comercios, y el negocio exige editar y eliminar. | 2026-10-11 |
+| Bolsillo en Stellar (2.9.0) | Contexto **nuevo y separado**: wallet de USDC en **Stellar testnet** con pagos de persona a persona. Su fuente de verdad es la cadena; no escribe movimientos del libro (G1 intacta). En la cadena solo van direcciones y montos (K2). El usuario firma con su wallet (Cavos o extensión); el servidor nunca tiene llaves. La familia y la bóveda (contrato Soroban) llegan en la 3.0.0. | 2026-10-17 |
 | Sincronización de correo | Manual. Se descarta el cron cada 2 h planeado para v1.3.1. | 2026-10-11 |
 | Avisos a familia | Correo y WhatsApp vía un puerto `Notificador`. Requieren un servicio que corra aunque el dispositivo esté apagado. | 2026-10-11 |

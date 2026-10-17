@@ -111,3 +111,15 @@
 | U5 | El correo nuevo es válido y distinto del actual; el cambio se completa desde el enlace que llega al correo nuevo. Hasta entonces se sigue entrando con el actual. | Rechaza | Decidido · Implementado 2.6.0 |
 | U6 | La foto de perfil es JPG, PNG o WebP de hasta 2 MB (la app la recorta a 512 px). | Rechaza | Decidido · Implementado 2.6.0 |
 | U7 | Una cuenta nueva se confirma por correo antes de poder entrar. Los enlaces del correo vuelven a la misma app desde donde se pidió (producción o local). | — | Decidido · Implementado 2.6.0 |
+
+## Constelación · bolsillo (2.9.0, Stellar testnet)
+
+La familia y la bóveda (K3–K7) llegan en la 3.0.0.
+
+| # | Regla | Tipo | Estado |
+|---|---|---|---|
+| K1 | Solo **testnet**. | — | Decidido · Implementado 2.9.0 |
+| K2 | En la cadena solo van direcciones `G…` y montos. **Nunca** nombres, apodos, parentescos ni fotos. | — | Decidido · Implementado 2.9.0 |
+| K8 | Antes de mover dinero siempre hay una pantalla de revisión con destino, monto y "no se puede deshacer". | — | Decidido · Implementado 2.9.0 |
+| K9 | Enviar a una dirección que no está en la Constelación se advierte de forma destacada (posible estafa). En 2.9.0, sin familia todavía, toda dirección se advierte. | Advierte | Decidido · Implementado 2.9.0 |
+| K10 | Los montos USDC tienen 7 decimales en la cadena; se muestran en céntimos, truncados hacia abajo. Un envío acepta hasta 7 decimales y no supera el saldo. | Rechaza | Decidido · Implementado 2.9.0 |
