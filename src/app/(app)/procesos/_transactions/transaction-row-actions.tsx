@@ -1,7 +1,7 @@
 "use client";
 
 import { DeleteButton } from "@/components/delete-button";
-import type { Account, CreditCard, Transaction } from "@/lib/types";
+import type { Account, CreditCard, DebitCard, Transaction } from "@/lib/types";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import { TransactionForm } from "./transaction-form";
 import { TransferForm } from "./transfer-form";
@@ -13,10 +13,12 @@ export function TransactionRowActions({
   cards,
   categories,
   categoryIcons,
+  debitCards,
 }: {
   transaction: Transaction;
   accounts: Account[];
   cards: CreditCard[];
+  debitCards?: DebitCard[];
   categories?: string[];
   categoryIcons?: Record<string, CategoryIconKey>;
 }) {
@@ -42,6 +44,7 @@ export function TransactionRowActions({
         type={transaction.type}
         accounts={accounts}
         cards={cards}
+        debitCards={debitCards}
         categories={categories}
         categoryIcons={categoryIcons}
         fixedCardId={

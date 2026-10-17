@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/form-field";
 import { formatCurrency } from "@/lib/format";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
-import type { Account, CreditCard, Transaction } from "@/lib/types";
+import type { Account, CreditCard, DebitCard, Transaction } from "@/lib/types";
 import { TransactionList } from "../_transactions/transaction-list";
 
 const PAGE_SIZES = [5, 10, 20, 50] as const;
@@ -40,6 +40,7 @@ export function ExpenseExplorer({
   transactions,
   accounts,
   cards,
+  debitCards = [],
   categories,
   categoryIcons,
   todayISO,
@@ -48,6 +49,8 @@ export function ExpenseExplorer({
   transactions: Transaction[];
   accounts: Account[];
   cards: CreditCard[];
+  /** Tarjetas de débito, también desactivadas (2.8.0). */
+  debitCards?: DebitCard[];
   categories: string[];
   categoryIcons: Record<string, CategoryIconKey>;
   todayISO: string;
@@ -212,6 +215,7 @@ export function ExpenseExplorer({
         transactions={visible}
         accounts={accounts}
         cards={cards}
+        debitCards={debitCards}
         categories={categories}
         categoryIcons={categoryIcons}
         emptyLabel={active ? "Ningún gasto coincide con los filtros." : "Aún no registrás gastos."}

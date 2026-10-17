@@ -6,6 +6,7 @@
 
 import {
   assertCategoryUsable,
+  assertDebitCardUsable,
   assertSameCurrency,
   DomainError,
   dueOccurrences,
@@ -22,6 +23,7 @@ import type {
   AccountRepository,
   CardRepository,
   CategoryRepository,
+  DebitCardRepository,
   GoalFields,
   GoalRepository,
   NewMovement,
@@ -37,6 +39,8 @@ export type PlanDeps = {
   accounts: AccountRepository;
   cards: CardRepository;
   categories: CategoryRepository;
+  /** Solo hace falta para planes con tarjeta de débito (2.8.0). */
+  debitCards?: DebitCardRepository;
 };
 
 const NOT_FOUND = "Plan no encontrado";
@@ -56,6 +60,7 @@ function termsOf(f: PlanFields) {
     endsOn: f.ends_on,
     accountId: f.account_id,
     cardId: f.card_id,
+    debitCardId: f.debit_card_id ?? null,
   };
 }
 
@@ -72,6 +77,11 @@ async function checkTarget(deps: PlanDeps, f: PlanFields): Promise<void> {
       throw new DomainError("G4", "Tarjeta no encontrada o desactivada");
     }
   }
+  if (f.debit_card_id) {
+    // G4/C3: tarjeta de débito activa y de la cuenta del plan.
+    const card = deps.debitCards ? await deps.debitCards.find(f.debit_card_id) : null;
+    assertDebitCardUsable(card, f.account_id);
+  }
 }
 
 /**
@@ -86,6 +96,7 @@ export function savePlan(
   return run(async () => {
     const fields: PlanFields = {
       ...input.fields,
+      debit_card_id: input.fields.kind === "subscription" ? (input.fields.debit_card_id ?? null) : null,
       name: input.fields.name.trim(),
       // Gasto fijo sin categoría: la sugerida por el nombre (Alquiler → Vivienda…).
       category:
@@ -129,6 +140,7 @@ export function occurrenceMovement(plan: Plan, date: ISODate): NewMovement {
     note: plan.note ? `${plan.name} · ${plan.note}` : plan.name,
     account_id: plan.account_id,
     card_id: plan.card_id,
+    debit_card_id: plan.debit_card_id ?? null,
     plan_id: plan.id,
   };
 }

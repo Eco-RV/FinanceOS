@@ -18,6 +18,10 @@ const MISSING_TABLE = new Set(["PGRST205", "42P01"]);
 
 const PLAN_COLUMNS =
   "id, kind, name, amount, currency, frequency, starts_on, ends_on, account_id, card_id, category, note, generated_through, archived";
+/** 2.8.0: tarjeta de débito del plan (columna nueva). */
+const PLAN_COLUMNS_V280 = `${PLAN_COLUMNS}, debit_card_id`;
+/** La columna no existe (SQL 2.8.0 sin correr): se lee y guarda sin ella. */
+const MISSING_COLUMN = new Set(["42703", "PGRST204"]);
 
 function toPlan(row: Record<string, unknown>): Plan {
   return {
@@ -29,28 +33,42 @@ function toPlan(row: Record<string, unknown>): Plan {
 export function supabasePlans(supabase: SupabaseClient) {
   const plans: PlanRepository = {
     async list() {
-      const { data, error } = await supabase
-        .from("plans")
-        .select(PLAN_COLUMNS)
-        .order("created_at", { ascending: true });
+      const read = (columns: string) =>
+        supabase.from("plans").select(columns).order("created_at", { ascending: true });
+      let { data, error } = await read(PLAN_COLUMNS_V280);
+      if (error?.code && MISSING_COLUMN.has(error.code)) ({ data, error } = await read(PLAN_COLUMNS));
       if (error) {
         if (error.code && MISSING_TABLE.has(error.code)) return [];
         throw new InfrastructureError("No se pudieron leer los planes");
       }
-      return (data ?? []).map(toPlan);
+      return ((data ?? []) as unknown as Record<string, unknown>[]).map(toPlan);
     },
     async find(id) {
-      const { data } = await supabase.from("plans").select(PLAN_COLUMNS).eq("id", id).maybeSingle();
-      return data ? toPlan(data) : null;
+      const read = (columns: string) =>
+        supabase.from("plans").select(columns).eq("id", id).maybeSingle();
+      let { data, error } = await read(PLAN_COLUMNS_V280);
+      if (error?.code && MISSING_COLUMN.has(error.code)) ({ data, error } = await read(PLAN_COLUMNS));
+      return data ? toPlan(data as unknown as Record<string, unknown>) : null;
     },
     async save(id, fields, generatedThrough) {
-      const { data, error } = id
-        ? await supabase.from("plans").update(fields).eq("id", id).select("id").single()
-        : await supabase
-            .from("plans")
-            .insert({ ...fields, generated_through: generatedThrough ?? null })
-            .select("id")
-            .single();
+      const write = (row: Record<string, unknown>) =>
+        id
+          ? supabase.from("plans").update(row).eq("id", id).select("id").single()
+          : supabase
+              .from("plans")
+              .insert({ ...row, generated_through: generatedThrough ?? null })
+              .select("id")
+              .single();
+      let { data, error } = await write({ ...fields, debit_card_id: fields.debit_card_id ?? null });
+      // Sin el SQL 2.8.0 se guarda igual, salvo que el plan use tarjeta de débito.
+      if (error?.code && MISSING_COLUMN.has(error.code)) {
+        if (fields.debit_card_id) {
+          throw new InfrastructureError("Falta correr el SQL de la versión 2.8.0 (tarjetas de débito)");
+        }
+        const { debit_card_id: _omit, ...legacy } = fields;
+        void _omit;
+        ({ data, error } = await write(legacy));
+      }
       if (error?.code && MISSING_TABLE.has(error.code)) {
         throw new InfrastructureError("Falta correr el SQL de la versión 2.7.0 (planes)");
       }
@@ -80,6 +98,7 @@ export function supabasePlans(supabase: SupabaseClient) {
           note: r.note ?? "",
           account_id: r.account_id ?? "",
           card_id: r.card_id ?? "",
+          debit_card_id: r.debit_card_id ?? "",
         })),
       });
       if (error) throw new InfrastructureError("No se pudieron registrar los movimientos del plan");

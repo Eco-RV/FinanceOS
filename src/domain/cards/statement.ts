@@ -17,6 +17,11 @@ import type { MovementType } from "../ledger/movement.ts";
 export type CardCycle = {
   cutoff_day: number;
   payment_due_day: number;
+  /**
+   * T3 (2.8.0): los movimientos con fecha del día de corte entran al corte
+   * SIGUIENTE (bancos que cortan por fecha de proceso, como BAC).
+   */
+  cutoff_day_rolls_over?: boolean | null;
 };
 
 /** Next occurrence of `cutoffDay` on or after today. */
@@ -95,8 +100,16 @@ export type CardStatement = {
   paidAfterCutoff: number;
   /** Lo que falta pagar del corte antes de `dueDate`. */
   dueAmount: number;
-  /** Consumo posterior al corte (entra al próximo estado de cuenta). */
+  /**
+   * Consumo posterior al corte que falta pagar (entra al próximo estado de
+   * cuenta). Ya descuenta los abonos anticipados (`prepaid`).
+   */
   newCharges: number;
+  /**
+   * Abonos anticipados (2.8.0): lo pagado después del corte por encima del
+   * pago de contado, aplicado al consumo sin cortar.
+   */
+  prepaid: number;
   /** Deuda total según movimientos (Σ cargos − Σ pagos). */
   balanceByMovements: number;
   status: CardStatementStatus;
@@ -123,7 +136,12 @@ export function cardStatement(
     card.cutoff_day,
     card.payment_due_day,
   );
-  const cutoffISO = toISODate(lastCutoff);
+  // T3: con `cutoff_day_rolls_over`, el día de corte ya es del corte siguiente.
+  const cutoffISO = toISODate(
+    card.cutoff_day_rolls_over
+      ? new Date(lastCutoff.getFullYear(), lastCutoff.getMonth(), lastCutoff.getDate() - 1)
+      : lastCutoff,
+  );
   const todayISO = toISODate(today);
 
   // "Después del corte" se parte en dos: lo que ya ocurrió (cuenta como
@@ -160,6 +178,12 @@ export function cardStatement(
 
   const statementBalance = Math.max(0, chargesThru - paymentsThru);
   const dueAmount = Math.max(0, statementBalance - paymentsPosted);
+  // Lo pagado de más (saldo a favor al corte + abonos posteriores que superan
+  // el pago de contado) se aplica al consumo sin cortar: gastar 20 000 y
+  // abonar 20 000 el mismo día deja la tarjeta igual.
+  const surplus = Math.max(0, paymentsThru + paymentsPosted - chargesThru);
+  const prepaid = Math.min(Math.max(0, chargesPosted), surplus);
+  const newCharges = Math.max(0, chargesPosted - prepaid);
   const balanceByMovements =
     chargesThru +
     chargesPosted +
@@ -183,7 +207,8 @@ export function cardStatement(
     statementBalance,
     paidAfterCutoff: paymentsPosted,
     dueAmount,
-    newCharges: chargesPosted,
+    newCharges,
+    prepaid,
     balanceByMovements,
     status,
     daysToDue,

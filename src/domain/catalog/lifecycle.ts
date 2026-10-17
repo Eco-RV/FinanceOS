@@ -14,6 +14,7 @@
  *   banco     avisos importados desde sus correos (pendientes, en cualquier estado)
  *   préstamo  cuotas pagadas (el desembolso no cuenta: es parte del alta)
  *   miembro   partes en financiamientos y reembolsos registrados
+ *   débito    gastos pagados con la tarjeta de débito (2.8.0)
  *
  * El saldo inicial no cuenta como historia: es parte del alta (C1). Una cuenta
  * creada por error con su saldo inicial se puede eliminar.
@@ -21,7 +22,14 @@
 
 import { DomainError } from "../shared/errors.ts";
 
-export type CatalogKind = "account" | "card" | "category" | "bank" | "loan" | "member";
+export type CatalogKind =
+  | "account"
+  | "card"
+  | "category"
+  | "bank"
+  | "loan"
+  | "member"
+  | "debitCard";
 
 const SUBJECT: Record<CatalogKind, string> = {
   account: "La cuenta",
@@ -30,6 +38,7 @@ const SUBJECT: Record<CatalogKind, string> = {
   bank: "El banco",
   loan: "El préstamo",
   member: "El miembro",
+  debitCard: "La tarjeta de débito",
 };
 
 const HISTORY: Record<CatalogKind, string> = {
@@ -39,6 +48,7 @@ const HISTORY: Record<CatalogKind, string> = {
   bank: "avisos importados",
   loan: "cuotas pagadas",
   member: "partes en financiamientos o reembolsos",
+  debitCard: "gastos registrados",
 };
 
 /** Pronombre enclítico y terminación según el género del sustantivo. */
@@ -49,6 +59,7 @@ const LA: Record<CatalogKind, "la" | "lo"> = {
   bank: "lo",
   loan: "lo",
   member: "lo",
+  debitCard: "la",
 };
 
 /** G5: se puede eliminar solo si no tiene historia. */

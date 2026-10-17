@@ -9,6 +9,8 @@ import { idsWithHistory } from "@/lib/catalog-history";
 import { repositories } from "@/infrastructure/container";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { openingsById } from "@/lib/transactions";
+import { loadDebitCards } from "@/lib/debit-cards";
+import { debitCardLabel } from "@/domain";
 import { AccountFormDialog } from "./account-form";
 import { deleteAccount, setAccountActive } from "./actions";
 
@@ -22,7 +24,7 @@ export default async function CuentasPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const [{ data }, { data: openingData }] = await Promise.all([
+  const [{ data }, { data: openingData }, debitCards] = await Promise.all([
     supabase
       .from("accounts")
       .select("*")
@@ -33,7 +35,10 @@ export default async function CuentasPage() {
       .eq("type", "opening_balance")
       .eq("archived", false)
       .not("account_id", "is", null),
+    loadDebitCards(supabase),
   ]);
+  // 2.8.0: tarjeta de débito activa de cada cuenta (C3: una como máximo).
+  const debitByAccount = new Map(debitCards.map((d) => [d.account_id, debitCardLabel(d)]));
 
   const all = (data ?? []) as Account[];
   const withHistory = await idsWithHistory(
@@ -68,7 +73,8 @@ export default async function CuentasPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Cuentas</h1>
           <p className="text-sm text-muted-foreground">
-            Saldos de débito, ahorro y efectivo.
+            Saldos de débito, ahorro y efectivo. Toca una cuenta para ver su tarjeta de débito y
+            sus movimientos.
           </p>
         </div>
         <AccountFormDialog />
@@ -89,8 +95,20 @@ export default async function CuentasPage() {
             ]}
           >
             {accounts.map((account, i) => (
-              <RowItem key={account.id} index={i}>
-                <span className="truncate font-medium">{account.name}</span>
+              <RowItem
+                key={account.id}
+                index={i}
+                href={`/procesos/cuentas/${account.id}`}
+                label={`Ver la cuenta ${account.name}`}
+              >
+                <div className="min-w-0">
+                  <span className="block truncate font-medium">{account.name}</span>
+                  {debitByAccount.has(account.id) ? (
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {debitByAccount.get(account.id)}
+                    </span>
+                  ) : null}
+                </div>
                 <span>{TYPE_LABELS[account.type]}</span>
                 <span className="truncate text-muted-foreground">
                   {account.institution ?? "—"}
@@ -111,8 +129,13 @@ export default async function CuentasPage() {
               <MobileCard
                 key={account.id}
                 index={i}
+                href={`/procesos/cuentas/${account.id}`}
+                label={`Ver la cuenta ${account.name}`}
                 title={account.name}
-                meta={account.institution ?? undefined}
+                meta={
+                  [account.institution, debitByAccount.get(account.id)].filter(Boolean).join(" · ") ||
+                  undefined
+                }
                 actions={
                   <>
                     <AccountFormDialog account={account} opening={openings.get(account.id)} />

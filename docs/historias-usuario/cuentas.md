@@ -67,6 +67,33 @@ colones, para tener una vista rápida de mi liquidez.
   listan pero no entran en ese total (ver *Reglas de negocio*).
 - En mobile la misma información se ve como tarjetas apiladas en vez de tabla.
 
+### 5. Ver el detalle de una cuenta (2.8.0)
+Como usuario quiero tocar una cuenta y ver su saldo, su tarjeta de débito y
+todos sus movimientos, para saber qué entró y qué salió de esa cuenta.
+
+**Criterios de aceptación**
+- Toda la fila de la lista abre el detalle (`/procesos/cuentas/<id>`); la
+  lista muestra la tarjeta de débito bajo el nombre.
+- El detalle muestra el saldo, la tarjeta de débito y los movimientos de la
+  cuenta (como origen o destino), los más nuevos primero (hasta 500): gastos,
+  ingresos, SINPE, transferencias (− si sale, + si entra), abonos a tarjeta
+  (con el monto que salió de la cuenta, también si se convirtió) y el saldo
+  inicial. Se editan y eliminan como en las demás listas.
+
+### 6. Tarjeta de débito (2.8.0)
+Como usuario quiero agregar la tarjeta de débito de mi cuenta bancaria, para
+registrar los gastos que pago con ella.
+
+**Criterios de aceptación**
+- Desde el detalle de una cuenta corriente o de ahorro: **Agregar tarjeta de
+  débito** con nombre y últimos 4 dígitos (opcionales). Las cuentas de
+  efectivo no tienen tarjeta.
+- Una cuenta tiene como máximo **una** tarjeta de débito activa (C3).
+- Editar nombre y dígitos; **Eliminar** si no tiene gastos, si no
+  **Desactivar** (G5); las desactivadas se pueden reactivar.
+- Pagar con la tarjeta (gasto rápido → Débito) resta del saldo de su cuenta;
+  el movimiento recuerda con qué tarjeta se pagó.
+
 ## Reglas de negocio
 
 - **La verdad son los movimientos** (G1). `current_balance` es una copia
@@ -96,6 +123,8 @@ colones, para tener una vista rápida de mi liquidez.
 - **2026-10-12 (v2.1.0, en desarrollo)** — Eliminar vs. desactivar (G5): una
   cuenta con movimientos ya no se borra en cascada; se desactiva y se puede
   reactivar. Sobre una desactivada no se registra (G4).
+- **2026-10-17 (v2.8.0, en desarrollo)** — Detalle de cuenta con sus
+  movimientos y tarjeta de débito por cuenta bancaria (C3).
 - **2026-10-14 (v2.5.0, en desarrollo)** — Lista en filas separadas. Las
   cuentas de **efectivo** son el origen de los gastos "Efectivo" del
   formulario rápido; un gasto ya no se registra sobre una cuenta de débito

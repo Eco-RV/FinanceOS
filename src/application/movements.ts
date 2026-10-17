@@ -2,6 +2,8 @@
 
 import {
   assertCategoryUsable,
+  assertDebitCardUsable,
+  cardPaymentConversion,
   normalizeSinpePhone,
   validateMovement,
   type Currency,
@@ -13,6 +15,8 @@ import type {
   AccountRepository,
   CardRepository,
   CategoryRepository,
+  DebitCardRepository,
+  ExchangeRateRepository,
   MovementRepository,
 } from "./ports.ts";
 import { fail, ok, run, type UseCaseResult } from "./result.ts";
@@ -25,6 +29,8 @@ export type MovementDeps = {
   cards: CardRepository;
   movements: MovementRepository;
   categories: CategoryRepository;
+  debitCards: DebitCardRepository;
+  exchangeRates: ExchangeRateRepository;
 };
 
 export type SaveMovementInput = {
@@ -39,8 +45,14 @@ export type SaveMovementInput = {
   card_id: string | null;
   /** Cuenta destino (solo transferencias). */
   to_account_id?: string | null;
-  /** Moneda de un cargo con tarjeta (T1); en cuentas manda la de la cuenta. */
+  /**
+   * Moneda de un cargo con tarjeta (T1); en cuentas manda la de la cuenta. En
+   * un abono, el saldo de la tarjeta que baja (M5): si no es la de la cuenta,
+   * se convierte con el último tipo de cambio.
+   */
   currency?: Currency | null;
+  /** Gasto de cuenta pagado con su tarjeta de débito (2.8.0). */
+  debit_card_id?: string | null;
   /** Gasto por SINPE, con destinatario y teléfono opcionales. */
   channel?: MovementChannel | null;
   counterparty_name?: string | null;
@@ -67,6 +79,11 @@ export function saveMovement(
     ]);
 
     const channel = input.channel ?? null;
+    const debitCardId = input.type === "expense" ? (input.debit_card_id ?? null) : null;
+    // M5: abono en la otra moneda de la tarjeta → hace falta el tipo de cambio.
+    const crossCurrencyPayment =
+      input.type === "card_payment" && Boolean(input.currency) && input.currency !== accountCurrency;
+    const rate = crossCurrencyPayment ? await deps.exchangeRates.latest() : null;
     const currency = validateMovement({
       type: input.type,
       amount: input.amount,
@@ -79,8 +96,31 @@ export function saveMovement(
       toAccountCurrency,
       channel,
       counterpartyPhone: input.counterparty_phone ?? null,
+      usdCrc: rate?.usd_crc ?? null,
+      debitCard: Boolean(debitCardId),
     });
     const isSinpe = channel === "sinpe";
+
+    // G4/C3: la tarjeta de débito está activa y es de la cuenta (al editar se
+    // puede conservar la que ya tenía aunque esté desactivada).
+    if (debitCardId) {
+      const card = await deps.debitCards.find(debitCardId);
+      const previous = input.id ? await deps.movements.debitCardOf(input.id) : null;
+      assertDebitCardUsable(
+        card && previous === debitCardId ? { ...card, archived: false } : card,
+        input.account_id,
+      );
+    }
+
+    const conversion =
+      input.type === "card_payment" && accountCurrency
+        ? cardPaymentConversion({
+            amount: input.amount,
+            paymentCurrency: currency,
+            accountCurrency,
+            usdCrc: rate?.usd_crc ?? null,
+          })
+        : { account_amount: null, exchange_rate: null };
 
     // G4: no se usa una categoría desactivada (al editar, se puede conservar).
     const categoryKind =
@@ -106,6 +146,9 @@ export function saveMovement(
       channel,
       counterparty_name: isSinpe ? input.counterparty_name?.trim() || null : null,
       counterparty_phone: isSinpe ? normalizeSinpePhone(input.counterparty_phone) : null,
+      debit_card_id: debitCardId,
+      account_amount: conversion.account_amount,
+      exchange_rate: conversion.exchange_rate,
     };
 
     const affected = new Set<string>();

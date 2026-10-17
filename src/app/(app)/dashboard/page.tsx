@@ -61,6 +61,7 @@ import { PlansAndGoals } from "./plans-goals";
 import { loadPlansBoard } from "@/lib/plans-board";
 import { repositories } from "@/infrastructure/container";
 import type { Goal } from "@/application";
+import { allRows } from "@/lib/supabase/all-rows";
 
 type Level = "overdue" | "urgent" | "soon" | "ok";
 
@@ -145,11 +146,16 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase.from("accounts").select("*").eq("archived", false),
     supabase.from("credit_cards").select("*").eq("archived", false),
-    supabase
-      .from("transactions")
-      .select("card_id, type, amount, occurred_on, financing_id, currency, interest_amount")
-      .eq("archived", false)
-      .not("card_id", "is", null),
+    // Todas las filas (paginado): con muchas cuotas se pasa del tope de ~1000.
+    allRows<CardTxn>((from, to) =>
+      supabase
+        .from("transactions")
+        .select("card_id, type, amount, occurred_on, financing_id, currency, interest_amount")
+        .eq("archived", false)
+        .not("card_id", "is", null)
+        .order("id")
+        .range(from, to),
+    ).then((data) => ({ data })),
     supabase
       .from("transactions")
       .select("amount, occurred_on, category, currency")

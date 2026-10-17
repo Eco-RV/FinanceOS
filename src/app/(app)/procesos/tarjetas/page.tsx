@@ -25,6 +25,7 @@ import { scheduledInterestByCard, withoutScheduledInterest } from "@/lib/card-ba
 import { CardBalances, CardOwed, urgentDaysToDue } from "./card-money";
 import { CardStatusBadge } from "./card-status";
 import { deleteCard, setCardActive } from "./actions";
+import { allRows } from "@/lib/supabase/all-rows";
 
 type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on" | "currency">;
 
@@ -38,11 +39,16 @@ export default async function TarjetasPage() {
       .from("credit_cards")
       .select("*")
       .order("created_at", { ascending: true }),
-    supabase
-      .from("transactions")
-      .select("card_id, type, amount, occurred_on, currency")
-      .eq("archived", false)
-      .not("card_id", "is", null),
+    // Todas las filas (paginado): con muchas cuotas se pasa del tope de ~1000.
+    allRows<CardTxn>((from, to) =>
+      supabase
+        .from("transactions")
+        .select("card_id, type, amount, occurred_on, currency")
+        .eq("archived", false)
+        .not("card_id", "is", null)
+        .order("id")
+        .range(from, to),
+    ).then((data) => ({ data })),
     supabase
       .from("banks")
       .select("id, name, archived")

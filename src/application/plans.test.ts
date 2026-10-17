@@ -5,6 +5,7 @@ import type {
   AccountRepository,
   CardRepository,
   CategoryRepository,
+  DebitCardRepository,
   Goal,
   GoalFields,
   GoalRepository,
@@ -232,4 +233,34 @@ test("S1/S2: meta con cuenta de su moneda y fecha futura", async () => {
 
   assert.ok((await deleteGoal(g.repo, "g1")).ok);
   assert.equal(g.goals.size, 0);
+});
+
+test("P2 (2.8.0): gasto fijo con tarjeta de débito, cobrado a su cuenta", async () => {
+  const p = fakePlans();
+  const debitCards = {
+    async find(id: string) {
+      return id === "deb" ? { account_id: "bac", name: "Débito", archived: false } : null;
+    },
+  } as unknown as DebitCardRepository;
+  const d = { plans: p.repo, accounts: accounts({ bac: "CRC", bn: "CRC" }), cards: cards([]), categories: categories(), debitCards };
+  const netflix: PlanFields = {
+    ...salary,
+    kind: "subscription",
+    name: "Netflix",
+    amount: 7_000,
+    frequency: "monthly",
+    starts_on: "2026-10-01",
+    debit_card_id: "deb",
+  };
+  const r = await savePlan(d, { id: null, fields: netflix, today: "2026-10-01" });
+  assert.ok(r.ok);
+  assert.equal(p.plans.get(r.value.id)?.debit_card_id, "deb");
+
+  const synced = await syncPlans(p.repo, "2026-10-01");
+  assert.ok(synced.ok);
+  assert.equal(p.movements[0].debit_card_id, "deb");
+  assert.equal(p.movements[0].account_id, "bac");
+
+  const wrong = await savePlan(d, { id: null, fields: { ...netflix, account_id: "bn" }, today: "2026-10-01" });
+  assert.equal(!wrong.ok && wrong.rule, "C3");
 });

@@ -90,3 +90,65 @@ test("C1: el saldo inicial de la tarjeta cuenta como cargo en su fecha", () => {
   assert.equal(st.dueAmount, 50_000);
   assert.equal(st.status, "pendiente");
 });
+
+test("T3 (2.8.0): con cutoff_day_rolls_over, el día de corte pasa al siguiente corte", () => {
+  const txns = [
+    tx("expense", 1_000, "2026-10-10"),
+    tx("expense", 500, "2026-10-15"), // día de corte
+    tx("expense", 200, "2026-10-16"),
+  ];
+  const today = d("2026-10-16");
+
+  const inclusive = cardStatement(card, txns, today);
+  assert.equal(inclusive.statementBalance, 1_500);
+  assert.equal(inclusive.newCharges, 200);
+
+  const rolls = cardStatement({ ...card, cutoff_day_rolls_over: true }, txns, today);
+  assert.equal(iso(rolls.lastCutoff), "2026-10-15");
+  assert.equal(rolls.statementBalance, 1_000);
+  assert.equal(rolls.dueAmount, 1_000);
+  assert.equal(rolls.newCharges, 700);
+  // El mismo día de corte ya cuenta como consumo sin cortar.
+  const onCutoff = cardStatement({ ...card, cutoff_day_rolls_over: true }, txns.slice(0, 2), d("2026-10-15"));
+  assert.equal(onCutoff.statementBalance, 1_000);
+  assert.equal(onCutoff.newCharges, 500);
+});
+
+test("abono anticipado: lo pagado de más baja el consumo sin cortar", () => {
+  const today = d("2026-10-20");
+  // Sin saldo al corte: gastar 20 000 y abonar 20 000 el mismo día deja todo igual.
+  const same = cardStatement(
+    card,
+    [tx("expense", 20_000, "2026-10-18"), tx("card_payment", 20_000, "2026-10-18")],
+    today,
+  );
+  assert.equal(same.dueAmount, 0);
+  assert.equal(same.newCharges, 0);
+  assert.equal(same.prepaid, 20_000);
+  assert.equal(same.balanceByMovements, 0);
+
+  // Primero se cubre el contado; el resto va al consumo sin cortar.
+  const split = cardStatement(
+    card,
+    [
+      tx("expense", 50_000, "2026-10-01"),
+      tx("expense", 30_000, "2026-10-17"),
+      tx("card_payment", 60_000, "2026-10-19"),
+    ],
+    today,
+  );
+  assert.equal(split.statementBalance, 50_000);
+  assert.equal(split.dueAmount, 0);
+  assert.equal(split.prepaid, 10_000);
+  assert.equal(split.newCharges, 20_000);
+
+  // Un saldo a favor al corte también se aplica.
+  const credit = cardStatement(
+    card,
+    [tx("card_payment", 5_000, "2026-10-01"), tx("expense", 3_000, "2026-10-17")],
+    today,
+  );
+  assert.equal(credit.statementBalance, 0);
+  assert.equal(credit.newCharges, 0);
+  assert.equal(credit.prepaid, 3_000);
+});

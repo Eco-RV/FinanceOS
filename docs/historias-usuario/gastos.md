@@ -13,9 +13,9 @@ compartida (`TransactionList`).
 ## Historias de usuario
 
 ### 1. Registrar un gasto
-Como usuario quiero registrar un gasto rápido —monto, categoría y si lo pagué
-con tarjeta o en efectivo— para llevar el detalle de en qué se me va el
-dinero sin perder tiempo en el día a día.
+Como usuario quiero registrar un gasto rápido —monto, categoría y cómo lo
+pagué— para llevar el detalle de en qué se me va el dinero sin perder tiempo
+en el día a día.
 
 **Criterios de aceptación**
 - El formulario va en este orden (2.5.0):
@@ -23,21 +23,27 @@ dinero sin perder tiempo en el día a día.
      alterna **CRC / USD**. Se aceptan coma o punto como decimal.
   2. **Categoría** (obligatoria): cuadrícula de botones con el ícono de cada
      categoría, cómoda para el dedo.
-  3. **Tarjeta o Efectivo** (selector arriba; por defecto Tarjeta):
-     - Tarjeta: carrusel tipo billetera (Android/iPhone) con las tarjetas
+  3. **Cómo pagaste** (2.8.0: **Crédito · Débito · SINPE · Efectivo**; por
+     defecto Crédito):
+     - Crédito: carrusel tipo billetera (Android/iPhone) con las tarjetas
        activas dibujadas como tarjetas. Siempre empieza en la **primera**
        (a la izquierda). Se cambia con las **flechas** ‹ ›, tocando una
        tarjeta, con la rueda del ratón o deslizando con el dedo; la elegida
        queda al centro. No se arrastra con el cursor. El cargo va en la moneda
        elegida (bimoneda, T1).
+     - Débito (2.8.0): las tarjetas de débito activas cuya cuenta es de la
+       moneda elegida, con el nombre de la cuenta y su saldo. El gasto sale
+       de esa cuenta y recuerda la tarjeta. Si no hay, se invita a agregarla
+       en su cuenta.
+     - SINPE (2.8.0): las cuentas bancarias (corriente o ahorro) de la moneda
+       elegida, más destinatario y teléfono opcionales (historia 6).
      - Efectivo: las cuentas de tipo **Efectivo** de la moneda elegida (si hay
        una sola, queda elegida). Si no hay, se invita a crearla en Cuentas.
   4. **Más opciones** (botón +): despliega **fecha** (por defecto hoy) y
      **nota** opcional (hasta 200 caracteres).
-- Ya **no** se registra un gasto directo sobre una cuenta de débito o ahorro:
-  para eso están SINPE y Transferencias. Al editar un gasto viejo hecho desde
-  una cuenta, esa cuenta se sigue ofreciendo.
-- En efectivo la moneda del movimiento la manda la cuenta.
+- Un gasto desde una cuenta bancaria va por **Débito** o **SINPE**. Al editar
+  un gasto viejo hecho desde una cuenta, esa cuenta se sigue ofreciendo.
+- En débito, SINPE y efectivo la moneda del movimiento la manda la cuenta.
 - Al guardar aparece al centro una confirmación animada "Gasto registrado"
   con el monto (no tapa el botón flotante).
 - Al guardar, el saldo de la cuenta (resta) o el saldo de la tarjeta (suma,
@@ -106,8 +112,10 @@ Como usuario quiero registrar un pago por SINPE Móvil indicando a quién se lo
 hice y a qué teléfono, para saber después a quién le pagué y en qué.
 
 **Criterios de aceptación**
-- Botón "Nuevo SINPE" en Gastos. Es un **gasto** (regla S1): sale de una
-  **cuenta de débito** (no de tarjeta), con **categoría obligatoria**.
+- Pestaña **SINPE** del gasto rápido (botón + en cualquier pantalla); el
+  botón "Nuevo SINPE" de Gastos abre ese mismo formulario ya en SINPE
+  (2.8.0). Es un **gasto** (regla S1): sale de una **cuenta bancaria** (no de
+  tarjeta ni de efectivo), con **categoría obligatoria**.
 - Campos extra opcionales: destinatario (hasta 80 caracteres) y teléfono (8
   dígitos; se aceptan espacios, guiones y el prefijo +506, que se quitan).
 - En la lista de gastos aparece como "<cuenta> · SINPE a <nombre> · <teléfono>".
@@ -150,6 +158,9 @@ financiamientos activos de todas las tarjetas.
 - **2026-10-12 (v2.1.0, en desarrollo)** — Categorías: eliminar solo si
   ningún gasto la usa, si no se desactiva (G5); no se registra con una
   desactivada (G4).
+- **2026-10-17 (v2.8.0, en desarrollo)** — El gasto rápido suma **Débito**
+  (tarjeta de débito de una cuenta) y **SINPE**; "Nuevo SINPE" usa el mismo
+  formulario.
 - **2026-10-14 (v2.5.0, en desarrollo)** — Formulario rápido de gasto (monto
   con moneda, categorías con ícono, Tarjeta en carrusel o Efectivo, "Más
   opciones" para fecha y nota) y confirmación animada al centro. Ya no se

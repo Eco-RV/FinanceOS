@@ -14,7 +14,7 @@ function revalidateTx(cardIds: string[] = []) {
   revalidatePath("/procesos/gastos");
   revalidatePath("/procesos/ingresos");
   revalidatePath("/procesos/transferencias");
-  revalidatePath("/procesos/cuentas");
+  revalidatePath("/procesos/cuentas", "layout");
   revalidatePath("/procesos/tarjetas");
   for (const id of cardIds) {
     if (id) revalidatePath(`/procesos/tarjetas/${id}`);
@@ -45,6 +45,7 @@ export async function saveTransaction(
     counterparty_name,
     counterparty_phone,
     currency,
+    debit_card_id,
   } = parsed.data;
   const { kind, id: originId } = parseOrigin(origin);
 
@@ -61,6 +62,7 @@ export async function saveTransaction(
     channel,
     counterparty_name,
     counterparty_phone,
+    debit_card_id,
   });
   if (!result.ok) return { ok: false, message: result.message };
 

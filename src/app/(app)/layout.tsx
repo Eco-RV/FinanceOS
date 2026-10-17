@@ -10,6 +10,7 @@ import { initialsOf } from "@/domain";
 import { ensurePlansUpToDate } from "@/lib/sync-plans";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
+import { loadDebitCards } from "@/lib/debit-cards";
 import type { Account, Category, CreditCard } from "@/lib/types";
 import { TransactionForm } from "./procesos/_transactions/transaction-form";
 
@@ -23,7 +24,7 @@ export default async function AppLayout({
   await ensurePlansUpToDate();
 
   const supabase = await createClient();
-  const [{ data: accData }, { data: cardData }, { data: catData }] =
+  const [{ data: accData }, { data: cardData }, { data: catData }, debitCards] =
     await Promise.all([
       supabase.from("accounts").select("*").eq("archived", false),
       supabase.from("credit_cards").select("*").eq("archived", false),
@@ -33,6 +34,7 @@ export default async function AppLayout({
         .eq("kind", "expense")
         .eq("archived", false)
         .order("name", { ascending: true }),
+      loadDebitCards(supabase),
     ]);
 
   // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
@@ -68,6 +70,7 @@ export default async function AppLayout({
           type="expense"
           accounts={accounts}
           cards={cards}
+          debitCards={debitCards}
           categories={categories}
           categoryIcons={iconsByName(options)}
           triggerLabel="Nuevo gasto"
