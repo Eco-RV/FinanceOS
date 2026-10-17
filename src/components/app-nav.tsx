@@ -4,10 +4,10 @@ import type { ComponentType } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CandlestickChart,
   LayoutDashboard,
   LoaderCircle,
   Settings2,
+  Sparkles,
   Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ type NavItem = { href: string; label: string; icon: IconType; beta?: boolean };
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Resumen", icon: LayoutDashboard },
   { href: "/procesos", label: "Procesos", icon: Workflow },
-  { href: "/trading", label: "Trading", icon: CandlestickChart, beta: true },
+  { href: "/trading", label: "Constelación", icon: Sparkles, beta: true },
   { href: "/ajustes", label: "Ajustes", icon: Settings2 },
 ];
 

@@ -112,3 +112,14 @@
 | **Pendiente (por confirmar)** | Compra detectada que todavía no es gasto ni toca saldos. | Decidido |
 | **Aprobar** / **Descartar** | Aprobar convierte el pendiente en gasto; descartar lo ignora. | Decidido |
 | **Regla de comercio** | Categoría sugerida para un comercio, aprendida al aprobar. | Decidido |
+
+## Constelación (2.9.0, Stellar testnet)
+
+Contexto aparte del libro: su fuente de verdad es la **cadena** (Stellar
+testnet), no los movimientos de Finance OS.
+
+| Término | Definición | Estado |
+|---|---|---|
+| **Wallet / bolsillo** | La cuenta Stellar `G…` del usuario, con su saldo en USDC. Solo él la controla (Cavos con su correo o Google, o una extensión). Enviar a otra persona es un pago directo de wallet a wallet, sin contrato. | Decidido · Implementado 2.9.0 |
+| **USDC** | Dólar digital (Circle) en Stellar, con 7 decimales. Para tenerlo hace falta una **trustline** ("abrir el bolsillo de dólares"). | Decidido · Implementado 2.9.0 |
+| **XLM de prueba** | La moneda de la red, que paga las comisiones. En testnet la regala Friendbot. | Decidido · Implementado 2.9.0 |

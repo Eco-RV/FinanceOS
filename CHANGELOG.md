@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.9.0 — sin publicar
+
+Mi bolsillo en Stellar: dólares digitales (USDC) de persona a persona, en la
+red de prueba (testnet).
+
+### Constelación (antes Trading, beta)
+- La pestaña **Trading** pasa a **Constelación**: hub con la wallet y lo que
+  viene (familia, bóveda, apoyos, academia y portafolio, "Próximamente").
+- **Wallet**: entrar con correo o Google (Cavos, sin instalar nada) o con una
+  wallet de extensión (Freighter, xBull…). Finance OS nunca ve las llaves.
+- **Puesta a punto** en testnet: XLM de prueba automático (Friendbot), abrir
+  el bolsillo de dólares (trustline USDC) y conseguir USDC de prueba (DEX o
+  faucet de Circle).
+- **Mi bolsillo** (`/trading/bolsillo`): saldo en USDC con su equivalente en
+  colones (último tipo de cambio), **Enviar** a otra persona con pantalla de
+  revisión y aviso de posible estafa, y **Recibir** con QR y copiar dirección.
+
+### Base de datos
+- Sin cambios.
+
+### Configuración
+- `NEXT_PUBLIC_CAVOS_APP_ID` (App ID público de Cavos) y, opcional,
+  `NEXT_PUBLIC_CAVOS_ENVIRONMENT` (`development` por defecto).
+- En el dashboard de Cavos: orígenes `http://localhost:3000` y
+  `https://financeos-ten-rust.vercel.app`; Callback URLs con la ruta
+  `/trading` (`http://localhost:3000/trading`,
+  `https://financeos-ten-rust.vercel.app/trading`).
+- Opcionales (por defecto testnet): `NEXT_PUBLIC_STELLAR_RPC_URL`,
+  `NEXT_PUBLIC_STELLAR_HORIZON_URL`, `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`,
+  `NEXT_PUBLIC_USDC_ISSUER`, `NEXT_PUBLIC_USDC_SAC_ID`.
+
 ## 2.8.0 — 2026-10-17
 
 Correcciones de tarjetas, SINPE y débito en el gasto rápido, abonos en dólares

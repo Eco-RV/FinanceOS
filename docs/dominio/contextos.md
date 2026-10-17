@@ -16,6 +16,7 @@
 | **Planes** | Cosas que generan movimientos a futuro. | Salario, suscripción, seguro, movimiento programado |
 | **Financiamientos y préstamos** | Deuda a plazos. | Financiamiento con o sin interés, préstamo, cuota, tabla de amortización, abono a cuota |
 | **Familia** | Repartir cuotas con contactos y avisarles. | Familia, miembro, parte, reembolso, aviso de cuota |
+| **Constelación** (2.9.0) | Bolsillo en USDC sobre Stellar testnet: wallet, enviar y recibir de persona a persona. Fuente de verdad: la cadena. | Wallet, bolsillo, USDC, trustline |
 | **Presupuesto** | Liquidez y gastos fijos. | Línea base financiera, periodo, tope de línea base |
 | **Importación** | Traer compras desde los correos del banco. | Aviso bancario, plantilla, sincronizar, pendiente, aprobar, regla de comercio |
 
@@ -47,6 +48,8 @@ Reglas de la relación:
 - **Familia no toca la tarjeta.** Los reembolsos de miembros son su propio
   registro; el abono al banco es un movimiento normal.
 - **Importación no toca saldos** hasta que el usuario aprueba.
+- **Constelación no toca el libro** (2.9.0): su dinero vive en la cadena;
+  Finance OS solo lo lee para mostrarlo.
 
 ## Lo que está fuera del dominio (adaptadores)
 
