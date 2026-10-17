@@ -15,6 +15,8 @@ import type {
   CardRepository,
   CategoryFields,
   CategoryRepository,
+  DebitCardInput,
+  DebitCardRepository,
   ExchangeRateRepository,
   FinancingRepository,
   FreshStartRepository,
@@ -50,6 +52,8 @@ export function fakeStore(seed: {
   banks?: Record<string, BankRow>;
   /** id → nombre. */
   members?: Record<string, string>;
+  /** id → tipo de cuenta (default "checking"). */
+  accountTypes?: Record<string, string>;
 } = {}) {
   const product = (currency: Currency, name: string): Product => ({
     name,
@@ -123,6 +127,10 @@ export function fakeStore(seed: {
       const r = accountRows.get(id);
       return r && !r.archived ? r.currency : null;
     },
+    typeOf: async (id) => {
+      const r = accountRows.get(id);
+      return r && !r.archived ? (seed.accountTypes?.[id] ?? "checking") : null;
+    },
     save: async (id, fields) => {
       const key = id ?? nextId("acc");
       const prev = accountRows.get(key);
@@ -153,6 +161,22 @@ export function fakeStore(seed: {
         archived: prev?.archived ?? false,
         bank_id: fields.bank_id === undefined ? (prev?.bank_id ?? null) : fields.bank_id,
       });
+      return { id: key };
+    },
+  };
+  const debitCardRows = new Map<string, DebitCardInput & { archived: boolean }>();
+  const debitCards: DebitCardRepository = {
+    ...lifecycle(debitCardRows, (id) =>
+      [...movements.values()].filter((m) => m.debit_card_id === id).length,
+    ),
+    save: async (id, fields) => {
+      // C3: una activa por cuenta (como el índice único de la base).
+      const clash = [...debitCardRows].some(
+        ([key, c]) => key !== id && !c.archived && c.account_id === fields.account_id,
+      );
+      if (clash) throw new InfrastructureError("Esa cuenta ya tiene una tarjeta de débito activa");
+      const key = id ?? nextId("deb");
+      debitCardRows.set(key, { ...fields, archived: debitCardRows.get(key)?.archived ?? false });
       return { id: key };
     },
   };
@@ -198,6 +222,7 @@ export function fakeStore(seed: {
     cardIdOf: async (id) => movements.get(id)?.card_id ?? null,
     categoryOf: async (id) => movements.get(id)?.category ?? null,
     loanIdOf: async (id) => movements.get(id)?.loan_id ?? null,
+    debitCardOf: async (id) => movements.get(id)?.debit_card_id ?? null,
     openingOf: async (target, id, currency) => {
       for (const [movementId, m] of movements) {
         const owner = target === "account" ? m.account_id : m.card_id;
@@ -500,6 +525,7 @@ export function fakeStore(seed: {
     deps: {
       accounts,
       cards,
+      debitCards,
       categories,
       banks,
       loans,
@@ -530,6 +556,7 @@ export function fakeStore(seed: {
       stored,
       accountRows,
       cardRows,
+      debitCardRows,
       categoryRows,
       bankRows,
       loanRows,

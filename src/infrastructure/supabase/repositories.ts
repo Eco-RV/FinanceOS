@@ -20,6 +20,7 @@ import {
   type CategoryFields,
   type CategoryKind,
   type CategoryRepository,
+  type DebitCardRepository,
   type Loan,
   type LoanRepository,
   type Mailer,
@@ -52,7 +53,14 @@ function exactILike(text: string): string {
   return text.trim().replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
-type CatalogTable = "accounts" | "credit_cards" | "categories" | "banks" | "loans" | "members";
+type CatalogTable =
+  | "accounts"
+  | "credit_cards"
+  | "categories"
+  | "banks"
+  | "loans"
+  | "members"
+  | "debit_cards";
 
 async function findEntry<Extra extends string = never>(
   supabase: SupabaseClient,
@@ -125,6 +133,15 @@ async function saveRow(
 export function supabaseRepositories(supabase: SupabaseClient) {
   const accounts: AccountRepository = {
     currencyOf: (id) => currencyOf(supabase, "accounts", id),
+    async typeOf(id) {
+      const { data } = await supabase
+        .from("accounts")
+        .select("type")
+        .eq("id", id)
+        .eq("archived", false)
+        .maybeSingle();
+      return (data?.type as string | undefined) ?? null;
+    },
     find: (id) => findEntry(supabase, "accounts", id),
     // G5: movimientos propios (origen o destino), sin su saldo inicial;
     // archivados incluidos, también son historia.
@@ -177,6 +194,53 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     async delete(id) {
       const { error } = await supabase.from("credit_cards").delete().eq("id", id);
       check(error, "No se pudo eliminar la tarjeta");
+    },
+  };
+
+  // 2.8.0 (C3): una tarjeta de débito activa por cuenta (índice único parcial).
+  const debitCards: DebitCardRepository = {
+    async find(id) {
+      const { data } = await supabase
+        .from("debit_cards")
+        .select("account_id, name, archived")
+        .eq("id", id)
+        .maybeSingle();
+      return (data as { account_id: string; name: string; archived: boolean } | null) ?? null;
+    },
+    // G5: los gastos pagados con ella (archivados incluidos).
+    historyCount: (id) =>
+      count(
+        supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("debit_card_id", id),
+        HISTORY_ERROR,
+      ),
+    async setArchived(id, archived) {
+      const { error } = await supabase.from("debit_cards").update({ archived }).eq("id", id);
+      if (error?.code === UNIQUE_VIOLATION) {
+        throw new InfrastructureError("Esa cuenta ya tiene una tarjeta de débito activa");
+      }
+      check(error, "No se pudo actualizar la tarjeta de débito");
+    },
+    async save(id, fields) {
+      const { data, error } = id
+        ? await supabase
+            .from("debit_cards")
+            .update({ name: fields.name, last_four: fields.last_four })
+            .eq("id", id)
+            .select("id")
+            .single()
+        : await supabase.from("debit_cards").insert(fields).select("id").single();
+      if (error?.code === UNIQUE_VIOLATION) {
+        throw new InfrastructureError("Esa cuenta ya tiene una tarjeta de débito activa");
+      }
+      check(error, "No se pudo guardar la tarjeta de débito");
+      return { id: data!.id as string };
+    },
+    async delete(id) {
+      const { error } = await supabase.from("debit_cards").delete().eq("id", id);
+      check(error, "No se pudo eliminar la tarjeta de débito");
     },
   };
 
@@ -346,6 +410,14 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .eq("id", id)
         .maybeSingle();
       return data?.loan_id ?? null;
+    },
+    async debitCardOf(id) {
+      const { data } = await supabase
+        .from("transactions")
+        .select("debit_card_id")
+        .eq("id", id)
+        .maybeSingle();
+      return data?.debit_card_id ?? null;
     },
     async categoryOf(id) {
       const { data } = await supabase
@@ -694,7 +766,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
           .from("transactions")
-          .select("type, amount, currency, account_id, card_id, to_account_id, archived")
+          .select("type, amount, currency, account_id, card_id, to_account_id, account_amount, archived")
           .order("id")
           .range(from, from + PAGE - 1);
         check(error, "No se pudieron leer los movimientos");
@@ -770,6 +842,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
   return {
     accounts,
     cards,
+    debitCards,
     categories,
     banks,
     loans,

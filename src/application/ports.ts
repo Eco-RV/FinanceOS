@@ -22,6 +22,8 @@ import type {
   PlanKind,
   ProfileFields,
   StoredBalance,
+  DebitCardEntry,
+  DebitCardFields,
 } from "../domain/index.ts";
 
 export type NewMovement = {
@@ -42,6 +44,12 @@ export type NewMovement = {
   installment_no?: number | null;
   /** Ocurrencia de un plan recurrente (2.7.0). */
   plan_id?: string | null;
+  /** Gasto de cuenta pagado con su tarjeta de débito (2.8.0). */
+  debit_card_id?: string | null;
+  /** Abono en otra moneda (M5, 2.8.0): sale de la cuenta, en su moneda. */
+  account_amount?: number | null;
+  /** Abono en otra moneda (M5, 2.8.0): colones por dólar usados. */
+  exchange_rate?: number | null;
 };
 
 export type AccountFields = {
@@ -59,6 +67,8 @@ export type CardFields = {
   cutoff_day: number;
   payment_due_day: number;
   currency: Currency;
+  /** T3 (2.8.0): las compras del día de corte entran al corte siguiente. */
+  cutoff_day_rolls_over?: boolean;
   /** Se omite si el formulario no lo trae (compatibilidad pre-1.3.0). */
   bank_id?: string | null;
 };
@@ -82,6 +92,8 @@ export interface LifecycleRepository<Entry extends CatalogEntry = CatalogEntry> 
 export interface AccountRepository extends LifecycleRepository {
   /** Moneda de una cuenta activa, o `null` si no existe. */
   currencyOf(accountId: string): Promise<Currency | null>;
+  /** Tipo (checking/savings/cash) de una cuenta activa, o `null` si no existe. */
+  typeOf(accountId: string): Promise<string | null>;
   /** Crea (id `null`) o actualiza los datos de la cuenta. Nunca toca el saldo. */
   save(accountId: string | null, fields: AccountFields): Promise<{ id: string }>;
 }
@@ -91,6 +103,17 @@ export interface CardRepository extends LifecycleRepository<CatalogEntry & { ban
   currencyOf(cardId: string): Promise<Currency | null>;
   /** Crea (id `null`) o actualiza los datos de la tarjeta. Nunca toca el saldo. */
   save(cardId: string | null, fields: CardFields): Promise<{ id: string }>;
+}
+
+export type DebitCardInput = DebitCardFields & { account_id: string };
+
+/** Tarjetas de débito (2.8.0, C3): una activa por cuenta bancaria. */
+export interface DebitCardRepository extends LifecycleRepository<DebitCardEntry> {
+  /**
+   * Crea o actualiza. Otra tarjeta activa en la misma cuenta lanza
+   * `InfrastructureError` (C3).
+   */
+  save(debitCardId: string | null, fields: DebitCardInput): Promise<{ id: string }>;
 }
 
 export type CategoryKind = "expense" | "income";
@@ -131,6 +154,8 @@ export interface MovementRepository {
   categoryOf(movementId: string): Promise<string | null>;
   /** Préstamo al que pertenece un movimiento (pago o desembolso), o `null`. */
   loanIdOf(movementId: string): Promise<string | null>;
+  /** Tarjeta de débito con la que se pagó un movimiento, o `null`. */
+  debitCardOf(movementId: string): Promise<string | null>;
   /**
    * Saldo inicial activo de una cuenta o tarjeta en una moneda (C1: como
    * máximo uno por moneda; una cuenta tiene una sola).
@@ -370,6 +395,8 @@ export type PlanFields = {
   ends_on: ISODate | null;
   account_id: string | null;
   card_id: string | null;
+  /** Gasto fijo con tarjeta de débito (2.8.0): `account_id` es su cuenta. */
+  debit_card_id?: string | null;
   category: string | null;
   note: string | null;
 };

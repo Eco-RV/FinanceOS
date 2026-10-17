@@ -17,3 +17,4 @@ export * from "./balances.ts";
 export * from "./exchange-rates.ts";
 export * from "./profile.ts";
 export * from "./plans.ts";
+export * from "./debit-cards.ts";

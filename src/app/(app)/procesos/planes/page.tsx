@@ -10,6 +10,8 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/schema";
 import { ensurePlansUpToDate } from "@/lib/sync-plans";
 import { loadPlansBoard, type PlanRow } from "@/lib/plans-board";
 import type { Account, Category, CreditCard } from "@/lib/types";
+import { loadDebitCards } from "@/lib/debit-cards";
+import { debitCardLabel } from "@/domain";
 import { BackLink } from "@/components/back-link";
 import { Badge } from "@/components/ui/badge";
 import { DeleteButton } from "@/components/delete-button";
@@ -36,11 +38,12 @@ export default async function PlanesPage() {
   const supabase = await createClient();
   const repos = await repositories();
   const todayISO = toISODate(crToday());
-  const [board, { data: accData }, { data: cardData }, { data: catData }] = await Promise.all([
+  const [board, { data: accData }, { data: cardData }, { data: catData }, allDebitCards] = await Promise.all([
     loadPlansBoard(supabase, repos, todayISO),
     supabase.from("accounts").select("*").order("created_at", { ascending: true }),
     supabase.from("credit_cards").select("*").order("created_at", { ascending: true }),
     supabase.from("categories").select("*").eq("archived", false).order("name", { ascending: true }),
+    loadDebitCards(supabase, { includeArchived: true }),
   ]);
 
   const allAccounts = (accData ?? []) as Account[];
@@ -53,11 +56,16 @@ export default async function PlanesPage() {
   const formProps = {
     accounts,
     cards,
+    debitCards: allDebitCards.filter((d) => !d.archived),
     incomeCategories: { names: inc.map((o) => o.name), icons: iconsByName(inc) },
     expenseCategories: { names: exp.map((o) => o.name), icons: iconsByName(exp) },
   };
+  const debitOf = (p: PlanRow) =>
+    p.debit_card_id ? allDebitCards.find((d) => d.id === p.debit_card_id) : undefined;
   const targetName = (p: PlanRow) =>
-    p.account_id
+    debitOf(p)
+      ? debitCardLabel(debitOf(p)!)
+      : p.account_id
       ? (allAccounts.find((a) => a.id === p.account_id)?.name ?? "Cuenta")
       : p.card_id
         ? (allCards.find((c) => c.id === p.card_id)?.name ?? "Tarjeta")

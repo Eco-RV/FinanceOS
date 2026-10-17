@@ -31,7 +31,8 @@ internet, suscripciones), para que se cargue solo y cuente en mi línea base.
 
 **Criterios de aceptación**
 - **Gasto fijo** (P2, antes "Suscripción"): mensual, con una tarjeta de
-  crédito o desde una cuenta de débito. La categoría se sugiere por el nombre
+  crédito, con una **tarjeta de débito** (2.8.0: el cargo sale de su cuenta)
+  o desde una cuenta. La categoría se sugiere por el nombre
   (Alquiler → Vivienda; Agua, Luz, Internet → Servicios; Netflix →
   Suscripciones) y se puede cambiar. Si el monto varía (luz, agua), se edita
   el movimiento cuando llega.
@@ -84,6 +85,8 @@ controlar mi liquidez.
 
 ## Historial
 
+- **2026-10-17 (v2.8.0, en desarrollo)** — Un gasto fijo se puede pagar con
+  tarjeta de débito.
 - **2026-10-14 (v2.7.0)** — Archivo nuevo: salario,
   gastos fijos (renta, servicios, suscripciones), seguros de tarjeta, línea
   base y programados.

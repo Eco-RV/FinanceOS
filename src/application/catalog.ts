@@ -23,6 +23,7 @@ const NOT_FOUND: Record<CatalogKind, string> = {
   bank: "Banco no encontrado",
   loan: "Préstamo no encontrado",
   member: "Miembro no encontrado",
+  debitCard: "Tarjeta de débito no encontrada",
 };
 
 /** G5: elimina solo si no tiene historia; si tiene, hay que desactivarlo. */

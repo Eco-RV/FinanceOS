@@ -39,6 +39,8 @@ export type PlanTerms = {
   /** Salario y suscripción con débito: cuenta; seguro y suscripción con crédito: tarjeta. */
   accountId: string | null;
   cardId: string | null;
+  /** Gasto fijo pagado con tarjeta de débito (2.8.0): `accountId` es su cuenta. */
+  debitCardId?: string | null;
 };
 
 /** P1, P2, T9, P5: forma de un plan. */
@@ -60,6 +62,9 @@ export function validatePlan(p: PlanTerms): void {
   }
   if (p.kind === "subscription" && Boolean(p.accountId) === Boolean(p.cardId)) {
     throw new DomainError("P2", "Un gasto fijo se paga con una tarjeta o desde una cuenta (una sola)");
+  }
+  if (p.debitCardId && (p.kind !== "subscription" || !p.accountId)) {
+    throw new DomainError("P2", "Solo un gasto fijo se paga con tarjeta de débito, desde su cuenta");
   }
 }
 

@@ -222,7 +222,11 @@ export default async function CardDetailPage({
               <Stat
                 title="Consumo sin cortar"
                 value={formatCurrency(s.newCharges, cur)}
-                hint={`entra al corte del ${formatDate(cutoff)}`}
+                hint={
+                  s.prepaid > 0
+                    ? `ya descuenta ${formatCurrency(s.prepaid, cur)} de abono anticipado`
+                    : `entra al corte del ${formatDate(cutoff)}`
+                }
               />
             </div>
           </section>
@@ -264,7 +268,11 @@ export default async function CardDetailPage({
         <Stat
           title="Próximo corte"
           value={formatDate(cutoff)}
-          hint={`día ${card.cutoff_day}`}
+          hint={
+            card.cutoff_day_rolls_over
+              ? `día ${card.cutoff_day} · ese día pasa al siguiente corte`
+              : `día ${card.cutoff_day}`
+          }
         />
         <Stat
           title="Pago límite"
@@ -305,6 +313,11 @@ export default async function CardDetailPage({
               accounts={accounts}
               fixedCardId={card.id}
               fixedCardBalance={st.dueAmount > 0 ? st.dueAmount : balances[limitCurrency]}
+              fixedCardBalances={{
+                CRC: (multi.byCurrency.CRC?.dueAmount ?? 0) > 0 ? multi.byCurrency.CRC!.dueAmount : balances.CRC,
+                USD: (multi.byCurrency.USD?.dueAmount ?? 0) > 0 ? multi.byCurrency.USD!.dueAmount : balances.USD,
+              }}
+              exchangeRate={rate}
               triggerLabel="Registrar pago / abono"
             />
           ) : null}

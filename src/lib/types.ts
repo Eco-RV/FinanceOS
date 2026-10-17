@@ -22,6 +22,8 @@ export type CreditCard = {
   credit_limit: number | null;
   cutoff_day: number;
   payment_due_day: number;
+  /** T3 (2.8.0): las compras del día de corte entran al corte siguiente. */
+  cutoff_day_rolls_over?: boolean;
   /** Saldo en CRC (proyección). */
   current_balance: number;
   /** Saldo en USD (proyección, 2.0.0 — tarjeta bimoneda). */
@@ -67,6 +69,22 @@ export type Transaction = {
   channel?: "sinpe" | null;
   counterparty_name?: string | null;
   counterparty_phone?: string | null;
+  /** Gasto de cuenta pagado con su tarjeta de débito (2.8.0). */
+  debit_card_id?: string | null;
+  /** Abono en otra moneda (M5, 2.8.0): lo que salió de la cuenta, en su moneda. */
+  account_amount?: number | null;
+  /** Abono en otra moneda (M5, 2.8.0): colones por dólar usados. */
+  exchange_rate?: number | null;
+  archived: boolean;
+  created_at: string;
+};
+
+/** Tarjeta de débito de una cuenta bancaria (2.8.0, C3). */
+export type DebitCard = {
+  id: string;
+  account_id: string;
+  name: string;
+  last_four: string | null;
   archived: boolean;
   created_at: string;
 };

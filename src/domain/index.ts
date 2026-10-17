@@ -24,3 +24,4 @@ export * from "./ledger/fresh-start.ts";
 export * from "./account/profile.ts";
 export * from "./plans/plan.ts";
 export * from "./savings/goal.ts";
+export * from "./banking/debit-card.ts";

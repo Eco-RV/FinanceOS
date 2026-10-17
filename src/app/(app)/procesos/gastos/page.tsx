@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
+import { loadDebitCards } from "@/lib/debit-cards";
 import { crToday, toISODate } from "@/domain";
 import type { Account, Category, CreditCard, Transaction } from "@/lib/types";
 import { BackLink } from "@/components/back-link";
@@ -36,6 +37,7 @@ export default async function GastosPage({
     { data: accData },
     { data: cardData },
     { data: catData },
+    allDebitCards,
   ] = await Promise.all([
     supabase
       .from("transactions")
@@ -59,7 +61,9 @@ export default async function GastosPage({
       .eq("kind", "expense")
       .eq("archived", false)
       .order("name", { ascending: true }),
+    loadDebitCards(supabase, { includeArchived: true }),
   ]);
+  const debitCards = allDebitCards.filter((d) => !d.archived);
 
   const transactions = (txData ?? []) as Transaction[];
   const allAccounts = (accData ?? []) as Account[];
@@ -78,7 +82,7 @@ export default async function GastosPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
           <p className="text-sm text-muted-foreground">
-            Cargos a tarjeta, en efectivo y pagos por SINPE.
+            Cargos a tarjeta de crédito o débito, en efectivo y pagos por SINPE.
           </p>
         </div>
         {canRegister ? (
@@ -94,6 +98,8 @@ export default async function GastosPage({
                 type="expense"
                 sinpe
                 accounts={accounts}
+                cards={cards}
+                debitCards={debitCards}
                 categories={categories}
                 categoryIcons={categoryIcons}
                 triggerLabel="Nuevo SINPE"
@@ -103,6 +109,7 @@ export default async function GastosPage({
               type="expense"
               accounts={accounts}
               cards={cards}
+              debitCards={debitCards}
               categories={categories}
               categoryIcons={categoryIcons}
             />
@@ -116,6 +123,7 @@ export default async function GastosPage({
           transactions={transactions}
           accounts={allAccounts}
           cards={allCards}
+          debitCards={allDebitCards}
           categories={categories}
           categoryIcons={categoryIcons}
           todayISO={toISODate(crToday())}

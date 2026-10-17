@@ -28,14 +28,17 @@ export async function savePlanAction(_prev: FormResult, formData: FormData): Pro
   const [kind, targetId] = target.split(":");
   const today = toISODate(crToday());
   const repos = await repositories();
+  // 2.8.0: con tarjeta de débito, el cargo sale de su cuenta.
+  const debit = kind === "debit" ? await repos.debitCards.find(targetId) : null;
   const result = await savePlan(repos, {
     id,
     today,
     fields: {
       ...rest,
       frequency: rest.kind === "salary" ? rest.frequency : "monthly",
-      account_id: kind === "account" ? targetId : null,
+      account_id: kind === "account" ? targetId : kind === "debit" ? (debit?.account_id ?? null) : null,
       card_id: kind === "card" ? targetId : null,
+      debit_card_id: kind === "debit" ? targetId : null,
     },
   });
   if (!result.ok) return { ok: false, message: result.message };

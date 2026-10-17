@@ -68,10 +68,28 @@ export const creditCardSchema = z.object({
     .max(31, "Día 1-31"),
   /** Moneda del límite de crédito (T2). La tarjeta acepta cargos en CRC y USD (T1). */
   currency: z.enum(CURRENCIES),
+  /** T3 (2.8.0): casilla "las compras del día de corte pasan al siguiente corte". */
+  cutoff_day_rolls_over: z
+    .literal("on")
+    .optional()
+    .transform((v) => v === "on"),
   /** Saldo inicial por moneda (T1); vacío = 0. */
   opening_crc: openingFields.opening_amount,
   opening_usd: openingFields.opening_amount,
   opening_date: openingFields.opening_date,
+});
+
+/** Tarjeta de débito de una cuenta bancaria (2.8.0, C3). */
+export const debitCardSchema = z.object({
+  account_id: z.string().regex(/^[0-9a-fA-F-]{36}$/, "Cuenta inválida"),
+  name: z.string().trim().min(1, "El nombre es obligatorio").max(40, "Máximo 40 caracteres"),
+  last_four: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/, "Deben ser 4 dígitos")
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
 });
 
 export type AccountInput = z.infer<typeof accountSchema>;
@@ -162,6 +180,13 @@ export const transactionSchema = z
       .trim()
       .max(20)
       .optional()
+      .transform((v) => (v ? v : null)),
+    // Gasto de cuenta pagado con su tarjeta de débito (2.8.0).
+    debit_card_id: z
+      .string()
+      .regex(/^[0-9a-fA-F-]{36}$/, "Tarjeta de débito inválida")
+      .optional()
+      .or(z.literal(""))
       .transform((v) => (v ? v : null)),
     // Presente solo para card_payment (hidden input con la tarjeta de la ruta).
     card_id: z
@@ -456,7 +481,7 @@ export const planSchema = z.object({
   frequency: z.enum(FREQUENCY_VALUES).optional().default("monthly"),
   starts_on: planDate,
   ends_on: optionalDate,
-  target: z.string().regex(/^(account|card):[0-9a-fA-F-]{36}$/, "Elige dónde entra o se cobra"),
+  target: z.string().regex(/^(account|card|debit):[0-9a-fA-F-]{36}$/, "Elige dónde entra o se cobra"),
   category: z
     .string()
     .trim()

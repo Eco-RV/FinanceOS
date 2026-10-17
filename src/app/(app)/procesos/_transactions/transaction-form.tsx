@@ -19,7 +19,8 @@ import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
 import { CURRENCIES } from "@/lib/schema";
-import type { Account, CreditCard, Transaction, TransactionType } from "@/lib/types";
+import { formatCurrency, formatDate } from "@/lib/format";
+import type { Account, CreditCard, DebitCard, Transaction, TransactionType } from "@/lib/types";
 import { saveTransaction } from "./actions";
 import { CategoryPicker } from "./category-picker";
 import { ExpenseForm } from "./expense-form";
@@ -37,12 +38,18 @@ type Props = {
   /** Categorías configuradas para gastos/ingresos (no aplica a card_payment). */
   categories?: string[];
   fixedCardId?: string;
+  /** Saldo a pagar de la tarjeta por moneda (botón "Usar saldo total"). */
   fixedCardBalance?: number;
+  fixedCardBalances?: Partial<Record<"CRC" | "USD", number>>;
+  /** Último tipo de cambio (M5: abono en otra moneda, 2.8.0). */
+  exchangeRate?: { usd_crc: number; rate_on: string } | null;
+  /** Tarjetas de débito activas para el gasto rápido (2.8.0). */
+  debitCards?: DebitCard[];
   transaction?: Transaction;
   triggerLabel?: string;
   /** Botón circular fijo (para el acceso rápido global) en vez del botón inline. */
   fab?: boolean;
-  /** Gasto por SINPE Móvil: solo desde cuentas, con destinatario y teléfono. */
+  /** Gasto por SINPE Móvil: abre el gasto rápido en la pestaña SINPE. */
   sinpe?: boolean;
   /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
   categoryIcons?: Record<string, CategoryIconKey>;
@@ -67,17 +74,18 @@ const DIALOG_TITLE: Record<FormTransactionType, string> = {
 };
 
 /**
- * Registrar o editar un movimiento. Desde 2.5.0 el gasto (con tarjeta o en
- * efectivo) usa el formulario rápido `ExpenseForm`; SINPE, ingresos y pagos
- * de tarjeta siguen con este.
+ * Registrar o editar un movimiento. Todo gasto (crédito, débito, SINPE o
+ * efectivo; SINPE y débito desde 2.8.0) usa el formulario rápido
+ * `ExpenseForm`; ingresos y pagos de tarjeta siguen con este.
  */
 export function TransactionForm(props: Props) {
-  const isSinpe = props.sinpe || props.transaction?.channel === "sinpe";
-  if (props.type === "expense" && !isSinpe) {
+  if (props.type === "expense") {
     return (
       <ExpenseForm
         accounts={props.accounts}
         cards={props.cards ?? []}
+        debitCards={props.debitCards}
+        initialMode={props.sinpe ? "sinpe" : undefined}
         categories={props.categories ?? []}
         categoryIcons={props.categoryIcons}
         transaction={props.transaction}
@@ -96,17 +104,17 @@ function MovementForm({
   categories: categoryOptions = [],
   fixedCardId,
   fixedCardBalance,
+  fixedCardBalances,
+  exchangeRate,
   transaction,
   triggerLabel,
   fab = false,
-  sinpe: sinpeProp = false,
   categoryIcons,
 }: Props) {
   const editing = Boolean(transaction);
-  const sinpe = sinpeProp || transaction?.channel === "sinpe";
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveTransaction,
-    editing ? "Movimiento actualizado" : sinpe ? "SINPE registrado" : SUCCESS[type],
+    editing ? "Movimiento actualizado" : SUCCESS[type],
   );
 
   const [amount, setAmount] = useState(
@@ -129,15 +137,36 @@ function MovementForm({
 
   // T1: un cargo con tarjeta puede ser en CRC o USD; en una cuenta manda su moneda.
   const [origin, setOrigin] = useState(defaultOrigin);
-  const originIsCard = type === "expense" && !sinpe && origin.startsWith("card:");
+  const originIsCard = type === "expense" && origin.startsWith("card:");
   const originCard = originIsCard
     ? cards.find((c) => `card:${c.id}` === origin)
     : undefined;
 
-  const canPayTotal =
-    type === "card_payment" &&
-    typeof fixedCardBalance === "number" &&
-    fixedCardBalance > 0;
+  // M5 (2.8.0): el abono baja el saldo de la tarjeta en la moneda elegida; si
+  // la cuenta es de otra moneda, paga el equivalente con el tipo de cambio.
+  const originAccount = accounts.find((a) => `account:${a.id}` === origin) ??
+    (!showOrigin ? accounts[0] : undefined);
+  const accountCurrency = originAccount?.currency === "USD" ? "USD" : "CRC";
+  const [paymentCurrency, setPaymentCurrency] = useState<"" | "CRC" | "USD">(
+    transaction?.type === "card_payment" && transaction.currency !== originAccount?.currency
+      ? (transaction.currency as "CRC" | "USD")
+      : "",
+  );
+  const payIn = paymentCurrency || accountCurrency;
+  const converts = type === "card_payment" && payIn !== accountCurrency;
+  const amountNumber = Number(amount);
+  const converted =
+    converts && exchangeRate && amountNumber > 0
+      ? payIn === "USD"
+        ? Math.round(amountNumber * exchangeRate.usd_crc * 100) / 100
+        : Math.round((amountNumber / exchangeRate.usd_crc) * 100) / 100
+      : null;
+  const totalToPay =
+    type === "card_payment"
+      ? (fixedCardBalances?.[payIn] ?? (payIn === accountCurrency ? fixedCardBalance : undefined))
+      : undefined;
+
+  const canPayTotal = type === "card_payment" && typeof totalToPay === "number" && totalToPay > 0;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -170,14 +199,10 @@ function MovementForm({
       <DialogContent className="max-h-[92dvh] grid-cols-[minmax(0,1fr)] overflow-x-hidden overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {editing
-              ? `Editar ${sinpe ? "SINPE" : DIALOG_TITLE[type]}`
-              : triggerLabel ?? (sinpe ? "Nuevo SINPE" : NEW_LABEL[type])}
+            {editing ? `Editar ${DIALOG_TITLE[type]}` : (triggerLabel ?? NEW_LABEL[type])}
           </DialogTitle>
           <DialogDescription>
-            {sinpe
-              ? "Pago por SINPE Móvil desde una cuenta. Cuenta como gasto."
-              : type === "card_payment"
+            {type === "card_payment"
               ? "Baja el saldo de la tarjeta y de la cuenta origen."
               : type === "income"
                 ? "Suma el monto al saldo de la cuenta."
@@ -187,7 +212,6 @@ function MovementForm({
 
         <form action={submit} className="flex flex-col gap-4">
           <input type="hidden" name="type" value={type} />
-          {sinpe ? <input type="hidden" name="channel" value="sinpe" /> : null}
           {transaction ? (
             <input type="hidden" name="id" value={transaction.id} />
           ) : null}
@@ -232,10 +256,50 @@ function MovementForm({
               variant="outline"
               size="sm"
               className="self-start"
-              onClick={() => setAmount(String(fixedCardBalance))}
+              onClick={() => setAmount(String(totalToPay))}
             >
-              Usar saldo total de la tarjeta
+              Usar saldo total de la tarjeta ({formatCurrency(totalToPay!, payIn)})
             </Button>
+          ) : null}
+
+          {type === "card_payment" ? (
+            <div className="flex flex-col gap-2">
+              <FormField label="Saldo de la tarjeta que abonas" htmlFor="currency">
+                <Select
+                  id="currency"
+                  name="currency"
+                  value={payIn}
+                  onChange={(e) => setPaymentCurrency(e.target.value as "CRC" | "USD")}
+                >
+                  <option value="CRC">Colones (₡)</option>
+                  <option value="USD">Dólares ($)</option>
+                </Select>
+              </FormField>
+              {converts ? (
+                exchangeRate ? (
+                  <p className="rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                    El monto va en {payIn === "USD" ? "dólares" : "colones"}.{" "}
+                    {converted != null ? (
+                      <>
+                        Sale de la cuenta{" "}
+                        <span className="font-medium text-foreground tabular-nums">
+                          {formatCurrency(converted, accountCurrency)}
+                        </span>{" "}
+                      </>
+                    ) : (
+                      "La cuenta paga el equivalente "
+                    )}
+                    con $1 = {formatCurrency(exchangeRate.usd_crc, "CRC")} (
+                    {formatDate(exchangeRate.rate_on)}).
+                  </p>
+                ) : (
+                  <p className="rounded-xl bg-warning/15 px-3 py-2 text-xs text-foreground">
+                    Para abonar en otra moneda registra el tipo de cambio en Ajustes → Tipo de
+                    cambio.
+                  </p>
+                )
+              ) : null}
+            </div>
           ) : null}
 
           {type !== "card_payment" ? (
@@ -253,9 +317,7 @@ function MovementForm({
 
           {showOrigin ? (
             <FormField
-              label={
-                type === "expense" && !sinpe ? "Origen (cuenta o tarjeta)" : "Cuenta origen"
-              }
+              label={type === "expense" ? "Origen (cuenta o tarjeta)" : "Cuenta origen"}
               htmlFor="origin"
               error={errors?.origin}
             >
@@ -266,7 +328,7 @@ function MovementForm({
                 onChange={(e) => setOrigin(e.target.value)}
               >
                 <option value="">Elegí…</option>
-                {type === "expense" && !sinpe ? (
+                {type === "expense" ? (
                   <>
                     <optgroup label="Cuentas">
                       {accounts.map((a) => (
@@ -294,37 +356,6 @@ function MovementForm({
                 )}
               </Select>
             </FormField>
-          ) : null}
-
-          {sinpe ? (
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                label="Destinatario (opcional)"
-                htmlFor="counterparty_name"
-                error={errors?.counterparty_name}
-              >
-                <Input
-                  id="counterparty_name"
-                  name="counterparty_name"
-                  maxLength={80}
-                  defaultValue={transaction?.counterparty_name ?? ""}
-                />
-              </FormField>
-              <FormField
-                label="Teléfono (opcional)"
-                htmlFor="counterparty_phone"
-                error={errors?.counterparty_phone}
-              >
-                <Input
-                  id="counterparty_phone"
-                  name="counterparty_phone"
-                  type="tel"
-                  inputMode="numeric"
-                  placeholder="8888-8888"
-                  defaultValue={transaction?.counterparty_phone ?? ""}
-                />
-              </FormField>
-            </div>
           ) : null}
 
           {originIsCard ? (
