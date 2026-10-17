@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.9.0 — sin publicar
+## 2.9.0 — 2026-10-17
 
 Mi bolsillo en Stellar: dólares digitales (USDC) de persona a persona, en la
 red de prueba (testnet).
