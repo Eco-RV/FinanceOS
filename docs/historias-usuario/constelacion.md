@@ -42,8 +42,8 @@ Como usuario quiero enviar USDC a otra persona sin miedo a equivocarme.
   en español.
 
 > **3.0.0 (en construcción):** las historias 3 a 8 son de la Constelación
-> familiar. El contrato `family` ya está escrito, probado y desplegado en
-> testnet (historias 4–6 en la cadena); las pantallas vienen en las fases
+> familiar. Desde la Fase 5 las historias 3 a 6 están en la app (Mi familia,
+> invitaciones y Bóveda); apoyos (7) y Academia (8) vienen en las fases
 > siguientes de `docs/constelacion/plan-3.0.0.md`.
 
 ### 3. Armar mi constelación
@@ -126,3 +126,4 @@ palabras sencillas.
 - **2026-10-17 (v3.0.0, en desarrollo)** — Historias 3–8 (familia, bóveda,
   retiros, administración, apoyos y academia); contrato `family` desplegado.
 - **2026-10-17 (v3.0.0, en desarrollo)** — Fases 3 y 4: dominio, casos de uso y tablas de Supabase (wallet ligada, agenda, invitaciones y Academia).
+- **2026-10-17 (v3.0.0, en desarrollo)** — Fase 5: pantallas de familia (constelación, estrellas, roles), invitaciones con enlace y bóveda (depositar, pedir, aprobar y cancelar retiros).

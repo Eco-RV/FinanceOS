@@ -7,18 +7,30 @@ import { Badge } from "@/components/ui/badge";
 import { WalletBar, WalletGate } from "@/components/stellar/wallet-gate";
 import { WalletSetup } from "@/components/stellar/wallet-setup";
 import { PocketSummary } from "./pocket-summary";
+import { PendingInviteBanner } from "./pending-invite";
 
-const SOON = [
+const READY = [
   {
-    icon: Users,
-    label: "Mi familia",
-    description: "Tu constelación: cada familiar es una estrella.",
+    href: "/trading/bolsillo",
+    icon: Wallet,
+    label: "Mi bolsillo",
+    description: "Tu saldo en USDC: enviar, recibir y conseguir USDC de prueba.",
   },
   {
+    href: "/trading/familia",
+    icon: Users,
+    label: "Mi familia",
+    description: "Tu constelación: cada familiar es una estrella. Invita y administra.",
+  },
+  {
+    href: "/trading/boveda",
     icon: Landmark,
     label: "Bóveda familiar",
     description: "Ahorro común con meta; los retiros los aprueba otro guardián.",
   },
+];
+
+const SOON = [
   {
     icon: HandCoins,
     label: "Apoyos",
@@ -60,22 +72,20 @@ export default async function ConstellationPage() {
       <WalletGate signInHere>
         <div className="flex flex-col gap-4">
           <WalletBar />
+          <PendingInviteBanner />
           <PocketSummary rate={rate} />
           <WalletSetup />
         </div>
       </WalletGate>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="rise" style={{ ["--rise-i" as string]: 1 }}>
-          <NavCard
-            href="/trading/bolsillo"
-            icon={Wallet}
-            label="Mi bolsillo"
-            description="Tu saldo en USDC: enviar, recibir y conseguir USDC de prueba."
-          />
-        </div>
+        {READY.map((item, i) => (
+          <div key={item.href} className="rise" style={{ ["--rise-i" as string]: i + 1 }}>
+            <NavCard href={item.href} icon={item.icon} label={item.label} description={item.description} />
+          </div>
+        ))}
         {SOON.map((item, i) => (
-          <div key={item.label} className="rise" style={{ ["--rise-i" as string]: i + 2 }}>
+          <div key={item.label} className="rise" style={{ ["--rise-i" as string]: i + READY.length + 1 }}>
             <NavCardDisabled
               icon={item.icon}
               label={item.label}

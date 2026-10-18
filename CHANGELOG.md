@@ -31,6 +31,21 @@ sobre Stellar testnet, por fases. Ver `docs/constelacion/plan-3.0.0.md`.
   invitaciones (solo el hash del token; canje con función `security definer`)
   y progreso de la Academia. Adaptador `src/infrastructure/supabase/constellation.ts`.
 
+### Fase 5 — Pantallas de familia, invitaciones y bóveda
+- **Mi familia** (`/trading/familia`): crear la familia (quedas como núcleo),
+  la constelación en SVG ("Tú" al centro, brillo según lo aportado, la bóveda
+  como planeta con su avance), estrellas con apodo/emoji/parentesco propios,
+  hacer guardián o miembro (núcleo), quitar y salirse.
+- **Invitaciones**: enlace de 72 h (copiar o WhatsApp); quien lo abre entra con
+  su cuenta, conecta su wallet y lo acepta en `/trading/unirse/<token>`; el
+  núcleo la ve "Lista para agregar" y la agrega con su firma. También agregar
+  por dirección.
+- **Bóveda** (`/trading/boveda`): saldo y ≈ colones, meta con barra,
+  depositar y pedir retiro (solo hacia la familia) con revisión antes de
+  firmar, retiros pendientes con aprobar o cancelar, aportes por estrella y
+  aprobaciones por retiro (núcleo).
+- La wallet conectada se liga sola a la cuenta (solo la dirección).
+
 ### Base de datos (correr a mano ANTES de desplegar, después de todo 2.9.0)
 1. `supabase/Versionamiento/3.0.0/00_stellar_wallets.sql`
 2. `supabase/Versionamiento/3.0.0/01_constellation_stars.sql`

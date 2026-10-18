@@ -7,6 +7,7 @@
 
 import { contract } from "@stellar/stellar-sdk";
 import { familyContractId, networkPassphrase, rpcUrl } from "@/lib/stellar/env";
+import type { FamilyView, StarRole, WithdrawalView } from "@/domain";
 import type { SignTransactionFn } from "./horizon";
 
 type Tx<T> = contract.AssembledTransaction<T>;
@@ -80,8 +81,12 @@ export function unwrap<T>(result: R<T>): T {
   return result.unwrap();
 }
 
-/** Simula → firma en la wallet → envía, y devuelve el valor (o el error del contrato). */
+/**
+ * Simula → si el contrato rechaza, lanza su mensaje (en español) SIN pedir
+ * firma → firma en la wallet → envía, y devuelve el valor.
+ */
 export async function signAndSendResult<T>(tx: Tx<R<T>>): Promise<T> {
+  unwrap(tx.result as R<T>);
   const sent = await tx.signAndSend();
   return unwrap(sent.result as R<T>);
 }
@@ -97,4 +102,63 @@ export async function readFamily(familyId: number): Promise<FamilyOnChain | null
   const client = await familyClient();
   const tx = await client.get_family({ family_id: familyId });
   return tx.result.isOk() ? tx.result.unwrap() : null;
+}
+
+// ─────────────────────  vistas del dominio (3.0.0, Fase 5)  ─────────────────────
+
+const roleOf = (r: Role): StarRole => (r.tag === "Guardian" ? "guardian" : "member");
+export const toRole = (r: StarRole): Role => (r === "guardian" ? GUARDIAN : MEMBER);
+
+export function toFamilyView(f: FamilyOnChain): FamilyView {
+  return {
+    id: Number(f.id),
+    core: f.core,
+    stars: f.members.map((m) => ({ address: m.address, role: roleOf(m.role) })),
+    goal: BigInt(f.goal),
+    balance: BigInt(f.balance),
+    approvalsNeeded: Number(f.approvals_needed),
+  };
+}
+
+export function toWithdrawalView(w: WithdrawalOnChain): WithdrawalView {
+  return {
+    id: Number(w.id),
+    familyId: Number(w.family_id),
+    to: w.to,
+    amount: BigInt(w.amount),
+    requestedBy: w.requested_by,
+    approvals: [...w.approvals],
+    required: Number(w.required),
+    status: w.status.tag.toLowerCase() as WithdrawalView["status"],
+    createdAt: Number(w.created_at),
+  };
+}
+
+export type FamilySnapshot = {
+  family: FamilyView;
+  /** Total depositado por cada dirección (unidades de 7 decimales). */
+  contributions: Record<string, bigint>;
+  pending: WithdrawalView[];
+};
+
+/** Todo lo que muestran Familia y Bóveda, en una lectura (sin firma). */
+export async function readFamilySnapshot(familyId: number): Promise<FamilySnapshot | null> {
+  const client = await familyClient();
+  const tx = await client.get_family({ family_id: familyId });
+  if (tx.result.isErr()) return null;
+  const family = toFamilyView(tx.result.unwrap());
+  const [contribs, pendingTx] = await Promise.all([
+    Promise.all(
+      family.stars.map(async (s) => {
+        const c = await client.contribution_of({ family_id: familyId, address: s.address });
+        return [s.address, BigInt(c.result)] as const;
+      }),
+    ),
+    client.pending_withdrawals({ family_id: familyId }),
+  ]);
+  return {
+    family,
+    contributions: Object.fromEntries(contribs),
+    pending: pendingTx.result.map(toWithdrawalView),
+  };
 }
