@@ -1,9 +1,10 @@
 # Changelog
 
-## 3.0.0 — sin publicar
+## 3.0.0 — 2026-10-17
 
 Constelación familiar: familia y bóveda de ahorro en USDC con aprobaciones,
 sobre Stellar testnet, por fases. Ver `docs/constelacion/plan-3.0.0.md`.
+Quedan para la 3.1.0 los Apoyos (Trustless Work) y la Academia.
 
 ### Fase 0 — Lenguaje y decisiones
 - Plan con las decisiones cerradas (D1–D13), reglas **K3–K7** (familia y
