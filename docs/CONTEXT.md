@@ -240,7 +240,8 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 | 2.7 | Planes recurrentes (salario, gastos fijos, seguros), línea base (P4) y Ahorros y metas | ✅ v2.7.0 (en `main`) |
 | 4 | Ahorros y metas | ✅ v2.7.0 |
 | 2.9 | Mi bolsillo en Stellar (testnet): wallet con Cavos o extensión, USDC de persona a persona (enviar con revisión, recibir con QR), pestaña Constelación | ✅ v2.9.0 (en `main`) |
-| 3.0 | Constelación familiar: contrato `family` desplegado, dominio, Supabase y pantallas de familia, invitaciones y bóveda; siguen apoyos y academia | 🚧 en `feature/3.0.0` |
+| 3.0 | Constelación familiar: contrato `family` desplegado, dominio, Supabase y pantallas de familia, invitaciones y bóveda | ✅ v3.0.0 (en `main`) |
+| 3.1 | Apoyos (Trustless Work) y Academia | 📝 plan |
 | 2.8 | Correcciones: día de corte al siguiente corte (BAC), abono anticipado, abono en otra moneda con tipo de cambio, SINPE y débito en el gasto rápido, tarjetas de débito y detalle de cuenta, gasto fijo con débito | ✅ v2.8.0 (en `main`) |
 
 ## Gotchas
