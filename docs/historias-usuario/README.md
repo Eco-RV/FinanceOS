@@ -38,7 +38,7 @@ pierden. Esta carpeta es ese lugar fijo:
 | [`cuenta.md`](./cuenta.md) | Acceso, perfil, correo, contraseña y preferencias |
 | [`planes.md`](./planes.md) | Salario, suscripciones, seguros y línea base |
 | [`ahorros.md`](./ahorros.md) | Ahorros y metas |
-| [`constelacion.md`](./constelacion.md) | Constelación: bolsillo en USDC sobre Stellar (2.9.0) |
+| [`constelacion.md`](./constelacion.md) | Constelación: bolsillo en USDC (2.9.0) y Constelación familiar (3.0.0) sobre Stellar |
 
 Cuando aparezca un nuevo proceso principal (p. ej. "Préstamos" o "Ahorros y
 metas" del roadmap), se agrega un archivo nuevo a esta tabla siguiendo el

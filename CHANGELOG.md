@@ -1,5 +1,64 @@
 # Changelog
 
+## 3.0.0 — sin publicar
+
+Constelación familiar: familia y bóveda de ahorro en USDC con aprobaciones,
+sobre Stellar testnet, por fases. Ver `docs/constelacion/plan-3.0.0.md`.
+
+### Fase 0 — Lenguaje y decisiones
+- Plan con las decisiones cerradas (D1–D13), reglas **K3–K7** (familia y
+  bóveda), glosario y contexto (separado del libro) e historias de usuario.
+
+### Fase 1 — Contrato `family` (Soroban)
+- Familia con núcleo, guardianes y miembros (solo direcciones y roles);
+  bóveda de USDC con depósitos, meta y retiros aprobados por guardianes
+  distintos de quien pide, solo hacia la familia y con vencimiento de 7 días.
+- Tests (`cargo test -p family`) y despliegue en testnet
+  (`contracts/Versionamiento/3.0.0/`), ya hecho por el usuario.
+- Cliente TS del contrato sin generar código (`contract.Client.from`).
+
+### Fase 3 — Dominio y casos de uso
+- `src/domain/constellation/family.ts`: espejo de K3–K7 para avisar antes de
+  firmar (quién agrega o quita, aprobaciones requeridas, bloqueos de un
+  retiro, cancelar), avance de la meta y brillo de cada estrella.
+- `src/domain/constellation/directory.ts`: agenda de estrellas (apodo, emoji,
+  parentesco; K2), invitaciones de 72 h y Academia (lecciones y puntaje).
+- `src/application/constellation.ts`: ligar la wallet, agenda, invitar,
+  canjear (con sesión, D2), revocar, marcar agregada y completar lecciones.
+
+### Fase 4 — Supabase
+- Wallet ligada (solo la dirección pública), agenda de estrellas por usuario,
+  invitaciones (solo el hash del token; canje con función `security definer`)
+  y progreso de la Academia. Adaptador `src/infrastructure/supabase/constellation.ts`.
+
+### Fase 5 — Pantallas de familia, invitaciones y bóveda
+- **Mi familia** (`/trading/familia`): crear la familia (quedas como núcleo),
+  la constelación en SVG ("Tú" al centro, brillo según lo aportado, la bóveda
+  como planeta con su avance), estrellas con apodo/emoji/parentesco propios,
+  hacer guardián o miembro (núcleo), quitar y salirse.
+- **Invitaciones**: enlace de 72 h (copiar o WhatsApp); quien lo abre entra con
+  su cuenta, conecta su wallet y lo acepta en `/trading/unirse/<token>`; el
+  núcleo la ve "Lista para agregar" y la agrega con su firma. También agregar
+  por dirección.
+- **Bóveda** (`/trading/boveda`): saldo y ≈ colones, meta con barra,
+  depositar y pedir retiro (solo hacia la familia) con revisión antes de
+  firmar, retiros pendientes con aprobar o cancelar, aportes por estrella y
+  aprobaciones por retiro (núcleo).
+- La wallet conectada se liga sola a la cuenta (solo la dirección).
+
+### Base de datos (correr a mano ANTES de desplegar, después de todo 2.9.0)
+1. `supabase/Versionamiento/3.0.0/00_stellar_wallets.sql`
+2. `supabase/Versionamiento/3.0.0/01_constellation_stars.sql`
+3. `supabase/Versionamiento/3.0.0/02_family_invites.sql` (activa `pgcrypto`)
+4. `supabase/Versionamiento/3.0.0/03_academy_progress.sql`
+
+### Contratos (los corre el usuario, testnet)
+1. `contracts/Versionamiento/3.0.0/00_despliegue_family_testnet.md` ✅
+
+### Configuración
+- `NEXT_PUBLIC_FAMILY_CONTRACT_ID` (id público del contrato `family`;
+  ya cargada en `.env.local` y Vercel).
+
 ## 2.9.0 — 2026-10-17
 
 Mi bolsillo en Stellar: dólares digitales (USDC) de persona a persona, en la

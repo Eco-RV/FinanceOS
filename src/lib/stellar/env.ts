@@ -25,6 +25,9 @@ export const USDC = {
 /** Clave del saldo de USDC en Horizon (`CODE:ISSUER`). */
 export const USDC_BALANCE_KEY = `${USDC.code}:${USDC.issuer}`;
 
+/** Contrato `family` desplegado (3.0.0) (ver contracts/Versionamiento/). */
+export const familyContractId = process.env.NEXT_PUBLIC_FAMILY_CONTRACT_ID?.trim() || "";
+
 /** Cavos (wallet con correo/Google). Sin App ID solo se ofrecen extensiones. */
 export const cavosAppId = process.env.NEXT_PUBLIC_CAVOS_APP_ID?.trim() || "";
 export const cavosEnvironment: "development" | "production" =

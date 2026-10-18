@@ -16,7 +16,7 @@
 | **Planes** | Cosas que generan movimientos a futuro. | Salario, suscripción, seguro, movimiento programado |
 | **Financiamientos y préstamos** | Deuda a plazos. | Financiamiento con o sin interés, préstamo, cuota, tabla de amortización, abono a cuota |
 | **Familia** | Repartir cuotas con contactos y avisarles. | Familia, miembro, parte, reembolso, aviso de cuota |
-| **Constelación** (2.9.0) | Bolsillo en USDC sobre Stellar testnet: wallet, enviar y recibir de persona a persona. Fuente de verdad: la cadena. | Wallet, bolsillo, USDC, trustline |
+| **Constelación** (2.9.0 · 3.0.0) | Bolsillo en USDC sobre Stellar testnet (2.9.0); familia, bóveda con aprobaciones, apoyos y academia (3.0.0). Fuente de verdad: la cadena. No confundir con **Familia** (cobros de cuotas). | Wallet, bolsillo, USDC, trustline, estrella, núcleo, guardián, bóveda, retiro, apoyo |
 | **Presupuesto** | Liquidez y gastos fijos. | Línea base financiera, periodo, tope de línea base |
 | **Importación** | Traer compras desde los correos del banco. | Aviso bancario, plantilla, sincronizar, pendiente, aprobar, regla de comercio |
 

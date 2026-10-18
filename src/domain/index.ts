@@ -26,3 +26,5 @@ export * from "./plans/plan.ts";
 export * from "./savings/goal.ts";
 export * from "./banking/debit-card.ts";
 export * from "./constellation/usdc.ts";
+export * from "./constellation/family.ts";
+export * from "./constellation/directory.ts";

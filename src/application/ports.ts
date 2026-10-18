@@ -24,6 +24,8 @@ import type {
   StoredBalance,
   DebitCardEntry,
   DebitCardFields,
+  AcademyLesson,
+  StarLabelFields,
 } from "../domain/index.ts";
 
 export type NewMovement = {
@@ -438,4 +440,80 @@ export interface GoalRepository {
   save(goalId: string | null, fields: GoalFields): Promise<{ id: string }>;
   setArchived(goalId: string, archived: boolean): Promise<void>;
   delete(goalId: string): Promise<void>;
+}
+
+// ─────────────────────────────  Constelación familiar (3.0.0)  ─────────────────────────────
+
+export type WalletConnectorKind = "cavos" | "extension";
+
+/** Wallet de Stellar ligada al usuario (solo la dirección pública). */
+export type LinkedWallet = { address: string; connector: WalletConnectorKind };
+
+export interface WalletLinkRepository {
+  current(): Promise<LinkedWallet | null>;
+  /**
+   * Liga una dirección (reemplaza la anterior). Una dirección ligada a otro
+   * usuario lanza `InfrastructureError`.
+   */
+  link(wallet: LinkedWallet): Promise<void>;
+  unlink(): Promise<void>;
+}
+
+export type StarLabel = StarLabelFields & { id: string };
+
+/** Agenda del usuario: cómo llama él a cada dirección (D3, K2: fuera de la cadena). */
+export interface StarDirectoryRepository {
+  list(): Promise<StarLabel[]>;
+  /** Una dirección repetida en la agenda lanza `InfrastructureError`. */
+  save(starId: string | null, fields: StarLabelFields): Promise<{ id: string }>;
+  delete(starId: string): Promise<void>;
+}
+
+export type InviteRole = "guardian" | "member";
+
+export type FamilyInvite = {
+  id: string;
+  family_id: number;
+  role: InviteRole;
+  expires_at: string;
+  redeemed_address: string | null;
+  redeemed_at: string | null;
+  added_at: string | null;
+  revoked: boolean;
+};
+
+export type NewFamilyInvite = {
+  family_id: number;
+  role: InviteRole;
+  /** SHA-256 (hex) del token; el token en claro nunca se guarda. */
+  token_hash: string;
+  expires_at: string;
+};
+
+export interface FamilyInviteRepository {
+  create(invite: NewFamilyInvite): Promise<{ id: string }>;
+  /** Invitaciones creadas por el usuario. */
+  listMine(): Promise<FamilyInvite[]>;
+  find(inviteId: string): Promise<FamilyInvite | null>;
+  revoke(inviteId: string): Promise<void>;
+  /** El núcleo ya agregó en la cadena la dirección que canjeó la invitación. */
+  markAdded(inviteId: string): Promise<void>;
+  /**
+   * Canjea una invitación vigente con la dirección del usuario actual. Una
+   * invitación vencida, revocada, usada o inexistente lanza `InfrastructureError`.
+   */
+  redeem(token: string, address: string): Promise<{ family_id: number; role: InviteRole }>;
+}
+
+/** Tokens de invitación: aleatorio + su hash (lo genera la infraestructura). */
+export interface InviteTokenService {
+  newToken(): { token: string; hash: string };
+}
+
+export type AcademyProgress = { lesson: AcademyLesson; score: number; completed_at: string };
+
+export interface AcademyRepository {
+  list(): Promise<AcademyProgress[]>;
+  /** Guarda el mejor puntaje de una lección. */
+  record(lesson: AcademyLesson, score: number): Promise<void>;
 }
