@@ -74,6 +74,12 @@ contado y antes de qué fecha.
   hasta el último corte), pagos aplicados después del corte
   (`paidAfterCutoff`), lo que falta pagar antes del vencimiento (`dueAmount`)
   y el consumo nuevo que todavía no corta (`newCharges`).
+- **Pago mínimo** (T8, 3.0.1): en cada estado de cuenta con saldo hay una card
+  "Pago mínimo" con "Digitar pago mínimo". El monto se copia del estado de
+  cuenta del banco (no lo calcula la app), por corte y moneda, y no puede
+  pasar el saldo al corte. La card dice cuánto falta abonar para cubrirlo
+  antes de la fecha límite, o "cubierto". Al llegar un corte nuevo se digita
+  el suyo; en blanco se quita.
 - **Abono anticipado** (2.8.0): lo pagado después del corte por encima de lo
   que faltaba del corte (o un saldo a favor al corte) se descuenta del
   consumo sin cortar; la card lo indica ("ya descuenta ₡X de abono
@@ -202,3 +208,5 @@ sección "Financiamientos" y cada cuota aparece en el historial como "Cuota".
   filtros (buscar, tipo, fechas, moneda), "Incluir futuras" para ver las
   cuotas programadas y filas por página (5/10/20/50/todas). Aviso M4 al abonar
   más que la deuda.
+- **2026-10-18 (v3.0.1, en desarrollo)** — Pago mínimo digitado por corte y
+  moneda (T8; SQL `3.0.1/03_card_minimum_payments.sql`).

@@ -49,7 +49,7 @@
 | T5 | Si el día de corte o de pago no existe en el mes, se usa el último día del mes. | — | Decidido |
 | T6 | Si el día de pago es ≤ al día de corte, la fecha límite cae el mes siguiente. | — | Decidido |
 | T7 | Estado: sin movimientos → sin saldo → al día → atrasada (vencida con saldo pendiente) → pendiente. | — | Decidido |
-| T8 | El pago mínimo lo digita el usuario desde el estado de cuenta; el sistema no lo calcula. | — | Propuesta |
+| T8 | El pago mínimo lo digita el usuario desde el estado de cuenta (por corte y moneda; ≥ 0 y no mayor que el saldo al corte); el sistema no lo calcula. Con lo abonado después del corte, la app dice cuánto falta para cubrirlo antes de la fecha límite. | Rechaza (fuera de rango) | Decidido · Implementado 3.0.1 |
 | T10 | El tipo de cambio de referencia es la **venta del BCCR**, que la app trae una vez al día (API pública de Hacienda) al abrir el Resumen, o a mano con "Traer del BCCR". El usuario lo puede digitar igual (T2); el más reciente manda. Si la fuente no responde, se sigue con el último. | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 | T9 | Un seguro genera un gasto mensual en una tarjeta de crédito o en una tarjeta de débito (sale de su cuenta, C3); una tarjeta puede tener varios. No se cobra desde la cuenta sola. | Rechaza | Decidido · Implementado 2.7.0 · Cambiado 3.0.1 (débito) |
 

@@ -15,6 +15,7 @@ import {
   daysUntil,
   isCurrency,
   nextCutoffDate,
+  minimumPaymentStatus,
   nextPaymentDate,
   toISODate,
   type Currency,
@@ -40,6 +41,7 @@ import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
 import { MovementExplorer } from "../../_transactions/movement-explorer";
 import { allRows } from "@/lib/supabase/all-rows";
+import { MinimumPaymentDialog } from "./minimum-payment-form";
 import { loadSharedLinks } from "@/lib/shared-board";
 import { FinancingForm } from "../_financiamientos/financing-form";
 import { FinancingList } from "../_financiamientos/financing-list";
@@ -59,6 +61,7 @@ export default async function CardDetailPage({
     { data: financingData },
     { data: bankData },
     { data: rateData },
+    { data: minimumData },
   ] = await Promise.all([
     supabase
       .from("credit_cards")
@@ -104,12 +107,20 @@ export default async function CardDetailPage({
       .order("rate_on", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // T8 (3.0.1): pagos mínimos digitados (sin el SQL 3.0.1, vacío).
+    supabase.from("card_minimum_payments").select("cutoff_on, currency, amount").eq("card_id", id),
   ]);
 
   if (!cardData) notFound();
 
   const transactions = (txData ?? []) as Transaction[];
   const today = crToday();
+  // T8: el mínimo digitado para el corte vigente de cada moneda.
+  const minimums = (minimumData ?? []) as { cutoff_on: string; currency: string; amount: number }[];
+  const minimumFor = (cur: string, s: { lastCutoff: Date }): number | null => {
+    const m = minimums.find((x) => x.currency === cur && x.cutoff_on === toISODate(s.lastCutoff));
+    return m ? Number(m.amount) : null;
+  };
   // F5: el saldo guardado trae el plan completo; solo el capital cuenta desde el día 1.
   const futureInterest = interestByCard(transactions, toISODate(today)).get(cardData.id) ?? {};
   const card = withoutScheduledInterest(
@@ -207,7 +218,7 @@ export default async function CardDetailPage({
               ) : null}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
               <Stat
                 title="Saldo al corte"
                 value={formatCurrency(s.statementBalance, cur)}
@@ -219,6 +230,40 @@ export default async function CardDetailPage({
                 value={formatCurrency(s.dueAmount, cur)}
                 hint={`antes del ${formatDate(s.dueDate)}`}
                 emphasis={overdue ? "danger" : s.dueAmount > 0 ? "warn" : undefined}
+              />
+              <Stat
+                title="Pago mínimo"
+                value={minimumFor(cur, s) != null ? formatCurrency(minimumFor(cur, s)!, cur) : "—"}
+                hint={
+                  minimumFor(cur, s) != null
+                    ? (() => {
+                        const m = minimumPaymentStatus(minimumFor(cur, s)!, s.paidAfterCutoff);
+                        return m.covered
+                          ? "cubierto con lo que abonaste"
+                          : `falta ${formatCurrency(m.remaining, cur)} antes del ${formatDate(s.dueDate)}`;
+                      })()
+                    : s.statementBalance > 0
+                      ? "cópialo de tu estado de cuenta"
+                      : undefined
+                }
+                emphasis={
+                  minimumFor(cur, s) != null && !minimumPaymentStatus(minimumFor(cur, s)!, s.paidAfterCutoff).covered
+                    ? overdue
+                      ? "danger"
+                      : "warn"
+                    : undefined
+                }
+                action={
+                  s.statementBalance > 0 ? (
+                    <MinimumPaymentDialog
+                      cardId={card.id}
+                      cutoffOn={toISODate(s.lastCutoff)}
+                      currency={cur}
+                      statementBalance={s.statementBalance}
+                      current={minimumFor(cur, s)}
+                    />
+                  ) : null
+                }
               />
               <Stat
                 title="Consumo sin cortar"
@@ -350,11 +395,14 @@ function Stat({
   value,
   hint,
   emphasis,
+  action,
 }: {
   title: string;
   value: ReactNode;
   hint?: string;
   emphasis?: "danger" | "warn";
+  /** Botón pequeño al pie (p. ej. digitar el pago mínimo, T8). */
+  action?: ReactNode;
 }) {
   return (
     <Card>
@@ -374,6 +422,7 @@ function Stat({
           {value}
         </p>
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+        {action ? <div className="-ml-2 pt-1">{action}</div> : null}
       </CardContent>
     </Card>
   );

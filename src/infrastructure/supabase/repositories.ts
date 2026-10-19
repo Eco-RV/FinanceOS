@@ -32,6 +32,7 @@ import {
   type NoticeRepository,
   type ReimbursementRepository,
   type ExchangeRateRepository,
+  type MinimumPaymentRepository,
   type FinancingRepository,
   type FreshStartRepository,
   type MerchantRuleRepository,
@@ -830,6 +831,25 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     },
   };
 
+  // T8 (3.0.1): pago mínimo por corte y moneda.
+  const minimumPayments: MinimumPaymentRepository = {
+    async save(m) {
+      const { error } = await supabase
+        .from("card_minimum_payments")
+        .upsert(m, { onConflict: "card_id,cutoff_on,currency" });
+      check(error, "No se pudo guardar el pago mínimo (¿corriste el SQL 3.0.1?)");
+    },
+    async delete(key) {
+      const { error } = await supabase
+        .from("card_minimum_payments")
+        .delete()
+        .eq("card_id", key.card_id)
+        .eq("cutoff_on", key.cutoff_on)
+        .eq("currency", key.currency);
+      check(error, "No se pudo borrar el pago mínimo");
+    },
+  };
+
   const exchangeRates: ExchangeRateRepository = {
     async latest() {
       const { data } = await supabase
@@ -867,6 +887,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     balances,
     exchangeRates,
     exchangeRateSource: haciendaExchangeRate,
+    minimumPayments,
     freshStart,
     ...supabaseAccount(supabase),
     ...supabasePlans(supabase),

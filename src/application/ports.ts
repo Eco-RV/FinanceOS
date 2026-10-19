@@ -417,6 +417,21 @@ export interface ExchangeRateRepository {
   save(rate: ExchangeRate): Promise<void>;
 }
 
+/** T8 (3.0.1): pago mínimo digitado del estado de cuenta, por corte y moneda. */
+export type MinimumPayment = {
+  card_id: string;
+  /** Fecha del corte al que pertenece. */
+  cutoff_on: ISODate;
+  currency: Currency;
+  amount: number;
+};
+
+export interface MinimumPaymentRepository {
+  /** Guarda o reemplaza el mínimo de ese corte y moneda. */
+  save(m: MinimumPayment): Promise<void>;
+  delete(key: Omit<MinimumPayment, "amount">): Promise<void>;
+}
+
 /**
  * Fuente oficial del tipo de cambio (3.0.1, T10): hoy la API pública de
  * Hacienda, que publica el de referencia del BCCR (venta). Lanza

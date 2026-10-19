@@ -53,7 +53,7 @@
 | **Pago de contado** | Lo que falta pagar del saldo al corte antes de la fecha límite (saldo al corte − abonos posteriores al corte). | Decidido |
 | **Abono anticipado** | Lo abonado después del corte por encima del pago de contado (o un saldo a favor al corte): se descuenta del consumo sin cortar. | Decidido · Implementado 2.8.0 |
 | **Día de corte al siguiente corte** | Opción de una tarjeta para bancos que cortan por fecha de proceso (BAC): lo comprado el mismo día del corte entra al corte siguiente. | Decidido · Implementado 2.8.0 |
-| **Pago mínimo** | Monto mínimo que exige el banco para no caer en mora. Lo calcula el banco con su fórmula; el usuario lo **digita** del estado de cuenta. | Propuesta |
+| **Pago mínimo** | Monto mínimo que exige el banco para no caer en mora. Lo calcula el banco con su fórmula; el usuario lo **digita** del estado de cuenta (T8). | Decidido · Implementado 3.0.1 |
 | **Consumo sin cortar** | Cargos posteriores al último corte que ya ocurrieron. Entran al siguiente estado de cuenta. | Decidido |
 | **Saldo real** | Por moneda: saldo al corte + consumo sin cortar (− abonos posteriores). | Decidido |
 | **Estado de la tarjeta** | `sin movimientos`, `sin saldo`, `al día`, `pendiente` o `atrasada`. | Decidido |

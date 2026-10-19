@@ -13,6 +13,7 @@ export * from "./shared/notices.ts";
 export * from "./ledger/movement.ts";
 export * from "./cards/statement.ts";
 export * from "./cards/multicurrency.ts";
+export * from "./cards/minimum.ts";
 export * from "./financing/installments.ts";
 export * from "./financing/amortization.ts";
 export * from "./financing/plan.ts";
