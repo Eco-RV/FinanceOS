@@ -38,7 +38,8 @@ import { cardOpeningsById } from "@/lib/transactions";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
-import { TransactionList } from "../../_transactions/transaction-list";
+import { MovementExplorer } from "../../_transactions/movement-explorer";
+import { allRows } from "@/lib/supabase/all-rows";
 import { FinancingForm } from "../_financiamientos/financing-form";
 import { FinancingList } from "../_financiamientos/financing-list";
 
@@ -64,12 +65,17 @@ export default async function CardDetailPage({
       .eq("id", id)
       .eq("archived", false)
       .maybeSingle(),
-    supabase
-      .from("transactions")
-      .select("*")
-      .eq("card_id", id)
-      .eq("archived", false)
-      .order("occurred_on", { ascending: false }),
+    // 3.0.1: todas las filas (PostgREST corta en ~1000), en orden estable.
+    allRows<Transaction>((from, to) =>
+      supabase
+        .from("transactions")
+        .select("*")
+        .eq("card_id", id)
+        .eq("archived", false)
+        .order("occurred_on", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ).then((data) => ({ data })),
     supabase
       .from("accounts")
       .select("*")
@@ -317,6 +323,7 @@ export default async function CardDetailPage({
                 CRC: (multi.byCurrency.CRC?.dueAmount ?? 0) > 0 ? multi.byCurrency.CRC!.dueAmount : balances.CRC,
                 USD: (multi.byCurrency.USD?.dueAmount ?? 0) > 0 ? multi.byCurrency.USD!.dueAmount : balances.USD,
               }}
+              cardDebts={balances}
               exchangeRate={rate}
               triggerLabel="Registrar pago / abono"
             />
@@ -327,13 +334,14 @@ export default async function CardDetailPage({
             Agregá una cuenta de débito para registrar pagos.
           </p>
         ) : null}
-        <TransactionList
+        <MovementExplorer
+          context="card"
           transactions={transactions}
           accounts={allAccounts}
           cards={[card]}
           categories={categories}
-          context="card"
-          emptyLabel="Sin movimientos registrados en esta tarjeta."
+          todayISO={toISODate(today)}
+          emptyLabel="Sin movimientos registrados en esta tarjeta hasta hoy."
           cancelledFinancingIds={financings.filter((f) => f.cancelled_on).map((f) => f.id)}
         />
       </div>

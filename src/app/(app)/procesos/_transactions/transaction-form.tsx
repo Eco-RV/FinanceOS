@@ -41,6 +41,8 @@ type Props = {
   /** Saldo a pagar de la tarjeta por moneda (botón "Usar saldo total"). */
   fixedCardBalance?: number;
   fixedCardBalances?: Partial<Record<"CRC" | "USD", number>>;
+  /** Deuda total de la tarjeta por moneda (M4: avisar si el abono la supera). */
+  cardDebts?: Partial<Record<"CRC" | "USD", number>>;
   /** Último tipo de cambio (M5: abono en otra moneda, 2.8.0). */
   exchangeRate?: { usd_crc: number; rate_on: string } | null;
   /** Tarjetas de débito activas para el gasto rápido (2.8.0). */
@@ -108,6 +110,7 @@ function MovementForm({
   fixedCardId,
   fixedCardBalance,
   fixedCardBalances,
+  cardDebts,
   exchangeRate,
   transaction,
   triggerLabel,
@@ -173,8 +176,8 @@ function MovementForm({
   const appliedHere =
     transaction?.type === "card_payment" && transaction.currency === payIn ? Number(transaction.amount) : 0;
   const overpaid =
-    type === "card_payment" && typeof totalToPay === "number"
-      ? overpaymentWarning(Math.max(0, totalToPay), amountNumber, appliedHere)
+    type === "card_payment" && typeof cardDebts?.[payIn] === "number"
+      ? overpaymentWarning(Math.max(0, cardDebts[payIn]!), amountNumber, appliedHere)
       : null;
   // C2 (advierte): un gasto desde una cuenta puede dejarla en negativo.
   const overdraft =

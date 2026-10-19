@@ -9,12 +9,13 @@ import { loadDebitCards } from "@/lib/debit-cards";
 import { openingsById } from "@/lib/transactions";
 import { idsWithHistory } from "@/lib/catalog-history";
 import { repositories } from "@/infrastructure/container";
-import { DEBIT_CARD_ACCOUNT_TYPES } from "@/domain";
+import { crToday, DEBIT_CARD_ACCOUNT_TYPES, toISODate } from "@/domain";
 import type { Account, AccountType, Category, CreditCard, Transaction } from "@/lib/types";
 import { BackLink } from "@/components/back-link";
 import { Panel } from "@/components/panel";
 import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
-import { TransactionList } from "../../_transactions/transaction-list";
+import { MovementExplorer } from "../../_transactions/movement-explorer";
+import { allRows } from "@/lib/supabase/all-rows";
 import { AccountFormDialog } from "../account-form";
 import { DebitCardFormDialog } from "../debit-card-form";
 import { deleteDebitCard, setDebitCardActive } from "../actions";
@@ -26,9 +27,6 @@ const TYPE_LABELS: Record<AccountType, string> = {
 };
 
 const TYPE_ICONS = { checking: Landmark, savings: PiggyBank, cash: Banknote } as const;
-
-/** Cuántos movimientos recientes se muestran (los más nuevos primero). */
-const MOVEMENT_LIMIT = 500;
 
 /**
  * Detalle de una cuenta (2.8.0): saldo, su tarjeta de débito (C3) y todos sus
@@ -49,14 +47,18 @@ export default async function AccountDetailPage({ params }: PageProps<"/procesos
     debitCards,
   ] = await Promise.all([
     supabase.from("accounts").select("*").eq("id", id).maybeSingle(),
-    supabase
-      .from("transactions")
-      .select("*")
-      .eq("archived", false)
-      .or(`account_id.eq.${id},to_account_id.eq.${id}`)
-      .order("occurred_on", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(MOVEMENT_LIMIT),
+    // 3.0.1: todos (antes, los 500 más recientes); la vista filtra y pagina.
+    allRows<Transaction>((from, to) =>
+      supabase
+        .from("transactions")
+        .select("*")
+        .eq("archived", false)
+        .or(`account_id.eq.${id},to_account_id.eq.${id}`)
+        .order("occurred_on", { ascending: false })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ).then((data) => ({ data })),
     supabase.from("accounts").select("*").order("created_at", { ascending: true }),
     supabase.from("credit_cards").select("*").order("created_at", { ascending: true }),
     supabase
@@ -183,22 +185,19 @@ export default async function AccountDetailPage({ params }: PageProps<"/procesos
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-2">
           <h2 className="text-lg font-semibold tracking-tight">Movimientos</h2>
-          <span className="text-sm text-muted-foreground">
-            {transactions.length === MOVEMENT_LIMIT
-              ? `Los ${MOVEMENT_LIMIT} más recientes`
-              : `${transactions.length} en total`}
-          </span>
+          <span className="text-sm text-muted-foreground">{transactions.length} en total</span>
         </div>
-        <TransactionList
+        <MovementExplorer
+          context="account"
           transactions={transactions}
           accounts={accounts}
           cards={cards}
           debitCards={debitCards}
-          context="account"
           accountId={account.id}
           categories={options.map((o) => o.name)}
           categoryIcons={iconsByName(options)}
-          emptyLabel="Esta cuenta todavía no tiene movimientos."
+          todayISO={toISODate(crToday())}
+          emptyLabel="Esta cuenta todavía no tiene movimientos hasta hoy."
         />
       </section>
     </div>

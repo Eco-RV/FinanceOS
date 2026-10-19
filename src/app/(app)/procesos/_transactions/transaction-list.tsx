@@ -40,7 +40,7 @@ type Props = {
 };
 
 /** Monto con signo según el contexto (flujo de caja vs. deuda de la tarjeta). */
-function displayAmount(
+export function displayAmount(
   t: Transaction,
   context: "list" | "card" | "account",
   accountId?: string,

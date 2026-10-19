@@ -1,17 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, FilterX, Search } from "lucide-react";
+import { FilterX, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/form-field";
 import { formatCurrency } from "@/lib/format";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import type { Account, CreditCard, DebitCard, Transaction } from "@/lib/types";
+import { PaginationFooter } from "@/components/pagination-footer";
+import { usePagination } from "@/lib/use-pagination";
+import { normalizeSearch as normalize } from "../_transactions/movement-explorer";
 import { TransactionList } from "../_transactions/transaction-list";
-
-const PAGE_SIZES = [5, 10, 20, 50] as const;
-type PageSize = (typeof PAGE_SIZES)[number] | "all";
 
 type Filters = {
   from: string;
@@ -23,13 +23,6 @@ type Filters = {
 };
 
 const EMPTY: Filters = { from: "", to: "", category: "", origin: "", q: "", scheduled: false };
-
-function normalize(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
-}
 
 /**
  * Gastos con filtros (2.5.0): fecha, categoría, origen (tarjeta, cuenta o
@@ -58,13 +51,6 @@ export function ExpenseExplorer({
   initial?: Partial<Pick<Filters, "from" | "to" | "category">>;
 }) {
   const [filters, setFilters] = useState<Filters>({ ...EMPTY, ...initial });
-  const [pageSize, setPageSize] = useState<PageSize>(10);
-  const [page, setPage] = useState(0);
-
-  const set = <K extends keyof Filters>(key: K, value: Filters[K]) => {
-    setFilters((f) => ({ ...f, [key]: value }));
-    setPage(0);
-  };
 
   const scheduledCount = useMemo(
     () => transactions.filter((t) => t.occurred_on > todayISO).length,
@@ -105,10 +91,12 @@ export function ExpenseExplorer({
     return Object.entries(by);
   }, [filtered]);
 
-  const size = pageSize === "all" ? Math.max(filtered.length, 1) : pageSize;
-  const pages = Math.max(1, Math.ceil(filtered.length / size));
-  const current = Math.min(page, pages - 1);
-  const visible = filtered.slice(current * size, current * size + size);
+  // 3.0.1: las filas por página se recuerdan (5, 10, 20, 50 o todas).
+  const pager = usePagination(filtered, "filas:gastos");
+  const set = <K extends keyof Filters>(key: K, value: Filters[K]) => {
+    setFilters((f) => ({ ...f, [key]: value }));
+    pager.reset();
+  };
   const active =
     filters.from || filters.to || filters.category || filters.origin || filters.q || filters.scheduled;
 
@@ -201,7 +189,7 @@ export function ExpenseExplorer({
                 size="sm"
                 onClick={() => {
                   setFilters(EMPTY);
-                  setPage(0);
+                  pager.reset();
                 }}
               >
                 <FilterX className="size-4" /> Limpiar
@@ -212,7 +200,7 @@ export function ExpenseExplorer({
       </div>
 
       <TransactionList
-        transactions={visible}
+        transactions={pager.visible}
         accounts={accounts}
         cards={cards}
         debitCards={debitCards}
@@ -221,55 +209,7 @@ export function ExpenseExplorer({
         emptyLabel={active ? "Ningún gasto coincide con los filtros." : "Aún no registrás gastos."}
       />
 
-      {filtered.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-          <label className="flex items-center gap-2 text-muted-foreground">
-            Filas
-            <Select
-              value={String(pageSize)}
-              onChange={(e) => {
-                const v = e.target.value;
-                setPageSize(v === "all" ? "all" : (Number(v) as PageSize));
-                setPage(0);
-              }}
-              className="w-24"
-            >
-              {PAGE_SIZES.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-              <option value="all">Todas</option>
-            </Select>
-          </label>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground tabular-nums">
-              {current * size + 1}–{Math.min(filtered.length, current * size + size)} de{" "}
-              {filtered.length}
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              aria-label="Página anterior"
-              disabled={current === 0}
-              onClick={() => setPage(current - 1)}
-            >
-              <ChevronLeft />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              aria-label="Página siguiente"
-              disabled={current >= pages - 1}
-              onClick={() => setPage(current + 1)}
-            >
-              <ChevronRight />
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <PaginationFooter state={pager.footer} />
     </div>
   );
 }

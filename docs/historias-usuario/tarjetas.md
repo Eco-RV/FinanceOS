@@ -98,6 +98,16 @@ contado y antes de qué fecha.
 - **Disponible** = límite − saldo en la moneda del límite − saldo en la otra
   moneda convertido con el último tipo de cambio de Ajustes (T2). Si hay saldo
   en otra moneda y no hay tipo de cambio, se muestra "—" con un aviso.
+- El historial **Movimientos** trae todos los movimientos de la tarjeta (sin el
+  tope de 1000 filas). El estado de cuenta se calcula siempre con todos; los
+  filtros solo cambian lo que se ve.
+- **Filtros y filas por página** (3.0.1): arriba del historial, siempre a la
+  vista, **Buscar** (nota, categoría, destinatario o monto, sin importar
+  tildes), **Tipo** (Cargos, Cuotas, Pagos, Saldo inicial) e **Incluir futuras**. Por defecto se ve solo
+  hasta hoy; al marcarlo aparecen también las cuotas programadas de los financiamientos y todo lo que tiene fecha
+  futura (M7). En "Más filtros" están Desde/Hasta y Moneda (si la tarjeta
+  tiene movimientos en las dos). Se muestran 10 filas por página (5, 10, 20, 50 o todas;
+  la elección se recuerda en este navegador) con los totales de lo filtrado.
 
 ### 5. Registrar un pago o abono de tarjeta
 Como usuario quiero registrar un pago desde una cuenta de débito hacia una
@@ -187,3 +197,7 @@ sección "Financiamientos" y cada cuota aparece en el historial como "Cuota".
   dibujada (mismo degradado que en el gasto) con animación de entrada. El
   Resumen suma el disponible de todas las
   tarjetas con semáforo (ver [`resumen.md`](./resumen.md)).
+- **2026-10-18 (v3.0.1, en desarrollo)** — Historial de la tarjeta con
+  filtros (buscar, tipo, fechas, moneda), "Incluir futuras" para ver las
+  cuotas programadas y filas por página (5/10/20/50/todas). Aviso M4 al abonar
+  más que la deuda.
