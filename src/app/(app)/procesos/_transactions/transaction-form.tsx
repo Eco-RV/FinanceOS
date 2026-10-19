@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Plus } from "lucide-react";
+import { ArrowDown, Pencil, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,10 @@ type Props = {
   debitCards?: DebitCard[];
   transaction?: Transaction;
   triggerLabel?: string;
-  /** Botón circular fijo (para el acceso rápido global) en vez del botón inline. */
+  /**
+   * Botón del acceso rápido global (3.0.1: lo posiciona el layout; ingreso =
+   * flecha abajo en verde). Solo para gasto e ingreso.
+   */
   fab?: boolean;
   /** Gasto por SINPE Móvil: abre el gasto rápido en la pestaña SINPE. */
   sinpe?: boolean;
@@ -195,7 +198,8 @@ function MovementForm({
             <Button
               size="icon-lg"
               aria-label={triggerLabel ?? NEW_LABEL[type]}
-              className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 size-12 rounded-full shadow-lg transition-[background-color,box-shadow,scale] hover:shadow-xl motion-safe:active:not-aria-[haspopup=menu]:scale-90 sm:right-6 sm:bottom-6"
+              title={triggerLabel ?? NEW_LABEL[type]}
+              className="size-14 rounded-2xl shadow-lg transition-[background-color,box-shadow,scale,filter] hover:shadow-xl hover:brightness-105 motion-safe:active:not-aria-[haspopup=menu]:scale-90 bg-income text-income-foreground hover:bg-income"
             />
           ) : (
             <Button size="sm" />
@@ -205,7 +209,7 @@ function MovementForm({
         {editing ? (
           <Pencil className="size-4" />
         ) : fab ? (
-          <Plus className="size-5" />
+          <ArrowDown className="size-6" strokeWidth={2.5} />
         ) : (
           <>
             <Plus className="size-4" /> {triggerLabel ?? NEW_LABEL[type]}
@@ -351,7 +355,7 @@ function MovementForm({
 
           {showOrigin ? (
             <FormField
-              label={type === "expense" ? "Origen (cuenta o tarjeta)" : "Cuenta origen"}
+              label={type === "expense" ? "Origen (cuenta o tarjeta)" : type === "income" ? "Cuenta que recibe" : "Cuenta origen"}
               htmlFor="origin"
               error={errors?.origin}
             >
