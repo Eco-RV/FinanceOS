@@ -37,6 +37,7 @@ import {
   type ShortfallLevel,
 } from "@/domain";
 import { termsOf } from "@/application";
+import { loadLoanAdjustments } from "@/lib/loan-adjustments";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
 import { loadSharedBoard } from "@/lib/shared-board";
@@ -241,10 +242,11 @@ export default async function DashboardPage() {
   for (const p of (loanPayData ?? []) as { loan_id: string; installment_no: number }[]) {
     paidByLoan.set(p.loan_id, [...(paidByLoan.get(p.loan_id) ?? []), Number(p.installment_no)]);
   }
+  const loanAdjustments = await loadLoanAdjustments(supabase);
   const loanEntries: CoverageLoan<Loan>[] = loans.map((loan) => {
     const currency = loan.currency === "USD" ? "USD" : "CRC";
     const progress = loanProgress(
-      termsOf({ ...loan, currency }),
+      termsOf({ ...loan, currency }, loanAdjustments.get(loan.id) ?? []),
       paidByLoan.get(loan.id) ?? [],
       todayISO,
     );

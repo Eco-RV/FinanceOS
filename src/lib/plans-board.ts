@@ -14,6 +14,7 @@ import {
   type ISODate,
 } from "@/domain";
 import { termsOf, type Plan } from "@/application";
+import { loadLoanAdjustments } from "@/lib/loan-adjustments";
 import type { Repositories } from "@/infrastructure/supabase/repositories";
 import type { Financing, Loan, Transaction } from "@/lib/types";
 
@@ -102,10 +103,16 @@ export async function loadPlansBoard(
   for (const r of (loanPayData ?? []) as { loan_id: string; installment_no: number }[]) {
     paid.set(r.loan_id, [...(paid.get(r.loan_id) ?? []), Number(r.installment_no)]);
   }
+  const loanAdjustments = await loadLoanAdjustments(supabase);
   for (const loan of (loanData ?? []) as Loan[]) {
     if (loan.currency !== "CRC") continue;
-    const progress = loanProgress(termsOf({ ...loan, currency: "CRC" }), paid.get(loan.id) ?? [], todayISO);
-    if (progress.next) fixed.push({ name: loan.name, source: "loan", monthly: progress.schedule.payment });
+    const progress = loanProgress(
+      termsOf({ ...loan, currency: "CRC" }, loanAdjustments.get(loan.id) ?? []),
+      paid.get(loan.id) ?? [],
+      todayISO,
+    );
+    // Con abonos o tasa variable, la cuota que sigue (L7/L8).
+    if (progress.next) fixed.push({ name: loan.name, source: "loan", monthly: progress.next.payment });
   }
 
   const cuotas = (cuotaData ?? []) as Pick<

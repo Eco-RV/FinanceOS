@@ -39,6 +39,7 @@ import type {
   PendingRepository,
   NewSharedNotice,
   SharedExpenseRepository,
+  StoredLoanAdjustment,
   StoredSharedExpense,
 } from "./ports.ts";
 import { InfrastructureError } from "./ports.ts";
@@ -80,6 +81,16 @@ export function fakeStore(seed: {
     NewMovement & { financing_id?: string | null; interest_amount?: number | null; archived?: boolean }
   >();
   const financings = new Map<string, NewFinancing>();
+  const prepayments: {
+    id: string;
+    financing_id: string;
+    previous: [string, NewMovement & { financing_id?: string | null; interest_amount?: number | null }][];
+    months: number;
+    transaction_id: string;
+    amount: number;
+    occurred_on: string;
+    fromNo: number;
+  }[] = [];
   const shares = new Map<string, MemberShare[]>();
   const memberRows = new Map<string, Omit<Member, "id">>(
     Object.entries(seed.members ?? {}).map(([id, name]) => [
@@ -280,10 +291,61 @@ export function fakeStore(seed: {
             card_id: f.card_id,
             description: f.description,
             months: f.months,
-            currency: "CRC",
+            currency: f.currency ?? "CRC",
             cancelled_on: cancelled.get(id) ?? null,
+            annual_rate: f.annual_rate,
+            category: f.category,
           }
         : null;
+    },
+    pendingInstallments: async (id, todayISO) =>
+      [...movements.values()]
+        .filter((m) => m.financing_id === id && !m.archived && m.installment_no != null && m.occurred_on > todayISO)
+        .map((m) => ({ no: m.installment_no!, occurred_on: m.occurred_on, amount: m.amount, interest: Number(m.interest_amount ?? 0) }))
+        .sort((a, b) => a.no - b.no),
+    prepay: async (id, input) => {
+      const f = financings.get(id)!;
+      const previous: [string, NewMovement & { financing_id?: string | null; interest_amount?: number | null }][] = [];
+      for (const [mvId, m] of movements) {
+        if (m.financing_id === id && m.installment_no! >= input.fromNo && m.occurred_on > input.todayISO) {
+          previous.push([mvId, m]);
+          movements.delete(mvId);
+        }
+      }
+      for (const c of input.installments) {
+        movements.set(nextId("mv"), {
+          type: "expense",
+          amount: c.amount,
+          interest_amount: c.interest || null,
+          currency: f.currency ?? "CRC",
+          occurred_on: c.occurred_on,
+          category: f.category,
+          note: `${f.description} (cuota ${c.no}/${c.of})`,
+          account_id: null,
+          card_id: f.card_id,
+          financing_id: id,
+          installment_no: c.no,
+        });
+      }
+      const prepId = nextId("prep");
+      prepayments.push({ id: prepId, financing_id: id, previous, months: f.months, transaction_id: input.transaction_id, amount: input.amount, occurred_on: input.occurred_on, fromNo: input.fromNo });
+      f.months = input.fromNo - 1 + input.installments.length;
+      return { id: prepId };
+    },
+    lastPrepayment: async (id) => {
+      const p = prepayments.filter((x) => x.financing_id === id).at(-1);
+      return p ? { id: p.id, amount: p.amount, occurred_on: p.occurred_on } : null;
+    },
+    undoPrepayment: async (prepId) => {
+      const i = prepayments.findIndex((x) => x.id === prepId);
+      const p = prepayments[i];
+      for (const [mvId, m] of movements) {
+        if (m.financing_id === p.financing_id && m.installment_no! >= p.fromNo) movements.delete(mvId);
+      }
+      for (const [mvId, m] of p.previous) movements.set(mvId, m);
+      financings.get(p.financing_id)!.months = p.months;
+      movements.delete(p.transaction_id);
+      prepayments.splice(i, 1);
     },
     cardIdOf: async (id) => financings.get(id)?.card_id ?? null,
     update: async (id, fields) => {
@@ -478,6 +540,7 @@ export function fakeStore(seed: {
   };
 
   const loanRows = new Map<string, Omit<Loan, "id">>();
+  const loanAdjustments: (StoredLoanAdjustment & { loan_id: string })[] = [];
   const loanPayments = (loanId: string) =>
     [...movements].filter(([, m]) => m.loan_id === loanId && m.installment_no != null);
   const loans: LoanRepository = {
@@ -497,6 +560,19 @@ export function fakeStore(seed: {
     },
     paidInstallments: async (id) => loanPayments(id).map(([, m]) => m.installment_no!),
     paymentOf: async (id, no) => loanPayments(id).find(([, m]) => m.installment_no === no)?.[0] ?? null,
+    adjustments: async (id) =>
+      loanAdjustments
+        .filter((a) => a.loan_id === id && (!a.transaction_id || movements.has(a.transaction_id)))
+        .map(({ loan_id: _l, ...a }) => a),
+    addAdjustment: async (id, input) => {
+      const adjId = nextId("adj");
+      loanAdjustments.push({ id: adjId, loan_id: id, ...input });
+      return { id: adjId };
+    },
+    deleteAdjustment: async (adjId) => {
+      const i = loanAdjustments.findIndex((a) => a.id === adjId);
+      if (i >= 0) loanAdjustments.splice(i, 1);
+    },
     delete: async (id) => {
       loanRows.delete(id);
       // on delete cascade: arrastra el desembolso.

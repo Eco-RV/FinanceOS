@@ -27,6 +27,9 @@ import type {
   AcademyLesson,
   StarLabelFields,
   CardCycle,
+  AmortizationEvent,
+  PendingInstallment,
+  PrepaymentMode,
   SharedPartState,
   SharedPaymentChannel,
   SharedShare,
@@ -199,6 +202,9 @@ export type StoredFinancing = {
   months: number;
   currency: Currency;
   cancelled_on: ISODate | null;
+  /** 3.0.1 (F11): tasa y categoría, para recalcular tras un abono. */
+  annual_rate?: number;
+  category?: string | null;
 };
 
 export interface FinancingRepository {
@@ -221,6 +227,28 @@ export interface FinancingRepository {
   /** F6: parte fija por cuota de cada miembro. */
   shares(financingId: string): Promise<MemberShare[]>;
   replaceShares(financingId: string, shares: MemberShare[]): Promise<void>;
+  /** F11 (3.0.1): cuotas programadas (fecha > hoy) con su interés. */
+  pendingInstallments(financingId: string, todayISO: ISODate): Promise<PendingInstallment[]>;
+  /**
+   * F11, atómico: reemplaza las cuotas programadas desde `fromNo` por estas y
+   * guarda las anteriores para poder deshacerlo.
+   */
+  prepay(
+    financingId: string,
+    input: {
+      todayISO: ISODate;
+      fromNo: number;
+      installments: FinancingInstallment[];
+      amount: number;
+      mode: PrepaymentMode;
+      occurred_on: ISODate;
+      transaction_id: string;
+    },
+  ): Promise<{ id: string }>;
+  /** Último abono del plan (el único que se puede deshacer), o `null`. */
+  lastPrepayment(financingId: string): Promise<{ id: string; amount: number; occurred_on: ISODate } | null>;
+  /** Vuelve al plan anterior y borra el gasto del abono. */
+  undoPrepayment(prepaymentId: string, todayISO: ISODate): Promise<void>;
 }
 
 export type MemberFields = { name: string; email: string | null; phone: string | null };
@@ -390,7 +418,22 @@ export interface LoanRepository extends LifecycleRepository<Loan> {
   paidInstallments(loanId: string): Promise<number[]>;
   /** Movimiento del pago de una cuota, o `null`. */
   paymentOf(loanId: string, installmentNo: number): Promise<string | null>;
+  /** 3.0.1: abonos extraordinarios (L7) y cambios de tasa (L8), en el orden en que se hicieron. */
+  adjustments(loanId: string): Promise<StoredLoanAdjustment[]>;
+  addAdjustment(
+    loanId: string,
+    input: { event: AmortizationEvent; occurred_on: ISODate; transaction_id: string | null },
+  ): Promise<{ id: string }>;
+  deleteAdjustment(adjustmentId: string): Promise<void>;
 }
+
+export type StoredLoanAdjustment = {
+  id: string;
+  event: AmortizationEvent;
+  occurred_on: ISODate;
+  /** El gasto del abono (L7); `null` en un cambio de tasa. */
+  transaction_id: string | null;
+};
 
 export interface FreshStartRepository {
   /** Cuentas y tarjetas activas, con las monedas que necesitan saldo inicial. */

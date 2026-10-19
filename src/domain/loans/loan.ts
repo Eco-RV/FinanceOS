@@ -14,9 +14,11 @@ import { daysUntil, fromISODate, type ISODate } from "../shared/calendar.ts";
 import type { Currency } from "../shared/money.ts";
 import { fromCents, toCents } from "../shared/money.ts";
 import {
-  frenchAmortization,
+  segmentedAmortization,
+  type AmortizationEvent,
   type AmortizationRow,
   type AmortizationSchedule,
+  type PrepaymentMode,
 } from "../financing/amortization.ts";
 
 export const LOAN_MAX_MONTHS = 480;
@@ -32,6 +34,8 @@ export type LoanTerms = {
   months: number;
   firstPaymentOn: ISODate;
   currency: Currency;
+  /** 3.0.1: abonos extraordinarios (L7) y cambios de tasa (L8), en orden. */
+  adjustments?: AmortizationEvent[];
 };
 
 /** L1: capital > 0, tasa entre 0 y 100 %, de 1 a 480 meses. */
@@ -47,15 +51,66 @@ export function validateLoanTerms(terms: LoanTerms): void {
   }
 }
 
-/** F5: calendario de cuotas (sistema francés) a partir de los términos. */
+/**
+ * F5: calendario de cuotas (sistema francés) a partir de los términos y, desde
+ * 3.0.1, de sus ajustes (abonos L7 y cambios de tasa L8), que lo recalculan
+ * por tramos. Sigue sin guardarse: se deriva.
+ */
 export function loanSchedule(terms: LoanTerms): AmortizationSchedule {
   validateLoanTerms(terms);
-  return frenchAmortization({
+  return segmentedAmortization({
     principal: terms.principal,
     annualRatePercent: terms.annualRatePercent,
     months: terms.months,
     firstChargeOn: terms.firstPaymentOn,
+    events: terms.adjustments,
   });
+}
+
+/** Abonado extra al capital hasta (e incluido) el punto después de la cuota `paidCount`. */
+function prepaidUpTo(terms: LoanTerms, paidCount: number): number {
+  return fromCents(
+    (terms.adjustments ?? []).reduce(
+      (s, a) => s + (a.kind === "prepayment" && a.afterNo <= paidCount ? toCents(a.amount) : 0),
+      0,
+    ),
+  );
+}
+
+/**
+ * L7 (3.0.1): un abono extraordinario va después de la última cuota pagada,
+ * es mayor que 0 y no pasa el capital que falta. El modo dice si baja el
+ * plazo (misma cuota) o la cuota (mismo plazo).
+ */
+export function validateLoanPrepayment(
+  progress: Pick<LoanProgress, "status" | "remainingPrincipal">,
+  amount: number,
+  mode: PrepaymentMode,
+): void {
+  if (progress.status === "pagado") throw new DomainError("L3", "El préstamo ya está pagado por completo");
+  if (!(toCents(amount) > 0)) throw new DomainError("L7", "El abono debe ser mayor que 0");
+  if (toCents(amount) > toCents(progress.remainingPrincipal)) {
+    throw new DomainError("L7", "El abono no puede pasar el capital que falta");
+  }
+  if (mode !== "term" && mode !== "payment") throw new DomainError("L7", "Elige si baja el plazo o la cuota");
+}
+
+/**
+ * L8 (3.0.1): tasa variable. La nueva tasa (0–100 %) rige desde una cuota que
+ * todavía no se pagó; se mantiene el plazo que queda y se recalcula la cuota.
+ */
+export function validateLoanRateChange(
+  progress: Pick<LoanProgress, "paidCount" | "status" | "schedule">,
+  fromNo: number,
+  annualRatePercent: number,
+): void {
+  if (progress.status === "pagado") throw new DomainError("L3", "El préstamo ya está pagado por completo");
+  if (!(annualRatePercent >= 0 && annualRatePercent <= LOAN_MAX_RATE)) {
+    throw new DomainError("L1", `La tasa anual debe estar entre 0 y ${LOAN_MAX_RATE} %`);
+  }
+  if (!Number.isInteger(fromNo) || fromNo <= progress.paidCount || fromNo > progress.schedule.rows.length) {
+    throw new DomainError("L8", "La nueva tasa rige desde una cuota que todavía no se pagó");
+  }
 }
 
 /**
@@ -83,10 +138,16 @@ export function nextInstallment(
   return next;
 }
 
-/** L5: solo se deshace la última cuota pagada, para conservar el orden. */
-export function lastPaidInstallment(paidNos: Iterable<number>): number {
+/**
+ * L5: solo se deshace la última cuota pagada, para conservar el orden; y no
+ * si después de ella hay un abono extraordinario (primero se deshace el abono).
+ */
+export function lastPaidInstallment(paidNos: Iterable<number>, adjustments: AmortizationEvent[] = []): number {
   const k = paidInOrder(paidNos);
   if (k === 0) throw new DomainError("L5", "El préstamo no tiene cuotas pagadas");
+  if (adjustments.some((a) => a.kind === "prepayment" && a.afterNo >= k)) {
+    throw new DomainError("L5", "Después de esa cuota hay un abono extraordinario: deshazlo primero");
+  }
   return k;
 }
 
@@ -129,7 +190,10 @@ export function loanProgress(
     next,
     overdue,
     status: next === null ? "pagado" : overdue.length > 0 ? "atrasado" : "al-dia",
-    remainingPrincipal: paidCount === 0 ? terms.principal : schedule.rows[paidCount - 1].balance,
+    // Capital − lo abonado en cuotas − lo abonado extra hasta hoy (L7).
+    remainingPrincipal: fromCents(
+      Math.max(0, toCents(terms.principal) - toCents(sum(paidRows, "principal")) - toCents(prepaidUpTo(terms, paidCount))),
+    ),
     principalPaid: sum(paidRows, "principal"),
     interestPaid: sum(paidRows, "interest"),
     interestPending: sum(pendingRows, "interest"),

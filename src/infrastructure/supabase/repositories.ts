@@ -10,6 +10,7 @@ import { supabaseAccount } from "./account";
 import { supabasePlans } from "./plans";
 import { supabaseSharedExpenses } from "./shared-expenses";
 import { haciendaExchangeRate } from "../exchange/hacienda";
+import { toLoanAdjustment } from "./loan-adjustments";
 import { supabaseConstellation } from "./constellation";
 import { isCurrency, type Currency, type Movement } from "@/domain";
 import { decryptToken } from "@/lib/mail/crypto";
@@ -396,6 +397,41 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       check(error, "No se pudo leer el pago de la cuota");
       return (data?.id as string | undefined) ?? null;
     },
+    // L7/L8 (3.0.1). Sin el SQL 3.0.1, sin ajustes.
+    async adjustments(id) {
+      const { data, error } = await supabase
+        .from("loan_adjustments")
+        .select("id, kind, after_installment, from_installment, amount, mode, annual_rate, occurred_on, transaction_id")
+        .eq("loan_id", id)
+        .eq("archived", false)
+        .order("created_at", { ascending: true });
+      if (error) return [];
+      return (data ?? []).map(toLoanAdjustment);
+    },
+    async addAdjustment(id, input) {
+      const e = input.event;
+      const { data, error } = await supabase
+        .from("loan_adjustments")
+        .insert({
+          loan_id: id,
+          kind: e.kind,
+          after_installment: e.kind === "prepayment" ? e.afterNo : null,
+          from_installment: e.kind === "rate" ? e.fromNo : null,
+          amount: e.kind === "prepayment" ? e.amount : null,
+          mode: e.kind === "prepayment" ? e.mode : null,
+          annual_rate: e.kind === "rate" ? e.annualRatePercent : null,
+          occurred_on: input.occurred_on,
+          transaction_id: input.transaction_id,
+        })
+        .select("id")
+        .single();
+      check(error, "No se pudo guardar el ajuste del préstamo (¿corriste el SQL 3.0.1?)");
+      return { id: data!.id as string };
+    },
+    async deleteAdjustment(adjustmentId) {
+      const { error } = await supabase.from("loan_adjustments").delete().eq("id", adjustmentId);
+      check(error, "No se pudo deshacer el ajuste");
+    },
   };
 
   const movements: MovementRepository = {
@@ -491,7 +527,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     async find(id) {
       const { data } = await supabase
         .from("financings")
-        .select("id, card_id, description, months, currency, cancelled_on")
+        .select("id, card_id, description, months, currency, cancelled_on, annual_rate, category")
         .eq("id", id)
         .eq("archived", false)
         .maybeSingle();
@@ -503,7 +539,63 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         months: Number(data.months),
         currency: isCurrency(String(data.currency)) ? (data.currency as Currency) : "CRC",
         cancelled_on: (data.cancelled_on as string | null) ?? null,
+        annual_rate: Number(data.annual_rate ?? 0),
+        category: (data.category as string | null) ?? null,
       };
+    },
+    // F11 (3.0.1): abono extraordinario (SQL 3.0.1/06_financing_prepayments.sql).
+    async pendingInstallments(id, todayISO) {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("installment_no, occurred_on, amount, interest_amount")
+        .eq("financing_id", id)
+        .eq("archived", false)
+        .not("installment_no", "is", null)
+        .gt("occurred_on", todayISO)
+        .order("installment_no");
+      check(error, "No se pudieron leer las cuotas");
+      return (data ?? []).map((r) => ({
+        no: Number(r.installment_no),
+        occurred_on: r.occurred_on as string,
+        amount: Number(r.amount),
+        interest: Number(r.interest_amount ?? 0),
+      }));
+    },
+    async prepay(id, input) {
+      const { data, error } = await supabase.rpc("prepay_financing", {
+        p_financing_id: id,
+        p_today: input.todayISO,
+        p_from_no: input.fromNo,
+        p_installments: input.installments.map((c) => ({
+          no: c.no,
+          occurred_on: c.occurred_on,
+          amount: c.amount,
+          interest: c.interest,
+        })),
+        p_amount: input.amount,
+        p_mode: input.mode,
+        p_occurred_on: input.occurred_on,
+        p_transaction_id: input.transaction_id,
+      });
+      check(error, "No se pudo registrar el abono (¿corriste el SQL 3.0.1?)");
+      return { id: data as string };
+    },
+    async lastPrepayment(id) {
+      const { data, error } = await supabase
+        .from("financing_prepayments")
+        .select("id, amount, occurred_on")
+        .eq("financing_id", id)
+        .eq("archived", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error || !data) return null;
+      return { id: data.id as string, amount: Number(data.amount), occurred_on: data.occurred_on as string };
+    },
+    async undoPrepayment(prepaymentId, todayISO) {
+      const { error } = await supabase.rpc("undo_financing_prepayment", { p_id: prepaymentId, p_today: todayISO });
+      if (error?.message) throw new InfrastructureError(error.message);
+      check(error, "No se pudo deshacer el abono");
     },
     async cardIdOf(id) {
       const { data } = await supabase

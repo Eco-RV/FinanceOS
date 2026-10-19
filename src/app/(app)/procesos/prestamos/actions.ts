@@ -11,7 +11,12 @@ import {
   renameLoan as renameLoanUseCase,
   setCatalogActive,
   undoLastInstallment,
+  prepayLoan,
+  changeLoanRate,
+  undoLastLoanAdjustment,
 } from "@/application";
+import { z } from "zod";
+import { crToday, toISODate } from "@/domain";
 import { repositories } from "@/infrastructure/container";
 import { lifecycleForm, toFormResult } from "@/lib/catalog-actions";
 
@@ -113,5 +118,51 @@ export async function setLoanActive(formData: FormData): Promise<FormResult> {
   const { loans } = await repositories();
   const result = await setCatalogActive(loans, "loan", id, active);
   if (result.ok) revalidate(id);
+  return toFormResult(result);
+}
+
+const uuid = z.string().regex(/^[0-9a-fA-F-]{36}$/, "Inválido");
+const isoDate = z.string().regex(/^d{4}-d{2}-d{2}$/, "Fecha inválida");
+
+/** L7 (3.0.1): abono extraordinario al capital. */
+export async function prepayAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const parsed = z
+    .object({
+      loan_id: uuid,
+      account_id: uuid,
+      amount: z.coerce.number().finite().positive("Debe ser mayor que 0"),
+      mode: z.enum(["term", "payment"]),
+      occurred_on: isoDate,
+    })
+    .safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
+  const result = await prepayLoan(await repositories(), { ...parsed.data, today: toISODate(crToday()) });
+  if (result.ok) revalidate(parsed.data.loan_id);
+  return toFormResult(result);
+}
+
+/** L8 (3.0.1): cambio de tasa desde una cuota. */
+export async function changeRateAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const parsed = z
+    .object({
+      loan_id: uuid,
+      from_no: z.coerce.number().int().min(1),
+      annual_rate: z.coerce.number().finite().min(0).max(100, "Máximo 100 %"),
+    })
+    .safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
+  const today = toISODate(crToday());
+  const result = await changeLoanRate(await repositories(), { ...parsed.data, occurred_on: today, today });
+  if (result.ok) revalidate(parsed.data.loan_id);
+  return toFormResult(result);
+}
+
+export async function undoAdjustmentAction(formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const loanId = (formData.get("loan_id") as string) || "";
+  const result = await undoLastLoanAdjustment(await repositories(), loanId);
+  if (result.ok) revalidate(loanId);
   return toFormResult(result);
 }
