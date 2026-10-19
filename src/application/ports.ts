@@ -26,6 +26,10 @@ import type {
   DebitCardFields,
   AcademyLesson,
   StarLabelFields,
+  CardCycle,
+  SharedPartState,
+  SharedPaymentChannel,
+  SharedShare,
 } from "../domain/index.ts";
 
 export type NewMovement = {
@@ -267,6 +271,79 @@ export type OutgoingMail = { to: string; subject: string; text: string };
 /** Envío de correo desde la cuenta del usuario (F8). */
 export interface Mailer {
   send(mail: OutgoingMail): Promise<void>;
+}
+
+/** Gasto compartido (3.0.1): el movimiento que se comparte y, si es de tarjeta, su ciclo. */
+export type SharedSource = {
+  movement_id: string;
+  type: MovementType;
+  amount: number;
+  currency: Currency;
+  occurred_on: ISODate;
+  account_id: string | null;
+  card: (CardCycle & { id: string }) | null;
+  note: string | null;
+  /** Cuotas de financiamiento y movimientos de préstamo se gestionan en su módulo. */
+  managed_elsewhere: boolean;
+};
+
+export type SharedPartRecord = SharedPartState & {
+  channel: SharedPaymentChannel | null;
+  note: string | null;
+  income_transaction_id: string | null;
+};
+
+export type StoredSharedExpense = {
+  id: string;
+  transaction_id: string;
+  description: string;
+  currency: Currency;
+  total_amount: number;
+  occurred_on: ISODate;
+  due_on: ISODate;
+  /** X3: la fecha límite sale de la tarjeta (no se edita a mano). */
+  card_id: string | null;
+  parts: SharedPartRecord[];
+};
+
+export type SharedPayment = {
+  paid_on: ISODate;
+  channel: SharedPaymentChannel;
+  note: string | null;
+  income_transaction_id: string | null;
+};
+
+export type NewSharedNotice = {
+  shared_expense_id: string;
+  member_id: string;
+  quincenas: number;
+  channel: NoticeChannel;
+};
+
+/** Para qué está ligado un movimiento a un gasto compartido (X6). */
+export type SharedLink = { shared_expense_id: string; role: "expense" | "income" };
+
+export interface SharedExpenseRepository {
+  /** El movimiento a compartir (activo), o `null`. */
+  source(movementId: string): Promise<SharedSource | null>;
+  /** Si el movimiento es el gasto de un compartido o el ingreso de un pago. */
+  linkOf(movementId: string): Promise<SharedLink | null>;
+  find(id: string): Promise<StoredSharedExpense | null>;
+  /** Un movimiento ya compartido lanza `InfrastructureError`. */
+  create(input: {
+    transaction_id: string;
+    description: string;
+    currency: Currency;
+    total_amount: number;
+    due_on: ISODate;
+    shares: SharedShare[];
+  }): Promise<{ id: string }>;
+  /** Cambia descripción y fecha, y reemplaza las partes (las pagadas se conservan iguales). */
+  update(id: string, fields: { description: string; due_on: ISODate; shares: SharedShare[] }): Promise<void>;
+  /** Marca (o desmarca con `null`) el pago de la parte de una persona. */
+  setPayment(id: string, memberId: string, payment: SharedPayment | null): Promise<void>;
+  delete(id: string): Promise<void>;
+  recordNotices(items: NewSharedNotice[]): Promise<void>;
 }
 
 export type PendingPurchase = {

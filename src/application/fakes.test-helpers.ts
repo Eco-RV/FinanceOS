@@ -4,6 +4,7 @@ import {
   balanceEffects,
   deriveBalances,
   type Currency,
+  type CardCycle,
   type ExchangeRate,
   type MemberShare,
 } from "../domain/index.ts";
@@ -36,6 +37,9 @@ import type {
   NewMovement,
   PendingPurchase,
   PendingRepository,
+  NewSharedNotice,
+  SharedExpenseRepository,
+  StoredSharedExpense,
 } from "./ports.ts";
 import { InfrastructureError } from "./ports.ts";
 
@@ -54,6 +58,8 @@ export function fakeStore(seed: {
   members?: Record<string, string>;
   /** id → tipo de cuenta (default "checking"). */
   accountTypes?: Record<string, string>;
+  /** id de tarjeta → ciclo (default corte 15, pago 30). */
+  cardCycles?: Record<string, CardCycle>;
 } = {}) {
   const product = (currency: Currency, name: string): Product => ({
     name,
@@ -368,6 +374,84 @@ export function fakeStore(seed: {
       notices.push(...items);
     },
   };
+  // 3.0.1: gastos compartidos (X1–X6).
+  const sharedRows = new Map<string, Omit<StoredSharedExpense, "id">>();
+  const sharedNotices: NewSharedNotice[] = [];
+  const sharedRepo: SharedExpenseRepository = {
+    source: async (id) => {
+      const m = movements.get(id);
+      if (!m || m.archived) return null;
+      return {
+        movement_id: id,
+        type: m.type,
+        amount: m.amount,
+        currency: m.currency,
+        occurred_on: m.occurred_on,
+        account_id: m.account_id,
+        card: m.card_id
+          ? { id: m.card_id, ...(seed.cardCycles?.[m.card_id] ?? { cutoff_day: 15, payment_due_day: 30 }) }
+          : null,
+        note: m.note,
+        managed_elsewhere: Boolean(m.financing_id || m.loan_id),
+      };
+    },
+    linkOf: async (movementId) => {
+      for (const [id, s] of sharedRows) {
+        if (s.transaction_id === movementId) return { shared_expense_id: id, role: "expense" };
+        if (s.parts.some((p) => p.income_transaction_id === movementId)) {
+          return { shared_expense_id: id, role: "income" };
+        }
+      }
+      return null;
+    },
+    find: async (id) => {
+      const s = sharedRows.get(id);
+      return s ? { id, ...s, parts: s.parts.map((p) => ({ ...p })) } : null;
+    },
+    create: async (input) => {
+      if ([...sharedRows.values()].some((s) => s.transaction_id === input.transaction_id)) {
+        throw new InfrastructureError("Ese gasto ya está compartido");
+      }
+      const m = movements.get(input.transaction_id)!;
+      const id = nextId("sh");
+      sharedRows.set(id, {
+        transaction_id: input.transaction_id,
+        description: input.description,
+        currency: input.currency,
+        total_amount: input.total_amount,
+        occurred_on: m.occurred_on,
+        due_on: input.due_on,
+        card_id: m.card_id,
+        parts: input.shares.map((s) => ({ ...s, paid_on: null, channel: null, note: null, income_transaction_id: null })),
+      });
+      return { id };
+    },
+    update: async (id, fields) => {
+      const s = sharedRows.get(id)!;
+      const before = new Map(s.parts.map((p) => [p.member_id, p]));
+      s.description = fields.description;
+      s.due_on = fields.due_on;
+      s.parts = fields.shares.map(
+        (sh) =>
+          before.get(sh.member_id)?.paid_on
+            ? before.get(sh.member_id)!
+            : { ...sh, paid_on: null, channel: null, note: null, income_transaction_id: null },
+      );
+    },
+    setPayment: async (id, memberId, payment) => {
+      const p = sharedRows.get(id)!.parts.find((x) => x.member_id === memberId)!;
+      p.paid_on = payment?.paid_on ?? null;
+      p.channel = payment?.channel ?? null;
+      p.note = payment?.note ?? null;
+      p.income_transaction_id = payment?.income_transaction_id ?? null;
+    },
+    delete: async (id) => {
+      sharedRows.delete(id);
+    },
+    recordNotices: async (items) => {
+      sharedNotices.push(...items);
+    },
+  };
   const mailer: Mailer = {
     send: async (mail) => {
       sentMail.push(mail);
@@ -540,8 +624,11 @@ export function fakeStore(seed: {
       merchantRules,
       balances,
       exchangeRates,
+      sharedExpenses: sharedRepo,
     },
     state: {
+      sharedRows,
+      sharedNotices,
       movements,
       financings,
       shares,

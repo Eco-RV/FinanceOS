@@ -19,3 +19,4 @@ export * from "./profile.ts";
 export * from "./plans.ts";
 export * from "./debit-cards.ts";
 export * from "./constellation.ts";
+export * from "./shared-expenses.ts";

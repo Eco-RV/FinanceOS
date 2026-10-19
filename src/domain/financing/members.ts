@@ -13,6 +13,7 @@
 import { DomainError } from "../shared/errors.ts";
 import { daysUntil, fromISODate, toISODate, type ISODate } from "../shared/calendar.ts";
 import { fromCents, toCents, type Currency } from "../shared/money.ts";
+import { groupNotices } from "../shared/notices.ts";
 import {
   nextCutoffDate,
   paymentDueForCutoff,
@@ -162,36 +163,19 @@ export function noticeGroups(
   sent: SentNotice[],
   todayISO: ISODate,
 ): NoticeGroup[] {
-  const groups = new Map<string, NoticeGroup>();
-  for (const p of parts) {
-    if (p.reimbursement) continue;
-    const quincenas = quincenasLeft(p.due_on, todayISO);
-    if (quincenas > NOTICE_QUINCENAS) continue;
-    const key = `${p.member_id}:${p.due_on}:${p.currency}`;
-    const g: NoticeGroup = groups.get(key) ?? {
-      member_id: p.member_id,
-      due_on: p.due_on,
-      currency: p.currency,
-      quincenas,
-      parts: [],
-      total: 0,
-      needsNotice: false,
-      lastSentAt: null,
-    };
-    g.parts.push(p);
-    g.total = fromCents(toCents(g.total) + toCents(p.amount));
-    const mine = sent.filter(
-      (n) =>
-        n.financing_id === p.financing_id &&
-        n.member_id === p.member_id &&
-        n.installment_no === p.installment_no,
-    );
-    if (!mine.some((n) => n.quincenas === quincenas)) g.needsNotice = true;
-    for (const n of mine) if (!g.lastSentAt || n.sent_at > g.lastSentAt) g.lastSentAt = n.sent_at;
-    groups.set(key, g);
-  }
-  return [...groups.values()].sort((a, b) =>
-    a.due_on === b.due_on ? a.member_id.localeCompare(b.member_id) : a.due_on < b.due_on ? -1 : 1,
+  return groupNotices(
+    parts.map((p) => ({ ...p, paid: Boolean(p.reimbursement) })),
+    (p) => {
+      const q = quincenasLeft(p.due_on, todayISO);
+      return q > NOTICE_QUINCENAS ? null : q;
+    },
+    (p) =>
+      sent.filter(
+        (n) =>
+          n.financing_id === p.financing_id &&
+          n.member_id === p.member_id &&
+          n.installment_no === p.installment_no,
+      ),
   );
 }
 

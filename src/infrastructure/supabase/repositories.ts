@@ -8,6 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAccount } from "./account";
 import { supabasePlans } from "./plans";
+import { supabaseSharedExpenses } from "./shared-expenses";
 import { supabaseConstellation } from "./constellation";
 import { isCurrency, type Currency, type Movement } from "@/domain";
 import { decryptToken } from "@/lib/mail/crypto";
@@ -584,9 +585,9 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       const { data } = await supabase.from("members").select(MEMBER_COLUMNS).eq("id", id).maybeSingle();
       return (data as Member | null) ?? null;
     },
-    // G5: partes en financiamientos y reembolsos.
+    // G5: partes en financiamientos, reembolsos y gastos compartidos (3.0.1).
     async historyCount(id) {
-      const [shares, reimbursements] = await Promise.all([
+      const [shares, reimbursements, sharedParts] = await Promise.all([
         count(
           supabase
             .from("financing_shares")
@@ -601,8 +602,15 @@ export function supabaseRepositories(supabase: SupabaseClient) {
             .eq("member_id", id),
           HISTORY_ERROR,
         ),
+        // Sin el SQL 3.0.1 la tabla no existe: no suma historia.
+        Promise.resolve(
+          supabase
+            .from("shared_expense_parts")
+            .select("id", { count: "exact", head: true })
+            .eq("member_id", id),
+        ).then(({ count: n }) => n ?? 0),
       ]);
-      return shares + reimbursements;
+      return shares + reimbursements + sharedParts;
     },
     async setArchived(id, archived) {
       const { error } = await supabase.from("members").update({ archived }).eq("id", id);
@@ -860,6 +868,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     freshStart,
     ...supabaseAccount(supabase),
     ...supabasePlans(supabase),
+    ...supabaseSharedExpenses(supabase),
     ...supabaseConstellation(supabase),
   };
 }
