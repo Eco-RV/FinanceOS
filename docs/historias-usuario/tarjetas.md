@@ -83,7 +83,9 @@ contado y antes de qué fecha.
   opción "Las compras del día de corte pasan al siguiente corte" (en su
   formulario), lo comprado el mismo día del corte no entra al pago de
   contado: queda como consumo sin cortar. Es como corta BAC (por fecha de
-  proceso). El próximo corte lo recuerda en su pista.
+  proceso). El próximo corte lo recuerda en su pista. Vale para **todo cargo**:
+  compras, cuotas de financiamiento y seguros (también en la fecha límite de
+  cada cuota, 3.0.1).
 - Si la tarjeta está `atrasada`, se muestra una alerta indicando los días de
   atraso, la fecha en que venció y el monto pendiente (y que ya genera
   intereses).

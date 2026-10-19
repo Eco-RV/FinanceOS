@@ -90,3 +90,16 @@ test("F7/F8: partes, por cobrar y avisos agrupados por miembro y fecha", () => {
   // En la siguiente quincena vuelve a tocar avisar.
   assert.equal(noticeGroups(parts, sent, "2026-10-25")[0].needsNotice, true);
 });
+
+test("T3: con 'pasa al siguiente corte', una cuota del día de corte vence en el corte siguiente", () => {
+  const cycle = { cutoff_day: 15, payment_due_day: 30 };
+  assert.equal(chargeDueDate(cycle, "2026-10-15"), "2026-10-30");
+  assert.equal(chargeDueDate({ ...cycle, cutoff_day_rolls_over: true }, "2026-10-15"), "2026-11-30");
+  // Un día antes del corte no cambia.
+  assert.equal(chargeDueDate({ ...cycle, cutoff_day_rolls_over: true }, "2026-10-14"), "2026-10-30");
+  // Mes corto: corte 31 recortado al 30 de noviembre.
+  assert.equal(
+    chargeDueDate({ cutoff_day: 31, payment_due_day: 20, cutoff_day_rolls_over: true }, "2026-11-30"),
+    "2027-01-20",
+  );
+});

@@ -36,8 +36,11 @@ internet, suscripciones), para que se cargue solo y cuente en mi línea base.
   (Alquiler → Vivienda; Agua, Luz, Internet → Servicios; Netflix →
   Suscripciones) y se puede cambiar. Si el monto varía (luz, agua), se edita
   el movimiento cuando llega.
-- **Seguro de tarjeta** (T9): mensual, a una tarjeta de crédito (puede haber
-  varios por tarjeta); categoría por defecto "Seguros".
+- **Seguro de tarjeta** (T9): mensual, a una **tarjeta de crédito** o a una
+  **tarjeta de débito** (3.0.1: p. ej. el seguro que el banco cobra por la
+  tarjeta de débito; el cargo sale del saldo de su cuenta). Puede haber varios
+  por tarjeta; categoría por defecto "Seguros". No se cobra desde la cuenta
+  sola.
 - Se repiten el mismo día del primer cargo cada mes (recortado en meses
   cortos) y se registran como **gasto** cuando llega su fecha.
 
@@ -90,3 +93,5 @@ controlar mi liquidez.
 - **2026-10-14 (v2.7.0)** — Archivo nuevo: salario,
   gastos fijos (renta, servicios, suscripciones), seguros de tarjeta, línea
   base y programados.
+- **2026-10-18 (v3.0.1, en desarrollo)** — Un seguro también se cobra a una
+  tarjeta de débito (T9; SQL `3.0.1/02_insurance_debit_card.sql`).

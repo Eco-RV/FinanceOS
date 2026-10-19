@@ -96,7 +96,7 @@ export function savePlan(
   return run(async () => {
     const fields: PlanFields = {
       ...input.fields,
-      debit_card_id: input.fields.kind === "subscription" ? (input.fields.debit_card_id ?? null) : null,
+      debit_card_id: input.fields.kind !== "salary" ? (input.fields.debit_card_id ?? null) : null,
       name: input.fields.name.trim(),
       // Gasto fijo sin categoría: la sugerida por el nombre (Alquiler → Vivienda…).
       category:

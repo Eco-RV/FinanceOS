@@ -17,7 +17,7 @@
  */
 
 import { DomainError } from "../shared/errors.ts";
-import { addDays, clampDay, fromISODate, toISODate, type ISODate } from "../shared/calendar.ts";
+import { addDays, fromISODate, toISODate, type ISODate } from "../shared/calendar.ts";
 import { fromCents, moneyFromCents, splitEvenly, toCents, type Currency } from "../shared/money.ts";
 import { groupNotices, type GroupedNotice } from "../shared/notices.ts";
 import type { CardCycle } from "../cards/statement.ts";
@@ -83,12 +83,7 @@ export function sharedDueDate(input: {
   card: CardCycle | null;
   chosen: ISODate | null;
 }): ISODate {
-  if (input.card) {
-    const day = fromISODate(input.occurred_on);
-    const onCutoff = day.getDate() === clampDay(day.getFullYear(), day.getMonth(), input.card.cutoff_day);
-    const from = input.card.cutoff_day_rolls_over && onCutoff ? toISODate(addDays(day, 1)) : input.occurred_on;
-    return chargeDueDate(input.card, from);
-  }
+  if (input.card) return chargeDueDate(input.card, input.occurred_on);
   if (!input.chosen) throw new DomainError("X3", "Elige hasta cuándo te deben pagar");
   if (input.chosen < input.occurred_on) {
     throw new DomainError("X3", "La fecha de cobro no puede ser anterior al gasto");

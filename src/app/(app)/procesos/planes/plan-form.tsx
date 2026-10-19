@@ -31,7 +31,7 @@ type Kind = Plan["kind"];
 const KINDS: { kind: Kind; icon: typeof Repeat; hint: string }[] = [
   { kind: "salary", icon: BriefcaseBusiness, hint: "Ingreso a una cuenta" },
   { kind: "subscription", icon: Repeat, hint: "Renta, servicios, suscripciones" },
-  { kind: "insurance", icon: ShieldCheck, hint: "Cargo mensual a tarjeta" },
+  { kind: "insurance", icon: ShieldCheck, hint: "Cargo mensual a tarjeta de crédito o débito" },
 ];
 
 type Categories = { names: string[]; icons: Record<string, CategoryIconKey> };
@@ -68,7 +68,8 @@ export function PlanFormDialog({
   const [name, setName] = useState(plan?.name ?? "");
 
   const usesAccount = kind === "salary" || (kind === "subscription" && payWith === "account");
-  const usesDebit = kind === "subscription" && payWith === "debit";
+  // T9 (3.0.1): un seguro va a una tarjeta de crédito o de débito.
+  const usesDebit = (kind === "subscription" || kind === "insurance") && payWith === "debit";
   const accountOptions = accounts.filter((a) => a.currency === currency);
   // Tarjetas de débito cuya cuenta es de la moneda del plan.
   const debitOptions = debitCards.filter((d) =>
@@ -142,6 +143,8 @@ export function PlanFormDialog({
                   onClick={() => {
                     setKind(k);
                     setCategory("");
+                    // Un seguro no se paga desde la cuenta sola (T9).
+                    if (k === "insurance" && payWith === "account") setPayWith("card");
                   }}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-xl p-3 text-center text-sm transition-[background-color,box-shadow,scale] duration-150 ease-fluid motion-safe:active:scale-[0.97]",
@@ -234,14 +237,23 @@ export function PlanFormDialog({
             </FormField>
           </div>
 
-          {kind === "subscription" ? (
-            <div role="tablist" aria-label="Cómo se paga" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+          {kind === "subscription" || kind === "insurance" ? (
+            <div
+              role="tablist"
+              aria-label="Cómo se paga"
+              className={cn("grid gap-1 rounded-xl bg-muted p-1", kind === "insurance" ? "grid-cols-2" : "grid-cols-3")}
+            >
               {(
-                [
-                  ["card", "Crédito"],
-                  ["debit", "Tarjeta de débito"],
-                  ["account", "Cuenta"],
-                ] as const
+                (kind === "insurance"
+                  ? [
+                      ["card", "Tarjeta de crédito"],
+                      ["debit", "Tarjeta de débito"],
+                    ]
+                  : [
+                      ["card", "Crédito"],
+                      ["debit", "Tarjeta de débito"],
+                      ["account", "Cuenta"],
+                    ]) as [typeof payWith, string][]
               ).map(([k, label]) => (
                 <button
                   key={k}

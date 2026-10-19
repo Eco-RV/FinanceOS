@@ -43,13 +43,13 @@
 |---|---|---|---|
 | T1 | La tarjeta lleva saldos y estados de cuenta separados por moneda (CRC y USD); el estado de la tarjeta es el más grave. | — | Decidido · Implementado 2.0.0 |
 | T2 | El límite está en la moneda del límite de la tarjeta (normalmente colones). Disponible = límite − (saldo CRC + saldo USD convertido con el último tipo de cambio manual). El capital de financiamientos ya está dentro del saldo. Sin tipo de cambio y con saldo en otra moneda, el disponible no se calcula. | — | Decidido · Implementado 2.0.0 |
-| T3 | Saldo al corte (por moneda) = cargos − abonos con fecha ≤ último corte. Pago de contado = saldo al corte − abonos posteriores al corte (mínimo 0). Si la tarjeta tiene la opción "las compras del día de corte pasan al siguiente corte" (bancos que cortan por fecha de proceso, como BAC), cuenta solo lo anterior al día de corte. Lo abonado de más (por encima del pago de contado, o un saldo a favor al corte) se descuenta del consumo sin cortar (abono anticipado). | — | Decidido · Cambiado 2.8.0 (opción de corte y abono anticipado) |
+| T3 | Saldo al corte (por moneda) = cargos − abonos con fecha ≤ último corte. Pago de contado = saldo al corte − abonos posteriores al corte (mínimo 0). Si la tarjeta tiene la opción "las compras del día de corte pasan al siguiente corte" (bancos que cortan por fecha de proceso, como BAC), cuenta solo lo anterior al día de corte (vale para todo cargo: compras, cuotas de financiamiento y seguros; desde 3.0.1 también en la fecha límite de cada cuota). Lo abonado de más (por encima del pago de contado, o un saldo a favor al corte) se descuenta del consumo sin cortar (abono anticipado). | — | Decidido · Cambiado 2.8.0 (opción de corte y abono anticipado) |
 | T4 | Los cargos posteriores al corte entran al siguiente estado de cuenta. | — | Decidido |
 | T5 | Si el día de corte o de pago no existe en el mes, se usa el último día del mes. | — | Decidido |
 | T6 | Si el día de pago es ≤ al día de corte, la fecha límite cae el mes siguiente. | — | Decidido |
 | T7 | Estado: sin movimientos → sin saldo → al día → atrasada (vencida con saldo pendiente) → pendiente. | — | Decidido |
 | T8 | El pago mínimo lo digita el usuario desde el estado de cuenta; el sistema no lo calcula. | — | Propuesta |
-| T9 | Un seguro genera un gasto mensual en la tarjeta de crédito; una tarjeta puede tener varios. | — | Decidido · Implementado 2.7.0 |
+| T9 | Un seguro genera un gasto mensual en una tarjeta de crédito o en una tarjeta de débito (sale de su cuenta, C3); una tarjeta puede tener varios. No se cobra desde la cuenta sola. | Rechaza | Decidido · Implementado 2.7.0 · Cambiado 3.0.1 (débito) |
 
 ## Financiamientos, préstamos y familia
 

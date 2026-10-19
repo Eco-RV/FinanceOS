@@ -147,7 +147,11 @@ queda, para cobrarle a tiempo.
 
 **Criterios de aceptación**
 - La fecha límite de una cuota es la fecha de pago del estado de cuenta en que
-  cae (el primer corte en o después de su fecha).
+  cae (el primer corte en o después de su fecha). Si la tarjeta tiene marcado
+  "Las compras del día de corte pasan al siguiente corte" (T3), la opción vale
+  también para las cuotas: una cuota que cae el mismo día del corte entra al
+  corte siguiente y vence en su fecha de pago (3.0.1; antes solo lo respetaba
+  el estado de cuenta, no la tabla ni los avisos).
 - Procesos → **Cobros a miembros** → "Avisos por enviar": las partes sin
   reembolsar cuya fecha límite está a **3 quincenas o menos** (o ya venció),
   agrupadas por miembro y fecha límite — un mensaje por miembro con todas sus
@@ -194,3 +198,6 @@ queda, para cobrarle a tiempo.
 - **2026-10-14 (v2.5.0, en desarrollo)** — Pantalla
   `/procesos/financiamientos` con los activos de todas las tarjetas (botón
   en Gastos y modal en el Resumen); toda la fila abre el detalle.
+- **2026-10-18 (v3.0.1, en desarrollo)** — La opción de corte de la tarjeta
+  (T3) también se aplica a la fecha límite de las cuotas: tabla del plan,
+  avisos a miembros y por cobrar.

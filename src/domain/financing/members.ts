@@ -11,7 +11,7 @@
  */
 
 import { DomainError } from "../shared/errors.ts";
-import { daysUntil, fromISODate, toISODate, type ISODate } from "../shared/calendar.ts";
+import { addDays, clampDay, daysUntil, fromISODate, toISODate, type ISODate } from "../shared/calendar.ts";
 import { fromCents, toCents, type Currency } from "../shared/money.ts";
 import { groupNotices } from "../shared/notices.ts";
 import {
@@ -58,9 +58,17 @@ export function installmentParts(
   return { members: shares, own: fromCents(toCents(amount) - membersCents) };
 }
 
-/** Fecha límite de pago del estado de cuenta en el que cae un cargo. */
+/**
+ * Fecha límite de pago del estado de cuenta en el que cae un cargo (compra o
+ * cuota). T3 (3.0.1): si la tarjeta pasa las compras del día de corte al
+ * corte siguiente, un cargo de ese día (también una cuota de financiamiento)
+ * cae en el corte siguiente, igual que en `cardStatement`.
+ */
 export function chargeDueDate(cycle: CardCycle, occurredOn: ISODate): ISODate {
-  const cutoff = nextCutoffDate(cycle.cutoff_day, fromISODate(occurredOn));
+  const day = fromISODate(occurredOn);
+  const onCutoff = day.getDate() === clampDay(day.getFullYear(), day.getMonth(), cycle.cutoff_day);
+  const from = cycle.cutoff_day_rolls_over && onCutoff ? addDays(day, 1) : day;
+  const cutoff = nextCutoffDate(cycle.cutoff_day, from);
   return toISODate(paymentDueForCutoff(cutoff, cycle.cutoff_day, cycle.payment_due_day));
 }
 

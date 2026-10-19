@@ -30,6 +30,14 @@ test("P1/P2/T9/P5: forma de cada plan", () => {
   assert.doesNotThrow(() => validatePlan(base));
   assert.throws(() => validatePlan({ ...base, accountId: null }), rule("P1"));
   assert.throws(() => validatePlan({ ...base, kind: "insurance", accountId: null, cardId: null }), rule("T9"));
+  // T9 (3.0.1): también con la tarjeta de débito de una cuenta, pero no desde la cuenta sola.
+  assert.doesNotThrow(() => validatePlan({ ...base, kind: "insurance", frequency: "monthly", debitCardId: "d1" }));
+  assert.throws(() => validatePlan({ ...base, kind: "insurance", frequency: "monthly" }), rule("T9"));
+  assert.throws(
+    () => validatePlan({ ...base, kind: "insurance", frequency: "monthly", cardId: "c1", debitCardId: "d1" }),
+    rule("T9"),
+  );
+  assert.throws(() => validatePlan({ ...base, debitCardId: "d1" }), rule("P2"));
   assert.throws(
     () => validatePlan({ ...base, kind: "subscription", frequency: "weekly", accountId: null, cardId: "c1" }),
     rule("P2"),

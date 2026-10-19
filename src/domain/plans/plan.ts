@@ -57,14 +57,17 @@ export function validatePlan(p: PlanTerms): void {
   if (p.kind === "salary" && (!p.accountId || p.cardId)) {
     throw new DomainError("P1", "Un salario entra a una cuenta de débito");
   }
-  if (p.kind === "insurance" && (!p.cardId || p.accountId)) {
-    throw new DomainError("T9", "Un seguro se cobra a una tarjeta de crédito");
+  // T9 (3.0.1): a una tarjeta de crédito o a una tarjeta de débito (sale de su cuenta).
+  const insuranceOnCredit = Boolean(p.cardId) && !p.accountId && !p.debitCardId;
+  const insuranceOnDebit = !p.cardId && Boolean(p.accountId) && Boolean(p.debitCardId);
+  if (p.kind === "insurance" && !insuranceOnCredit && !insuranceOnDebit) {
+    throw new DomainError("T9", "Un seguro se cobra a una tarjeta de crédito o de débito");
   }
   if (p.kind === "subscription" && Boolean(p.accountId) === Boolean(p.cardId)) {
     throw new DomainError("P2", "Un gasto fijo se paga con una tarjeta o desde una cuenta (una sola)");
   }
-  if (p.debitCardId && (p.kind !== "subscription" || !p.accountId)) {
-    throw new DomainError("P2", "Solo un gasto fijo se paga con tarjeta de débito, desde su cuenta");
+  if (p.debitCardId && (p.kind === "salary" || !p.accountId)) {
+    throw new DomainError("P2", "Solo un gasto fijo o un seguro se paga con tarjeta de débito, desde su cuenta");
   }
 }
 

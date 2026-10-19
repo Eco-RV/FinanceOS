@@ -4,7 +4,7 @@
 
 Mejoras sobre la 3.0.0: auditoría de la lógica de negocio, historiales con
 filtros, leyes de UX, botones de gasto e ingreso y **Gastos compartidos**.
-SQL nuevo en `supabase/Versionamiento/3.0.1/` (correr `00_` y después `01_`).
+SQL nuevo en `supabase/Versionamiento/3.0.1/` (correr `00_`, `01_` y `02_` en orden).
 
 ### Auditoría de la lógica de negocio
 - `docs/dominio/pendientes.md`: lo que falta, por regla, fase y proceso.
@@ -46,6 +46,14 @@ SQL nuevo en `supabase/Versionamiento/3.0.1/` (correr `00_` y después `01_`).
   - **Conexión**: `Stepper` en el alta de gasto compartido y en la wallet.
   - **Exceso de opciones**: Procesos con los 4 frecuentes arriba y "Más
     procesos".
+
+### Correcciones
+- **T9**: un seguro en Planes también se cobra a una **tarjeta de débito**
+  (sale del saldo de su cuenta). SQL `3.0.1/02_insurance_debit_card.sql`.
+- **T3 en cuotas**: con "las compras del día de corte pasan al siguiente
+  corte", una cuota de financiamiento que cae el día del corte ahora vence en
+  el corte siguiente también en la tabla del plan, los avisos a miembros y los
+  gastos compartidos (el estado de cuenta ya lo hacía).
 
 ### Gastos compartidos (X1–X6)
 - `/procesos/compartidos`: pagas el total y lo divides entre personas
