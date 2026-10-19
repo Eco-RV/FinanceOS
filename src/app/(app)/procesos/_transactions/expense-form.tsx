@@ -30,6 +30,7 @@ import { formatCurrency } from "@/lib/format";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import type { Account, CreditCard, DebitCard, Transaction } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { readLastUsed, rememberLastUsed } from "@/lib/last-used";
 import { saveTransaction } from "./actions";
 import { CategoryPicker } from "./category-picker";
 import { WalletCarousel } from "./wallet-carousel";
@@ -148,14 +149,24 @@ export function ExpenseForm({
     Boolean(transaction && (transaction.note || transaction.occurred_on !== today)),
   );
 
-  // Al abrir un gasto nuevo: formulario limpio y la primera tarjeta elegida.
+  // Al abrir un gasto nuevo: formulario limpio y, si ya se usó, la forma de
+  // pago de la última vez (3.0.1, ley de Parkinson); si no, la primera tarjeta.
   function onOpenChange(next: boolean) {
     if (next && !editing) {
       setAmount("");
       setCategory("");
       setMore(false);
-      setCardId(cards[0]?.id ?? "");
-      setMode(defaultMode());
+      const lastMode = readLastUsed("gasto:modo") as Mode | null;
+      const lastCard = readLastUsed("gasto:tarjeta");
+      setCardId(cards.some((c) => c.id === lastCard) ? lastCard! : (cards[0]?.id ?? ""));
+      const lastBank = readLastUsed("gasto:cuenta");
+      if (lastBank && accounts.some((a) => a.id === lastBank)) {
+        setBankId(lastBank);
+        setCashId(lastBank);
+      }
+      const lastDebit = readLastUsed("gasto:debito");
+      if (lastDebit) setDebitId(lastDebit);
+      setMode(!initialMode && lastMode && ["card", "debit", "sinpe", "cash"].includes(lastMode) ? lastMode : defaultMode());
     }
     setOpen(next);
   }
@@ -219,6 +230,13 @@ export function ExpenseForm({
     mode === "debit" ? (debitSelected?.card.id ?? keptDebit?.cardId ?? "") : "";
 
   function handleSubmit(formData: FormData) {
+    if (!editing) {
+      rememberLastUsed("gasto:modo", mode);
+      if (mode === "card") rememberLastUsed("gasto:tarjeta", cardId);
+      if (mode === "sinpe") rememberLastUsed("gasto:cuenta", bankSelected);
+      if (mode === "cash") rememberLastUsed("gasto:cuenta", cashSelected);
+      if (mode === "debit") rememberLastUsed("gasto:debito", debitSelected?.card.id);
+    }
     submit(formData);
   }
 

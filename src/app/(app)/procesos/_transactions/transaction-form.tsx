@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import { useDialogForm } from "@/lib/use-dialog-form";
+import { readLastUsed, rememberLastUsed } from "@/lib/last-used";
 import { crToday, overdraftWarning, overpaymentWarning, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
 import { CURRENCIES } from "@/lib/schema";
@@ -191,8 +192,29 @@ function MovementForm({
 
   const canPayTotal = type === "card_payment" && typeof totalToPay === "number" && totalToPay > 0;
 
+  // 3.0.1 · ley de Parkinson: un ingreso nuevo propone la cuenta y la
+  // categoría de la última vez.
+  function onOpenChange(next: boolean) {
+    if (next && !editing && type === "income") {
+      const lastAccount = readLastUsed("ingreso:cuenta");
+      if (lastAccount && accounts.some((a) => a.id === lastAccount)) setOrigin(`account:${lastAccount}`);
+      else if (!origin && accounts.length === 1) setOrigin(`account:${accounts[0].id}`);
+      const lastCategory = readLastUsed("ingreso:categoria");
+      if (!category && lastCategory && categories.includes(lastCategory)) setCategory(lastCategory);
+    }
+    setOpen(next);
+  }
+
+  function handleSubmit(formData: FormData) {
+    if (!editing && type === "income") {
+      rememberLastUsed("ingreso:cuenta", origin.startsWith("account:") ? origin.slice(8) : null);
+      rememberLastUsed("ingreso:categoria", category);
+    }
+    submit(formData);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger
         render={
           editing ? (
@@ -234,7 +256,7 @@ function MovementForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form action={handleSubmit} className="flex flex-col gap-4">
           <input type="hidden" name="type" value={type} />
           {transaction ? (
             <input type="hidden" name="id" value={transaction.id} />

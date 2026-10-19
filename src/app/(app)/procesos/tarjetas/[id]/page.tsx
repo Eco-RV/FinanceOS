@@ -188,30 +188,24 @@ export default async function CardDetailPage({
         const settled = s.status === "al-dia" || s.status === "sin-saldo";
         return (
           <section key={cur} className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold tracking-tight">
-              Estado de cuenta{multi.currencies.length > 1 ? ` en ${cur === "CRC" ? "colones" : "dólares"}` : ""}
-            </h2>
-
-            {overdue ? (
-              <Alert tone="danger">
-                <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
-                <p className="text-sm font-medium">
-                  Atrasada {Math.abs(s.daysToDue)} día
-                  {Math.abs(s.daysToDue) === 1 ? "" : "s"} — el pago venció el{" "}
-                  {formatDate(s.dueDate)} y genera intereses. Falta pagar{" "}
-                  {formatCurrency(s.dueAmount, cur)}.
+            {/* 3.0.1 · ceguera a banners: el estado va pegado al título, no en una caja aparte. */}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">
+                Estado de cuenta{multi.currencies.length > 1 ? ` en ${cur === "CRC" ? "colones" : "dólares"}` : ""}
+              </h2>
+              {overdue ? (
+                <p className="flex items-center gap-1.5 text-sm font-medium text-destructive" role="status">
+                  <TriangleAlert className="size-4 shrink-0" />
+                  Atrasada {Math.abs(s.daysToDue)} día{Math.abs(s.daysToDue) === 1 ? "" : "s"}: venció el{" "}
+                  {formatDate(s.dueDate)} y genera intereses
                 </p>
-              </Alert>
-            ) : settled ? (
-              <Alert tone="ok">
-                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-foreground/70" />
-                <p className="text-sm font-medium">
-                  {s.status === "sin-saldo"
-                    ? "No hubo saldo en el último corte."
-                    : "Estás al día con el corte."}
+              ) : settled ? (
+                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <CheckCircle2 className="size-4 shrink-0 text-success" />
+                  {s.status === "sin-saldo" ? "No hubo saldo en el último corte" : "Estás al día con el corte"}
                 </p>
-              </Alert>
-            ) : null}
+              ) : null}
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Stat
@@ -347,27 +341,6 @@ export default async function CardDetailPage({
           sharedLinks={await loadSharedLinks(supabase)}
         />
       </div>
-    </div>
-  );
-}
-
-function Alert({
-  tone,
-  children,
-}: {
-  tone: "danger" | "ok";
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-start gap-3 rounded-xl p-4",
-        tone === "danger"
-          ? "border border-destructive/30 bg-destructive/5 dark:bg-destructive/10"
-          : "surface",
-      )}
-    >
-      {children}
     </div>
   );
 }
