@@ -211,7 +211,7 @@ function fakeGoals() {
   return { repo, goals };
 }
 
-test("S1/S2: meta con cuenta de su moneda y fecha futura", async () => {
+test("A1/A2: meta con cuenta de su moneda y fecha futura", async () => {
   const g = fakeGoals();
   const d = { goals: g.repo, accounts: accounts({ ahorro: "CRC" }) };
   const fields: GoalFields = {
@@ -227,9 +227,9 @@ test("S1/S2: meta con cuenta de su moneda y fecha futura", async () => {
   assert.equal(g.goals.get("g1")?.name, "Viaje");
 
   const usd = await saveGoal(d, { id: null, fields: { ...fields, currency: "USD" }, today: "2026-10-14" });
-  assert.equal(!usd.ok && usd.rule, "S1");
+  assert.equal(!usd.ok && usd.rule, "A1");
   const past = await saveGoal(d, { id: null, fields: { ...fields, target_date: "2026-01-01" }, today: "2026-10-14" });
-  assert.equal(!past.ok && past.rule, "S2");
+  assert.equal(!past.ok && past.rule, "A2");
 
   assert.ok((await deleteGoal(g.repo, "g1")).ok);
   assert.equal(g.goals.size, 0);

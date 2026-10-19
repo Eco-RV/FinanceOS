@@ -14,7 +14,7 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 **Criterios de aceptación**
 - Nombre, ícono (del kit de la app), objetivo y moneda, fecha opcional
   (futura) y cuenta ligada (se sugieren primero las de ahorro, de la misma
-  moneda; una cuenta solo puede tener una meta activa, S1).
+  moneda; una cuenta solo puede tener una meta activa, A1).
 
 ### 2. Ver mi avance
 **Criterios de aceptación**
@@ -38,7 +38,7 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 
 ## Reglas de negocio
 
-- S1–S3 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
+- A1–A3 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
 - El Arranque de 0 conserva las metas.
 
 ## Pendiente / fuera de alcance

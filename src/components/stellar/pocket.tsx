@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { displayStellarBalance } from "@/domain";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useWallet } from "./wallet-context";
 import { ReceiveDialog } from "./receive-dialog";
 import { SendDialog } from "./send-dialog";
+import { useMyFamily } from "./use-family";
 import { WalletSetup } from "./wallet-setup";
 
 export type ExchangeRateView = { usd_crc: number; rate_on: string } | null;
@@ -34,10 +35,18 @@ export function PocketBalance({ rate, compact = false }: { rate: ExchangeRateVie
   );
 }
 
-/** Mi bolsillo (2.9.0): saldo, enviar, recibir y la puesta a punto de la wallet. */
-export function Pocket({ rate }: { rate: ExchangeRateView }) {
+/**
+ * Mi bolsillo (2.9.0): saldo, enviar, recibir y la puesta a punto de la wallet.
+ * K9 (3.0.1): no se advierten las estrellas de mi familia ni las de mi agenda.
+ */
+export function Pocket({ rate, directory = [] }: { rate: ExchangeRateView; directory?: string[] }) {
   const { address, balances, updateBalances } = useWallet();
+  const family = useMyFamily();
   const [refreshing, setRefreshing] = useState(false);
+  const knownAddresses = useMemo(() => {
+    const fromFamily = family.state.status === "ready" ? family.state.snapshot.family.stars.map((s) => s.address) : [];
+    return [...new Set([...fromFamily, ...directory])].filter((a) => a !== address);
+  }, [family.state, directory, address]);
   if (!address) return null;
 
   return (
@@ -60,7 +69,7 @@ export function Pocket({ rate }: { rate: ExchangeRateView }) {
           </Button>
         </div>
         <div className="flex gap-3">
-          <SendDialog />
+          <SendDialog knownAddresses={knownAddresses} />
           <ReceiveDialog address={address} />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">

@@ -218,7 +218,7 @@ export function setBaselineCap(
 
 const GOAL_NOT_FOUND = "Meta no encontrada";
 
-/** S1–S2: crea o edita una meta; la cuenta ligada debe estar activa y en su moneda. */
+/** A1–A2: crea o edita una meta; la cuenta ligada debe estar activa y en su moneda. */
 export function saveGoal(
   deps: { goals: GoalRepository; accounts: AccountRepository },
   input: { id: string | null; fields: GoalFields; today: ISODate },
@@ -234,7 +234,7 @@ export function saveGoal(
     if (fields.account_id) {
       const currency = await deps.accounts.currencyOf(fields.account_id);
       if (!currency) throw new DomainError("G4", "Cuenta no encontrada o desactivada");
-      assertSameCurrency(currency, fields.currency, "S1");
+      assertSameCurrency(currency, fields.currency, "A1");
     }
     return ok(await deps.goals.save(input.id, fields));
   });

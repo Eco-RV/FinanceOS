@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import { crToday, toISODate } from "@/domain";
+import { crToday, overdraftWarning, overpaymentWarning, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
 import { CURRENCIES } from "@/lib/schema";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -166,6 +166,23 @@ function MovementForm({
       ? (fixedCardBalances?.[payIn] ?? (payIn === accountCurrency ? fixedCardBalance : undefined))
       : undefined;
 
+  // M4 (advierte): un abono mayor que la deuda deja saldo a favor.
+  const appliedHere =
+    transaction?.type === "card_payment" && transaction.currency === payIn ? Number(transaction.amount) : 0;
+  const overpaid =
+    type === "card_payment" && typeof totalToPay === "number"
+      ? overpaymentWarning(Math.max(0, totalToPay), amountNumber, appliedHere)
+      : null;
+  // C2 (advierte): un gasto desde una cuenta puede dejarla en negativo.
+  const overdraft =
+    type === "expense" && originAccount
+      ? overdraftWarning(
+          Number(originAccount.current_balance),
+          amountNumber,
+          transaction?.account_id === originAccount.id ? Number(transaction.amount) : 0,
+        )
+      : null;
+
   const canPayTotal = type === "card_payment" && typeof totalToPay === "number" && totalToPay > 0;
 
   return (
@@ -260,6 +277,23 @@ function MovementForm({
             >
               Usar saldo total de la tarjeta ({formatCurrency(totalToPay!, payIn)})
             </Button>
+          ) : null}
+
+          {overpaid != null ? (
+            <p role="status" className="rounded-xl bg-warning/15 px-3 py-2 text-xs text-foreground">
+              Abonas más que la deuda: quedará un saldo a favor de{" "}
+              <span className="font-medium tabular-nums">{formatCurrency(overpaid, payIn)}</span>.
+              Puedes registrarlo igual.
+            </p>
+          ) : null}
+          {overdraft != null && originAccount ? (
+            <p role="status" className="rounded-xl bg-warning/15 px-3 py-2 text-xs text-foreground">
+              {originAccount.name} quedará en{" "}
+              <span className="font-medium tabular-nums">
+                {formatCurrency(overdraft, originAccount.currency)}
+              </span>
+              . Puedes registrarlo igual.
+            </p>
           ) : null}
 
           {type === "card_payment" ? (

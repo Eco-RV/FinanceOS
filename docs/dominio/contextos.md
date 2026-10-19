@@ -60,6 +60,6 @@ Estos cambian sin tocar las reglas. Ver [`arquitectura.md`](./arquitectura.md).
 | Guardar y leer datos (repositorios) | Supabase / Postgres | Otro Postgres, cifrado de extremo a extremo, local-first |
 | Identidad | Supabase Auth (correo + contraseña, Google) | Otro proveedor |
 | Leer avisos bancarios | Gmail API (solo lectura) | Otro proveedor de correo |
-| Notificador | — (pendiente) | Correo, WhatsApp |
-| Tipo de cambio | — (pendiente) | BCCR, digitado a mano |
+| Notificador | Gmail del usuario (`gmail.send`) y enlace `wa.me` (envío manual, 2.3.0) | API de WhatsApp Business, envío automático |
+| Tipo de cambio | Digitado a mano (Ajustes → Tipo de cambio, 2.0.0) | BCCR (pendiente) |
 | Reloj ("hoy") | `crToday()` (America/Costa_Rica) | — |

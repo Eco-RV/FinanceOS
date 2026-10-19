@@ -85,6 +85,9 @@ débito alcanza para pagarlas junto con las tarjetas.
   resta ese capital.
 
 ### 6. Editar, eliminar o desactivar un préstamo
+Como usuario quiero corregir los datos de un préstamo o quitarlo de mis
+listados cuando ya lo liquidé, sin perder su historia.
+
 **Criterios de aceptación**
 - Editar cambia nombre, banco y cuenta sugerida. Monto, tasa, plazo y
   fechas **no** se editan: definen el calendario.
@@ -121,3 +124,5 @@ débito alcanza para pagarlas junto con las tarjetas.
   (`supabase/Versionamiento/2.1.0/01_loans.sql`).
 - **2026-10-12 (v2.1.0)** — Las cuotas a cobro entran al Resumen y a la
   cobertura del débito (L6); el patrimonio neto resta el capital pendiente.
+- **2026-10-18 (v3.0.1, en desarrollo)** — La historia 6 suma su enunciado
+  "Como usuario…" (no cambia el comportamiento).

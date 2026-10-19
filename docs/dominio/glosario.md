@@ -20,13 +20,14 @@
 | **Perfil** | Datos opcionales del usuario: nombre, usuario (@), país y foto. | Decidido · Implementado 2.6.0 |
 | **Preferencias** | Ajustes de cómo se ve y se comporta la app (tema hoy; moneda base y formato de fecha a futuro). | Decidido · Implementado 2.6.0 |
 | **Familia** | Grupo de **contactos** del usuario (nombre, correo, WhatsApp) con quienes divide cuotas. **No** tienen login ni ven la app. | Decidido |
-| **Miembro** | Un contacto de la familia que paga parte de las cuotas de un financiamiento. Tiene nombre y correo y/o WhatsApp (Ajustes → Miembros). | Decidido · Implementado 2.3.0 |
+| **Persona (de un gasto compartido)** | Un miembro con quien se divide un gasto compartido (3.0.1). En pantalla se dice "persona"; en el modelo es un **miembro**. | Decidido · Implementado 3.0.1 |
+| **Miembro** | Un contacto de la familia que paga parte de las cuotas de un financiamiento o de un gasto compartido. Tiene nombre y correo y/o WhatsApp (Ajustes → Miembros). | Decidido · Implementado 2.3.0 |
 
 ## Bancos y productos
 
 | Término | Definición | Estado |
 |---|---|---|
-| **Banco** | Entidad financiera de un catálogo del sistema: BCR, BN, BAC (se pueden agregar). Sabe sus remitentes de correo y su plantilla de aviso. | Propuesta: catálogo del sistema, no dato que crea cada usuario |
+| **Banco** | Entidad financiera de un catálogo del sistema: BCR, BN, BAC (se pueden agregar). Sabe sus remitentes de correo y su plantilla de aviso. | Decidido: hoy cada usuario crea sus bancos (Ajustes → Bancos). Un catálogo del sistema queda como propuesta |
 | **Cuenta** | Lugar donde el usuario **tiene** dinero. Su saldo es disponible. | Decidido |
 | **Tipo de cuenta** | Clasificación de una cuenta bancaria de débito: ahorros, corriente… (en el documento de negocio aparece como "categorías de débito"; **no** son categorías de gasto). | Decidido |
 | **Cuenta bancaria de débito** | Cuenta en un banco, con tipo de cuenta y moneda. | Decidido |
@@ -35,8 +36,8 @@
 | **Tarjeta de crédito** | Producto donde el usuario **debe** dinero. Su saldo es deuda. Puede tener saldo en CRC y en USD a la vez (bimoneda). | Decidido |
 | **Límite de crédito** | Tope de deuda de la tarjeta, expresado **en colones**. | Decidido |
 | **Disponible** | Límite − deuda total (saldo real CRC + saldo real USD convertido a CRC + capital de financiamientos pendiente). | Decidido |
-| **Desactivar** | Sacar de uso algo que tiene historia (movimientos). Deja de ofrecerse para registrar, pero su historia queda. | Propuesta |
-| **Eliminar** | Borrar algo sin historia, o borrar un movimiento puntual. | Propuesta |
+| **Desactivar** | Sacar de uso algo que tiene historia (movimientos). Deja de ofrecerse para registrar, pero su historia queda. | Decidido · Implementado 2.1.0 (G5) |
+| **Eliminar** | Borrar algo sin historia, o borrar un movimiento puntual. | Decidido · Implementado 2.1.0 (G5) |
 
 ## Ciclo de la tarjeta de crédito
 
@@ -66,8 +67,8 @@
 | **SINPE** | Salida de dinero desde una cuenta de débito hacia un tercero vía SINPE Móvil. **Es un gasto** y lleva categoría. | Decidido |
 | **Abono** | Pago a una tarjeta de crédito. Sale **siempre** de una cuenta de débito: baja la cuenta y baja la deuda. Puede superar la deuda. Puede abonar el saldo en la otra moneda de la tarjeta: la cuenta paga el equivalente con el último tipo de cambio (M5, 2.8.0). | Decidido |
 | **Categoría de gasto** / **de ingreso** | Clasificación de un gasto (comida, transporte…) o un ingreso. El usuario parte de una lista sugerida y puede editar, deshabilitar y consultar. | Decidido |
-| **Movimiento programado** | Movimiento con fecha futura que nace de un plan (salario, suscripción, seguro, cuota). Se muestra como **proyección** y no se confunde con lo ocurrido hasta que llega su fecha. | Propuesta |
-| **Archivar** | Sacar movimientos de la vista y de los saldos sin borrarlos. | Propuesta |
+| **Movimiento programado** | Movimiento con fecha futura que nace de un plan (salario, suscripción, seguro, cuota). Se muestra como **proyección** y no se confunde con lo ocurrido hasta que llega su fecha. | Decidido · Implementado 2.0.0 (cuotas) y 2.7.0 (planes, M7) |
+| **Archivar** | Sacar movimientos de la vista y de los saldos sin borrarlos. | Decidido · Implementado 2.2.0 (Arranque de 0) |
 | **Arranque de 0** | Rutina con confirmación que archiva todos los movimientos (gastos, ingresos, abonos, transferencias, cuotas cobradas…), elimina financiamientos y préstamos con sus cuotas pendientes y pide un saldo inicial nuevo para cada cuenta y tarjeta. Conserva cuentas, tarjetas, bancos, categorías, salario, suscripciones y seguros. | Decidido |
 
 ## Planes recurrentes

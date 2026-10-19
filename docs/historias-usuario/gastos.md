@@ -133,8 +133,10 @@ financiamientos activos de todas las tarjetas.
 ## Reglas de negocio
 
 - Un gasto puede tener como origen una cuenta **o** una tarjeta — no ambas ni
-  ninguna. Desde 2.5.0 el formulario rápido solo ofrece tarjetas y cuentas de
-  efectivo (la regla de datos no cambia).
+  ninguna. El formulario rápido ofrece crédito, débito, SINPE y efectivo
+  (débito y SINPE desde 2.8.0).
+- C2 (3.0.1): si el gasto deja la cuenta en negativo, el formulario avisa en
+  cuánto quedará y deja registrarlo igual.
 - `category` es texto libre guardado en el movimiento, no una referencia a
   `categories`.
 - Un SINPE es un gasto con `channel = 'sinpe'`; solo desde cuenta (S1).
@@ -143,8 +145,8 @@ financiamientos activos de todas las tarjetas.
 
 ## Pendiente / fuera de alcance
 
-- No hay gastos recurrentes/automáticos (fuera de las cuotas que genera un
-  financiamiento sobre tarjeta, ver [`tarjetas.md`](./tarjetas.md)).
+- Los gastos recurrentes son gastos fijos de Planes (ver
+  [`planes.md`](./planes.md)); no hay otro tipo de gasto automático.
 - No hay adjuntar comprobantes/recibos.
 
 
@@ -166,3 +168,7 @@ financiamientos activos de todas las tarjetas.
   opciones" para fecha y nota) y confirmación animada al centro. Ya no se
   registra un gasto sobre una cuenta de débito. Lista con filtros y filas
   por página; botón y pantalla de Financiamientos.
+- **2026-10-18 (v3.0.1, en desarrollo)** — Aviso C2 (cuenta en negativo) en
+  el gasto rápido; acción "Compartir" para volver un gasto un gasto compartido
+  (ver [`compartidos.md`](./compartidos.md)). Se corrigen las reglas del
+  formulario rápido y el pendiente de gastos recurrentes.

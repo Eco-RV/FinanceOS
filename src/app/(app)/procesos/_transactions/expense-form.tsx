@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import { crToday, toISODate } from "@/domain";
+import { crToday, overdraftWarning, toISODate } from "@/domain";
 import { formatCurrency } from "@/lib/format";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import type { Account, CreditCard, DebitCard, Transaction } from "@/lib/types";
@@ -197,6 +197,23 @@ export function ExpenseForm({
           : cashSelected
             ? `account:${cashSelected}`
             : "";
+  // C2 (advierte): la cuenta de débito/SINPE/efectivo puede quedar en negativo.
+  const payingAccount =
+    mode === "debit"
+      ? (debitSelected?.account ?? accounts.find((a) => a.id === keptDebit?.accountId))
+      : mode === "sinpe"
+        ? bankForCurrency.find((a) => a.id === bankSelected)
+        : mode === "cash"
+          ? cashForCurrency.find((a) => a.id === cashSelected)
+          : undefined;
+  const overdraft = payingAccount
+    ? overdraftWarning(
+        Number(payingAccount.current_balance),
+        Number(amountValue),
+        transaction?.account_id === payingAccount.id ? Number(transaction.amount) : 0,
+      )
+    : null;
+
   const debitCardValue =
     mode === "debit" ? (debitSelected?.card.id ?? keptDebit?.cardId ?? "") : "";
 
@@ -450,6 +467,15 @@ export function ExpenseForm({
                 ))}
               </div>
             )}
+            {overdraft != null && payingAccount ? (
+              <p role="status" className="rounded-xl bg-warning/15 px-3 py-2 text-xs text-foreground">
+                {payingAccount.name} quedará en{" "}
+                <span className="font-medium tabular-nums">
+                  {formatCurrency(overdraft, payingAccount.currency)}
+                </span>
+                . Puedes registrarlo igual.
+              </p>
+            ) : null}
             {errors?.origin ? <p className="text-xs text-destructive">{errors.origin}</p> : null}
           </div>
 

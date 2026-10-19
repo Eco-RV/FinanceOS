@@ -1,7 +1,7 @@
 /**
  * Ahorros y metas (2.7.0). Una meta tiene un objetivo (monto, moneda y fecha
  * opcional) y se liga a una cuenta: lo ahorrado es el saldo de esa cuenta y
- * los aportes son transferencias hacia ella. Reglas S1–S3.
+ * los aportes son transferencias hacia ella. Reglas A1–A3.
  */
 
 import { fromISODate, type ISODate } from "../shared/calendar.ts";
@@ -14,14 +14,14 @@ export type GoalTerms = {
   targetDate: ISODate | null;
 };
 
-/** S2: nombre, objetivo mayor que cero y, si hay fecha, posterior a hoy al crear. */
+/** A2: nombre, objetivo mayor que cero y, si hay fecha, posterior a hoy al crear. */
 export function validateGoal(g: GoalTerms, today: ISODate, creating: boolean): void {
-  if (!g.name.trim()) throw new DomainError("S2", "La meta necesita un nombre");
+  if (!g.name.trim()) throw new DomainError("A2", "La meta necesita un nombre");
   if (!(g.targetAmount > 0) || !Number.isFinite(g.targetAmount)) {
-    throw new DomainError("S2", "El objetivo debe ser mayor que cero");
+    throw new DomainError("A2", "El objetivo debe ser mayor que cero");
   }
   if (creating && g.targetDate && g.targetDate <= today) {
-    throw new DomainError("S2", "La fecha de la meta debe ser futura");
+    throw new DomainError("A2", "La fecha de la meta debe ser futura");
   }
 }
 
@@ -47,7 +47,7 @@ function monthsBetween(from: ISODate, to: ISODate): number {
 }
 
 /**
- * S3: avance de una meta. Lo ahorrado no baja de 0 para el avance (una cuenta
+ * A3: avance de una meta. Lo ahorrado no baja de 0 para el avance (una cuenta
  * en negativo no "debe" a la meta). Atrasada = la fecha pasó sin llegar.
  */
 export function goalProgress(input: {

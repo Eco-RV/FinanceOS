@@ -6,7 +6,8 @@
 
 Cuentas de débito, ahorro o efectivo. Cada cuenta tiene un saldo que se
 mantiene al día automáticamente a partir de los movimientos (gastos, ingresos
-y pagos de tarjeta) que se le registran — de momento se edita a mano el saldo para ajustar.
+y pagos de tarjeta) que se le registran. El saldo no se edita a mano: se
+corrige con el saldo inicial (C1) o desde Ajustes → Verificar saldos.
 
 ## Historias de usuario
 
@@ -109,8 +110,8 @@ registrar los gastos que pago con ella.
 ## Pendiente / fuera de alcance
 
 - No hay conversión de moneda entre cuentas de distinta divisa.
-- Ahorros con metas (roadmap paso 4) todavía no existen como concepto propio;
-  hoy una cuenta `savings` es solo una cuenta más sin objetivo asociado.
+- Una cuenta tiene a lo sumo una meta de ahorro activa (A1, ver
+  [`ahorros.md`](./ahorros.md)).
 
 ## Historial
 
@@ -130,3 +131,6 @@ registrar los gastos que pago con ella.
   formulario rápido; un gasto ya no se registra sobre una cuenta de débito
   (para eso están SINPE y Transferencias). En el Resumen, el disponible en
   débito se llama **Liquidez**.
+- **2026-10-18 (v3.0.1, en desarrollo)** — Un gasto que deja la cuenta en
+  negativo se permite con aviso (C2). Se corrige el resumen (el saldo ya no se
+  edita a mano desde 2.0.0) y el pendiente de metas (existen desde 2.7.0).

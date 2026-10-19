@@ -117,6 +117,8 @@ calcularlo a mano.
   convertido y el tipo de cambio quedan guardados en el movimiento. Sin tipo
   de cambio no deja guardar. Al editar, se convierte con el último tipo de
   cambio.
+- M4 (3.0.1): si el abono supera la deuda de esa moneda, el formulario avisa
+  el saldo a favor que quedará y deja registrarlo igual.
 
 ### 6. Financiamientos
 Las compras a cuotas (tasa 0 o con interés), su reparto entre miembros de la

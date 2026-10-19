@@ -8,7 +8,7 @@
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
 | G1 | Los movimientos son la fuente de verdad. Todo saldo se deriva de ellos; un saldo guardado es una copia que debe coincidir (Ajustes → Verificar saldos). | — | Decidido · Implementado 2.0.0 |
-| G2 | Todo monto es mayor que 0; el sentido (entra/sale) lo da el tipo de movimiento. | Rechaza | Propuesta |
+| G2 | Todo monto es mayor que 0; el sentido (entra/sale) lo da el tipo de movimiento. | Rechaza | Decidido · Implementado 2.0.0 |
 | G3 | No se suman ni comparan montos de distinta moneda sin tipo de cambio explícito. | Rechaza | Decidido |
 | G4 | No se registra nada sobre algo desactivado (cuenta, tarjeta, categoría, banco): ni movimientos, ni edición, ni asociar una tarjeta a un banco desactivado. Al editar un movimiento se puede conservar la categoría que ya tenía aunque esté desactivada. | Rechaza | Decidido · Implementado 2.1.0 |
 | G5 | Lo que tiene historia se **desactiva** (se conserva y se puede reactivar); lo que no tiene, se puede **eliminar**. Historia: cuenta = movimientos como origen o destino; tarjeta = movimientos y financiamientos; categoría = movimientos de su tipo con ese nombre; banco = avisos importados. El saldo inicial (C1) no cuenta como historia. | Rechaza eliminar si tiene historia | Decidido 2026-10-12 · Implementado 2.1.0 |
@@ -19,7 +19,7 @@
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
 | C1 | Cada cuenta y tarjeta arranca con un **saldo inicial** oficial, que es un movimiento visible (`opening_balance`, monto con signo ≠ 0, máximo uno activo por cuenta/tarjeta). | Rechaza 0 o duplicado | Decidido · Implementado 2.0.0 |
-| C2 | Un gasto puede dejar una cuenta en negativo. | Advierte | Decidido |
+| C2 | Un gasto puede dejar una cuenta en negativo; el formulario avisa cuánto quedará. | Advierte | Decidido · Implementado 3.0.1 |
 | C3 | Una cuenta bancaria (corriente o ahorro, no efectivo) tiene como máximo **una** tarjeta de débito activa. La tarjeta no tiene saldo propio: un gasto con ella sale de su cuenta y recuerda la tarjeta. Un gasto fijo (P2) también se puede pagar con ella. | Rechaza | Decidido · Implementado 2.8.0 |
 | C4 | Una cuenta tiene una sola moneda. | — | Decidido |
 
@@ -31,10 +31,10 @@
 | M2 | Una transferencia es entre dos cuentas propias **distintas** y de la **misma moneda**, y no cuenta como gasto ni como ingreso. | Rechaza si origen = destino o monedas distintas | Decidido · Implementado 2.0.0 |
 | S1 | Un SINPE es un gasto desde una cuenta de débito (no tarjeta), con categoría; destinatario y teléfono (8 dígitos) opcionales. | Rechaza | Decidido · Implementado 2.0.0 |
 | M3 | Un abono sale siempre de una cuenta de débito hacia una tarjeta de crédito. | Rechaza | Decidido |
-| M4 | Un abono puede superar la deuda. | Advierte | Decidido |
+| M4 | Un abono puede superar la deuda; el formulario avisa el saldo a favor que quedará. | Advierte | Decidido · Implementado 3.0.1 |
 | M5 | Un abono baja el saldo de la tarjeta en la moneda que se elige (por defecto la de la cuenta). Si la cuenta es de otra moneda, sale de ella el equivalente con el **último tipo de cambio** digitado, que queda guardado en el movimiento; sin tipo de cambio se rechaza. | Rechaza (sin tipo de cambio) | Decidido · Cambiado 2.8.0 (antes: sin conversión) |
 | M6 | Un ingreso puede tener fecha futura. | — | Decidido |
-| M7 | Un movimiento con fecha futura es **programado**: no cuenta en saldos "de hoy" ni en el pago de contado hasta que llega su fecha. Sí cuenta en el disponible de la tarjeta si es cuota de un financiamiento. | — | Propuesta (amplía la regla actual de cuotas) |
+| M7 | Un movimiento con fecha futura es **programado**: no cuenta en saldos "de hoy" ni en el pago de contado hasta que llega su fecha. Sí cuenta en el disponible de la tarjeta si es cuota de un financiamiento. | — | Decidido · Implementado 2.0.0 (cuotas) y 2.7.0 (planes) |
 | M8 | El Arranque de 0 pide confirmación escrita (`ARRANCAR`) y un saldo inicial nuevo (puede ser 0) por cada cuenta y tarjeta activa (tarjetas: CRC y USD). De forma atómica: borra las cuotas pendientes (fecha > hoy) de los financiamientos, **archiva** todos los movimientos (no visibles), elimina financiamientos y préstamos (sus cuotas cobradas quedan archivadas) y crea los saldos iniciales nuevos, que son lo único visible. | Rechaza sin confirmación o sin saldos | Decidido 2026-10-12 · Implementado 2.2.0 |
 
 ## Tarjetas de crédito
@@ -84,11 +84,13 @@
 
 ## Ahorros y metas (2.7.0)
 
+Hasta 3.0.0 se llamaban S1–S3 (chocaban con S1 = SINPE); desde 3.0.1 son A1–A3.
+
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| S1 | Una meta se liga a lo sumo a una cuenta activa de su misma moneda, y una cuenta tiene como máximo una meta activa. Lo ahorrado es el saldo de esa cuenta; los aportes son transferencias hacia ella (M2). | Rechaza | Decidido · Implementado 2.7.0 |
-| S2 | Una meta tiene nombre y objetivo mayor que 0; la fecha, opcional, es futura al crearla. | Rechaza | Decidido · Implementado 2.7.0 |
-| S3 | Avance = ahorrado / objetivo (lo ahorrado no baja de 0). Con fecha: aporte mensual sugerido = lo que falta / meses que faltan; si la fecha pasó sin llegar, la meta está atrasada. Archivar o eliminar una meta no toca la cuenta. | — | Decidido · Implementado 2.7.0 |
+| A1 | Una meta se liga a lo sumo a una cuenta activa de su misma moneda, y una cuenta tiene como máximo una meta activa. Lo ahorrado es el saldo de esa cuenta; los aportes son transferencias hacia ella (M2). | Rechaza | Decidido · Implementado 2.7.0 |
+| A2 | Una meta tiene nombre y objetivo mayor que 0; la fecha, opcional, es futura al crearla. | Rechaza | Decidido · Implementado 2.7.0 |
+| A3 | Avance = ahorrado / objetivo (lo ahorrado no baja de 0). Con fecha: aporte mensual sugerido = lo que falta / meses que faltan; si la fecha pasó sin llegar, la meta está atrasada. Archivar o eliminar una meta no toca la cuenta. | — | Decidido · Implementado 2.7.0 |
 
 ## Importación
 
@@ -114,22 +116,22 @@
 
 ## Constelación · bolsillo (2.9.0, Stellar testnet)
 
-La familia y la bóveda (K3–K7) llegan en la 3.0.0.
+La familia y la bóveda (K3–K7) llegaron en la 3.0.0 (sección siguiente).
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
 | K1 | Solo **testnet**. | — | Decidido · Implementado 2.9.0 |
 | K2 | En la cadena solo van direcciones `G…` y montos. **Nunca** nombres, apodos, parentescos ni fotos. | — | Decidido · Implementado 2.9.0 |
 | K8 | Antes de mover dinero siempre hay una pantalla de revisión con destino, monto y "no se puede deshacer". | — | Decidido · Implementado 2.9.0 |
-| K9 | Enviar a una dirección que no está en la Constelación se advierte de forma destacada (posible estafa). En 2.9.0, sin familia todavía, toda dirección se advierte. | Advierte | Decidido · Implementado 2.9.0 |
+| K9 | Enviar a una dirección que no está en la Constelación se advierte de forma destacada (posible estafa). Desde 3.0.1 no se advierten las estrellas de tus familias ni las de tu directorio. | Advierte | Decidido · Implementado 2.9.0 · Completado 3.0.1 |
 | K10 | Los montos USDC tienen 7 decimales en la cadena; se muestran en céntimos, truncados hacia abajo. Un envío acepta hasta 7 decimales y no supera el saldo. | Rechaza | Decidido · Implementado 2.9.0 |
 
 ## Constelación familiar (3.0.0, Stellar testnet)
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| K3 | Solo una estrella de la familia deposita en su bóveda; monto mayor que 0 (USDC). | Rechaza | Decidido 2026-10-17 |
-| K4 | Un retiro de la bóveda necesita `min(aprobaciones configuradas, guardianes distintos de quien pide)` aprobaciones de guardianes **distintos de quien pide**. Si quien pide es el núcleo y es el único guardián, se ejecuta directo. Al ejecutarse, la bóveda debe tener saldo. | Rechaza | Decidido 2026-10-17 |
-| K5 | El destino de un retiro es una estrella de la misma familia (protege de estafas). | Rechaza | Decidido 2026-10-17 |
-| K6 | La familia tiene un **núcleo** (quien la crea): siempre guardián, no sale ni se quita. Solo el núcleo nombra o quita guardianes, cambia roles y fija las aprobaciones; cualquier guardián agrega miembros, quita miembros y fija la meta. Máximo 12 estrellas por familia y 5 familias por dirección. | Rechaza | Decidido 2026-10-17 |
-| K7 | Un retiro pendiente vence a los **7 días**: ya no se aprueba (se puede cancelar). Máximo 10 retiros pendientes por familia. Cancela quien pidió o un guardián. | Rechaza | Decidido 2026-10-17 |
+| K3 | Solo una estrella de la familia deposita en su bóveda; monto mayor que 0 (USDC). | Rechaza | Decidido 2026-10-17 · Implementado 3.0.0 |
+| K4 | Un retiro de la bóveda necesita `min(aprobaciones configuradas, guardianes distintos de quien pide)` aprobaciones de guardianes **distintos de quien pide**. Si quien pide es el núcleo y es el único guardián, se ejecuta directo. Al ejecutarse, la bóveda debe tener saldo. | Rechaza | Decidido 2026-10-17 · Implementado 3.0.0 |
+| K5 | El destino de un retiro es una estrella de la misma familia (protege de estafas). | Rechaza | Decidido 2026-10-17 · Implementado 3.0.0 |
+| K6 | La familia tiene un **núcleo** (quien la crea): siempre guardián, no sale ni se quita. Solo el núcleo nombra o quita guardianes, cambia roles y fija las aprobaciones; cualquier guardián agrega miembros, quita miembros y fija la meta. Máximo 12 estrellas por familia y 5 familias por dirección. | Rechaza | Decidido 2026-10-17 · Implementado 3.0.0 |
+| K7 | Un retiro pendiente vence a los **7 días**: ya no se aprueba (se puede cancelar). Máximo 10 retiros pendientes por familia. Cancela quien pidió o un guardián. | Rechaza | Decidido 2026-10-17 · Implementado 3.0.0 |
