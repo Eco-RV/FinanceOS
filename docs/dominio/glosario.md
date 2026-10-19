@@ -23,6 +23,10 @@
 | **Persona (de un gasto compartido)** | Un miembro con quien se divide un gasto compartido (3.0.1). En pantalla se dice "persona"; en el modelo es un **miembro**. | Decidido · Implementado 3.0.1 |
 | **Miembro** | Un contacto de la familia que paga parte de las cuotas de un financiamiento o de un gasto compartido. Tiene nombre y correo y/o WhatsApp (Ajustes → Miembros). | Decidido · Implementado 2.3.0 |
 
+| **Gasto compartido** | Gasto que el usuario paga completo y divide entre personas (miembros). Cada persona tiene una parte fija y la del usuario es el resto (X1–X6). | Decidido · Implementado 3.0.1 |
+| **Parte** | Lo que le toca pagar a una persona de un gasto compartido o de una cuota de financiamiento. | Decidido |
+| **Cobro** | Registro de que una persona pagó su parte: fecha, medio y, si se quiere, un ingreso a una cuenta (X4). | Decidido · Implementado 3.0.1 |
+
 ## Bancos y productos
 
 | Término | Definición | Estado |

@@ -232,9 +232,22 @@ export function ReimbursedBadge({ id, paidOn }: { id: string; paidOn: string }) 
 
 type NoticeKey = { memberId: string; dueOn: string; currency: string };
 
-/** F8: abre WhatsApp con el mensaje listo y deja constancia del aviso. */
-export function WhatsappNoticeButton({ notice, url }: { notice: NoticeKey; url: string }) {
-  const { pending, run } = useFormAction(recordWhatsappNotice);
+type NoticeAction = (formData: FormData) => Promise<FormResult>;
+
+/**
+ * F8/X5: abre WhatsApp con el mensaje listo y deja constancia del aviso.
+ * `action` registra el aviso (por defecto, el de cuotas de financiamiento).
+ */
+export function WhatsappNoticeButton({
+  notice,
+  url,
+  action = recordWhatsappNotice,
+}: {
+  notice: NoticeKey;
+  url: string;
+  action?: NoticeAction;
+}) {
+  const { pending, run } = useFormAction(action);
   return (
     <Button
       size="sm"
@@ -259,9 +272,15 @@ export function WhatsappNoticeButton({ notice, url }: { notice: NoticeKey; url: 
   );
 }
 
-/** F8: envía el aviso desde el Gmail conectado. */
-export function EmailNoticeButton({ notice }: { notice: NoticeKey }) {
-  const { pending, run } = useFormAction(sendEmailNotice);
+/** F8/X5: envía el aviso desde el Gmail conectado. */
+export function EmailNoticeButton({
+  notice,
+  action = sendEmailNotice,
+}: {
+  notice: NoticeKey;
+  action?: NoticeAction;
+}) {
+  const { pending, run } = useFormAction(action);
   return (
     <Button
       size="sm"

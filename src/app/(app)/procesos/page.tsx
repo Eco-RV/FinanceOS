@@ -10,11 +10,13 @@ import {
   PiggyBank,
   Receipt,
   Repeat,
+  Users,
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { crToday, toISODate } from "@/domain";
 import { loadFinancingBoard } from "@/lib/financing-board";
+import { loadSharedBoard } from "@/lib/shared-board";
 import { Badge } from "@/components/ui/badge";
 import { NavCard } from "@/components/nav-card";
 
@@ -70,9 +72,15 @@ const ITEMS: Item[] = [
     icon: HandCoins,
   },
   {
+    href: "/procesos/compartidos",
+    label: "Gastos compartidos",
+    description: "Pagas el total, divides entre varios y controlas quién te pagó.",
+    icon: Users,
+  },
+  {
     href: "/procesos/cobros",
     label: "Cobros a miembros",
-    description: "Avisos de cuota y lo que tu familia te debe de financiamientos.",
+    description: "Avisos y lo que te deben de cuotas y gastos compartidos.",
     icon: HandHeart,
   },
   {
@@ -83,23 +91,33 @@ const ITEMS: Item[] = [
   },
 ];
 
+/** Lo que se usa todos los días (siempre arriba). */
+const FREQUENT = new Set(["/procesos/gastos", "/procesos/ingresos", "/procesos/tarjetas", "/procesos/cuentas"]);
+
 export default async function ProcesosPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const [{ count }, board] = await Promise.all([
+  const todayISO = toISODate(crToday());
+  const [{ count }, board, shared] = await Promise.all([
     supabase
       .from("pending_transactions")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending")
       .eq("archived", false),
-    loadFinancingBoard(supabase, toISODate(crToday())),
+    loadFinancingBoard(supabase, todayISO),
+    loadSharedBoard(supabase, todayISO),
   ]);
-  const noticesToSend = board.groups.filter((g) => g.needsNotice).length;
+  const sharedNotices = shared.groups.filter((g) => g.needsNotice).length;
+  const noticesToSend = board.groups.filter((g) => g.needsNotice).length + sharedNotices;
 
   const items: Item[] = [
     ...ITEMS.map((item) =>
-      item.href === "/procesos/cobros" ? { ...item, badge: noticesToSend } : item,
+      item.href === "/procesos/cobros"
+        ? { ...item, badge: noticesToSend }
+        : item.href === "/procesos/compartidos"
+          ? { ...item, badge: sharedNotices }
+          : item,
     ),
     {
       href: "/procesos/pendientes",
@@ -109,6 +127,21 @@ export default async function ProcesosPage() {
       badge: count ?? 0,
     },
   ];
+
+  // 3.0.1 · ley 06 (exceso de opciones): primero lo de todos los días y lo que
+  // pide atención (con badge); el resto queda debajo, en "Más procesos".
+  const primary = items.filter((i) => FREQUENT.has(i.href) || (i.badge ?? 0) > 0);
+  const secondary = items.filter((i) => !primary.includes(i));
+  const card = ({ href, label, description, icon, badge }: Item) => (
+    <NavCard
+      key={href}
+      href={href}
+      icon={icon}
+      label={label}
+      description={description}
+      badge={badge ? <Badge>{badge}</Badge> : null}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -120,17 +153,15 @@ export default async function ProcesosPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {items.map(({ href, label, description, icon, badge }) => (
-          <NavCard
-            key={href}
-            href={href}
-            icon={icon}
-            label={label}
-            description={description}
-            badge={badge ? <Badge>{badge}</Badge> : null}
-          />
-        ))}
+        {primary.map(card)}
       </div>
+
+      {secondary.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-muted-foreground">Más procesos</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{secondary.map(card)}</div>
+        </section>
+      ) : null}
     </div>
   );
 }

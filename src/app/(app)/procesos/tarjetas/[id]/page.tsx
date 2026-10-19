@@ -40,6 +40,7 @@ import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
 import { MovementExplorer } from "../../_transactions/movement-explorer";
 import { allRows } from "@/lib/supabase/all-rows";
+import { loadSharedLinks } from "@/lib/shared-board";
 import { FinancingForm } from "../_financiamientos/financing-form";
 import { FinancingList } from "../_financiamientos/financing-list";
 
@@ -343,6 +344,7 @@ export default async function CardDetailPage({
           todayISO={toISODate(today)}
           emptyLabel="Sin movimientos registrados en esta tarjeta hasta hoy."
           cancelledFinancingIds={financings.filter((f) => f.cancelled_on).map((f) => f.id)}
+          sharedLinks={await loadSharedLinks(supabase)}
         />
       </div>
     </div>

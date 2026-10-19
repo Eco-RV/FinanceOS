@@ -37,6 +37,11 @@ type Props = {
   cancelledFinancingIds?: string[];
   /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
   categoryIcons?: Record<string, CategoryIconKey>;
+  /**
+   * 3.0.1: movimiento → gasto compartido (el gasto o el ingreso de un cobro).
+   * Si viene, los gastos sin compartir ofrecen "Compartir".
+   */
+  sharedLinks?: Record<string, string>;
 };
 
 /** Monto con signo según el contexto (flujo de caja vs. deuda de la tarjeta). */
@@ -82,6 +87,7 @@ export function TransactionList({
   emptyLabel = "Aún no hay movimientos.",
   cancelledFinancingIds = [],
   categoryIcons = {},
+  sharedLinks,
 }: Props) {
   const debitById = new Map(debitCards.map((d) => [d.id, d]));
   const activeDebitCards = debitCards.filter((d) => !d.archived);
@@ -165,6 +171,13 @@ export function TransactionList({
       <span className="text-xs text-muted-foreground">
         Se edita en {context === "account" ? "la cuenta" : "la tarjeta"}
       </span>
+    ) : sharedLinks?.[t.id] ? (
+      <Link
+        href={`/procesos/compartidos/${sharedLinks[t.id]}`}
+        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+      >
+        Ver en Compartidos
+      </Link>
     ) : t.loan_id ? (
       <Link
         href={`/procesos/prestamos/${t.loan_id}`}
@@ -182,6 +195,7 @@ export function TransactionList({
         categories={categories}
         categoryIcons={categoryIcons}
         debitCards={activeDebitCards}
+        canShare={Boolean(sharedLinks) && t.type === "expense"}
       />
     );
     return { t, amount, amountCurrency, isInstallment, detail: detailWithInterest, typeBadge, actions };

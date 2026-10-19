@@ -38,6 +38,7 @@ export function ExpenseExplorer({
   categoryIcons,
   todayISO,
   initial,
+  sharedLinks,
 }: {
   transactions: Transaction[];
   accounts: Account[];
@@ -49,6 +50,8 @@ export function ExpenseExplorer({
   todayISO: string;
   /** Filtros iniciales desde la URL (`?desde=&hasta=&categoria=`). */
   initial?: Partial<Pick<Filters, "from" | "to" | "category">>;
+  /** 3.0.1: movimiento → gasto compartido. */
+  sharedLinks?: Record<string, string>;
 }) {
   const [filters, setFilters] = useState<Filters>({ ...EMPTY, ...initial });
 
@@ -206,6 +209,7 @@ export function ExpenseExplorer({
         debitCards={debitCards}
         categories={categories}
         categoryIcons={categoryIcons}
+        sharedLinks={sharedLinks}
         emptyLabel={active ? "Ningún gasto coincide con los filtros." : "Aún no registrás gastos."}
       />
 

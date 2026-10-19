@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
+import { Users } from "lucide-react";
 import { DeleteButton } from "@/components/delete-button";
+import { buttonVariants } from "@/components/ui/button";
 import type { Account, CreditCard, DebitCard, Transaction } from "@/lib/types";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import { TransactionForm } from "./transaction-form";
@@ -14,6 +17,7 @@ export function TransactionRowActions({
   categories,
   categoryIcons,
   debitCards,
+  canShare = false,
 }: {
   transaction: Transaction;
   accounts: Account[];
@@ -21,6 +25,8 @@ export function TransactionRowActions({
   debitCards?: DebitCard[];
   categories?: string[];
   categoryIcons?: Record<string, CategoryIconKey>;
+  /** 3.0.1: ofrecer "Compartir" (gasto sin compartir). */
+  canShare?: boolean;
 }) {
   // El saldo inicial se edita desde el formulario de la cuenta o tarjeta.
   if (transaction.type === "opening_balance") return null;
@@ -40,6 +46,16 @@ export function TransactionRowActions({
 
   return (
     <div className="flex justify-end gap-1">
+      {canShare ? (
+        <Link
+          href={`/procesos/compartidos/nuevo?movimiento=${transaction.id}`}
+          aria-label="Compartir este gasto"
+          title="Compartir este gasto"
+          className={buttonVariants({ variant: "ghost", size: "icon" })}
+        >
+          <Users className="size-4" />
+        </Link>
+      ) : null}
       <TransactionForm
         type={transaction.type}
         accounts={accounts}

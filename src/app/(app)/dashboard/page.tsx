@@ -39,6 +39,7 @@ import {
 import { termsOf } from "@/application";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
+import { loadSharedBoard } from "@/lib/shared-board";
 import { ensurePlansUpToDate } from "@/lib/sync-plans";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
@@ -189,8 +190,10 @@ export default async function DashboardPage() {
 
   // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
   // 2.7.0: planes (línea base y programados) y metas de ahorro.
-  const [board, plansBoard, { data: goalData }] = await Promise.all([
+  // 3.0.1: también los gastos compartidos (X5).
+  const [board, sharedBoard, plansBoard, { data: goalData }] = await Promise.all([
     loadFinancingBoard(supabase, todayISO),
+    loadSharedBoard(supabase, todayISO),
     repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
     supabase
       .from("savings_goals")
@@ -198,8 +201,9 @@ export default async function DashboardPage() {
       .eq("archived", false),
   ]);
   const goals = (goalData ?? []) as Goal[];
-  const noticesToSend = board.groups.filter((g) => g.needsNotice).length;
-  const receivableCrc = board.receivables
+  const noticesToSend =
+    board.groups.filter((g) => g.needsNotice).length + sharedBoard.groups.filter((g) => g.needsNotice).length;
+  const receivableCrc = [...board.receivables, ...sharedBoard.receivables]
     .filter((r) => r.currency === "CRC")
     .reduce((s, r) => s + r.total, 0);
 
@@ -607,10 +611,10 @@ export default async function DashboardPage() {
             value={formatCurrency(receivableCrc)}
             hint={
               noticesToSend > 0
-                ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} de cuota por enviar`
+                ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} por enviar`
                 : receivableCrc > 0
-                  ? "De cuotas ya cobradas en la tarjeta"
-                  : "Nadie te debe cuotas cobradas"
+                  ? "De cuotas cobradas y gastos compartidos"
+                  : "Nadie te debe nada"
             }
             trailing={<LinkChevron />}
           />

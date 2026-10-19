@@ -71,6 +71,17 @@
 | F8 | El aviso de cuota es informativo: se envía a cada miembro con su parte y las quincenas (1, 2 o 3) que faltan para la fecha límite de pago del estado de cuenta en que cae la cuota; las partes de un miembro con la misma fecha van en un solo aviso. Se avisa una vez por quincena (3, 2, 1 y al vencer), a mano, por WhatsApp (mensaje listo) o correo (Gmail del usuario). Un miembro necesita correo o WhatsApp. | Rechaza (sin medio) | Decidido · Implementado 2.3.0 |
 | F9 | De un financiamiento solo se editan descripción y categoría (también en sus cuotas); los términos (monto, tasa, meses, fecha) no se editan. | — | Decidido 2026-10-14 · Implementado 2.3.0 |
 
+## Gastos compartidos (3.0.1)
+
+| # | Regla | Tipo | Estado |
+|---|---|---|---|
+| X1 | Un gasto compartido es un gasto (`expense`) normal, nuevo o ya registrado, desde una tarjeta de crédito, una cuenta, una tarjeta de débito o por SINPE. El usuario lo paga completo y afecta los saldos por el total. Se comparte una sola vez. Las cuotas de financiamiento y los pagos de préstamo no se comparten aquí (se reparten en su módulo). | Rechaza | Decidido 2026-10-18 · Implementado 3.0.1 |
+| X2 | Cada persona (un miembro activo, G4) aparece una vez, con una parte mayor que 0 en la moneda del gasto. La suma de las partes no pasa el total y la parte del usuario es el resto. Se sugieren partes iguales (céntimos sobrantes en la parte del usuario o, si no participa, en la de la última persona) y cada monto se puede ajustar. | Rechaza | Decidido 2026-10-18 · Implementado 3.0.1 |
+| X3 | Fecha límite de cobro: con tarjeta de crédito, la fecha de pago del estado de cuenta en que cae el cargo (respeta T3). Con otro origen, la elige el usuario (por defecto 15 días después) y no es anterior al gasto. Se guarda con el gasto. | Rechaza | Decidido 2026-10-18 · Implementado 3.0.1 |
+| X4 | Una parte se marca pagada **una vez** (fecha, medio SINPE/efectivo/transferencia/otro y nota). Si se elige, se registra además un ingreso por esa parte en una cuenta activa de la **misma moneda** (G3). Sin ingreso, es solo control y no toca saldos. Deshacer el pago borra ese ingreso. | Rechaza | Decidido 2026-10-18 · Implementado 3.0.1 |
+| X5 | El aviso funciona como F8 (WhatsApp o correo, a mano, una vez por tramo), pero se puede avisar **desde el día del gasto**. Más de 3 quincenas es un tramo propio (4). Las partes de una persona con la misma fecha límite y moneda van en un solo aviso. | — | Decidido 2026-10-18 · Implementado 3.0.1 |
+| X6 | No se cambia ni se quita la parte de quien ya pagó. No se deja de compartir un gasto que tiene pagos. Un gasto compartido no cambia monto, moneda ni origen, y no se elimina desde Gastos. El ingreso de un cobro no se edita ni se elimina desde Ingresos. El Arranque de 0 borra los compartidos y conserva los miembros. | Rechaza | Decidido 2026-10-18 · Implementado 3.0.1 |
+
 ## Planes y presupuesto
 
 | # | Regla | Tipo | Estado |

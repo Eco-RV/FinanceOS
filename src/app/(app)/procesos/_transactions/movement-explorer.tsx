@@ -69,6 +69,7 @@ export function MovementExplorer({
   cancelledFinancingIds,
   todayISO,
   emptyLabel,
+  sharedLinks,
 }: {
   context: "card" | "account";
   transactions: Transaction[];
@@ -81,6 +82,8 @@ export function MovementExplorer({
   cancelledFinancingIds?: string[];
   todayISO: string;
   emptyLabel: string;
+  /** 3.0.1: movimiento → gasto compartido. */
+  sharedLinks?: Record<string, string>;
 }) {
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [more, setMore] = useState(false);
@@ -260,6 +263,7 @@ export function MovementExplorer({
         context={context}
         accountId={accountId}
         cancelledFinancingIds={cancelledFinancingIds}
+        sharedLinks={sharedLinks}
         emptyLabel={active ? "Ningún movimiento coincide con los filtros." : emptyLabel}
       />
 

@@ -16,6 +16,7 @@ import { Panel } from "@/components/panel";
 import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
 import { MovementExplorer } from "../../_transactions/movement-explorer";
 import { allRows } from "@/lib/supabase/all-rows";
+import { loadSharedLinks } from "@/lib/shared-board";
 import { AccountFormDialog } from "../account-form";
 import { DebitCardFormDialog } from "../debit-card-form";
 import { deleteDebitCard, setDebitCardActive } from "../actions";
@@ -198,6 +199,7 @@ export default async function AccountDetailPage({ params }: PageProps<"/procesos
           categoryIcons={iconsByName(options)}
           todayISO={toISODate(crToday())}
           emptyLabel="Esta cuenta todavía no tiene movimientos hasta hoy."
+          sharedLinks={await loadSharedLinks(supabase)}
         />
       </section>
     </div>

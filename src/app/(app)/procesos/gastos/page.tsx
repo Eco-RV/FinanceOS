@@ -10,6 +10,7 @@ import type { Account, Category, CreditCard, Transaction } from "@/lib/types";
 import { BackLink } from "@/components/back-link";
 import { buttonVariants } from "@/components/ui/button";
 import { TransactionForm } from "../_transactions/transaction-form";
+import { loadSharedLinks } from "@/lib/shared-board";
 import { ExpenseExplorer } from "./expense-explorer";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -32,6 +33,8 @@ export default async function GastosPage({
   const filters = initialFilters(await searchParams);
 
   const supabase = await createClient();
+  // 3.0.1: qué gastos están compartidos (en paralelo con el resto).
+  const linksPromise = loadSharedLinks(supabase);
   const [
     { data: txData },
     { data: accData },
@@ -128,6 +131,7 @@ export default async function GastosPage({
           categoryIcons={categoryIcons}
           todayISO={toISODate(crToday())}
           initial={filters}
+          sharedLinks={await linksPromise}
         />
       ) : (
         <p className="text-sm text-muted-foreground">
