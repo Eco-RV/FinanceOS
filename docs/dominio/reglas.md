@@ -58,6 +58,7 @@
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
 | F1 | Al crear un financiamiento se eligen tarjeta, monto, tasa (0 = sin interés), de 2 a 72 meses y fecha de primera cuota; el **capital** resta al disponible desde el día 1 (en tasa 0, el total). El interés de cada cuota cuenta solo cuando llega su fecha. | Rechaza (fuera de rango) | Decidido · Cambiado 2.3.0 (72 meses, solo capital) |
+| F10 | La moneda del financiamiento se elige al crearlo (CRC o USD, por defecto la del límite). Sus cuotas van al saldo de esa moneda de la tarjeta (T1) y cuentan en el disponible convertidas con el último tipo de cambio (T2). | Rechaza (moneda no soportada) | Decidido 2026-10-18 · Implementado 3.0.1 |
 | F2 | Las cuotas caen el mismo día cada mes (ajustado al último día en meses cortos). | — | Decidido |
 | F3 | Las cuotas se consultan en una sección propia de la tarjeta, separadas de los gastos. | — | Decidido |
 | F4 | Al eliminar un financiamiento se borran solo sus cuotas **futuras**; las ya ocurridas y los abonos ya hechos quedan y se quitan a mano. | — | Decidido · Implementado 2.0.0 (fecha ≤ hoy se conserva) |

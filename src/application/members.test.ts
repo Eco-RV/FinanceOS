@@ -145,3 +145,22 @@ test("F8: aviso por correo se envía y se registra; sin correo se rechaza", asyn
   assert.ok((await recordNotices(s.deps.notices, [{ ...items[0], channel: "whatsapp" }])).ok);
   assert.equal(s.state.notices.length, 2);
 });
+
+test("F10: un financiamiento en dólares sobre una tarjeta con límite en colones", async () => {
+  const s = fakeStore({ cards: { visa: "CRC" } });
+  const r = await createFinancing(s.deps, {
+    card_id: "visa",
+    currency: "USD",
+    description: "Laptop",
+    category: "Tecnología",
+    total_amount: 1_200,
+    annual_rate: 0,
+    months: 12,
+    first_charge_on: "2026-11-05",
+  });
+  assert.ok(r.ok);
+  const rows = [...s.state.movements.values()];
+  assert.ok(rows.every((m) => m.currency === "USD"));
+  assert.equal(s.balanceOf("card", "visa", "USD"), 1_200);
+  assert.equal(s.balanceOf("card", "visa", "CRC"), 0);
+});

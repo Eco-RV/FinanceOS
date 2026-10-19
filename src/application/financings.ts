@@ -4,6 +4,7 @@ import {
   crToday,
   financingSchedule,
   toISODate,
+  type Currency,
   type FinancingInstallment,
   type ISODate,
 } from "../domain/index.ts";
@@ -17,6 +18,8 @@ export type FinancingDeps = {
 
 export type CreateFinancingInput = {
   card_id: string;
+  /** F10 (3.0.1): CRC o USD; sin elegir, la moneda del límite de la tarjeta. */
+  currency?: Currency;
   description: string;
   category: string | null;
   /** Capital (en tasa 0, el total de la compra). */
@@ -39,8 +42,10 @@ export function createFinancing(
   input: CreateFinancingInput,
 ): Promise<UseCaseResult<CreateFinancingOutput>> {
   return run(async () => {
-    const currency = await deps.cards.currencyOf(input.card_id);
-    if (!currency) return fail("Tarjeta no encontrada");
+    const cardCurrency = await deps.cards.currencyOf(input.card_id);
+    if (!cardCurrency) return fail("Tarjeta no encontrada");
+    // F10 (3.0.1): el plan puede ir en la otra moneda de la tarjeta (T1).
+    const currency = input.currency ?? cardCurrency;
 
     const annual_rate = input.annual_rate ?? 0;
     const installments = financingSchedule({
@@ -52,7 +57,7 @@ export function createFinancing(
     });
 
     const { id } = await deps.financings.createWithInstallments(
-      { ...input, annual_rate },
+      { ...input, annual_rate, currency },
       installments,
     );
     return ok({ id, installments });

@@ -468,8 +468,8 @@ export function supabaseRepositories(supabase: SupabaseClient) {
   const financings: FinancingRepository = {
     async createWithInstallments(plan, installments) {
       // Guarda exactamente el plan que calculó el dominio, de forma atómica
-      // (supabase/Versionamiento/2.3.0/00_financing_interest.sql).
-      const { data, error } = await supabase.rpc("create_financing_v3", {
+      // (supabase/Versionamiento/3.0.1/04_financing_currency.sql: v4 = v3 + moneda).
+      const { data, error } = await supabase.rpc("create_financing_v4", {
         p_card_id: plan.card_id,
         p_description: plan.description,
         p_category: plan.category,
@@ -483,6 +483,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
           amount: c.amount,
           interest: c.interest,
         })),
+        p_currency: plan.currency ?? "CRC",
       });
       check(error, "No se pudo crear el financiamiento.");
       return { id: data as string };

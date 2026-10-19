@@ -260,7 +260,7 @@ export function fakeStore(seed: {
           type: "expense",
           amount: c.amount,
           interest_amount: c.interest || null,
-          currency: "CRC",
+          currency: plan.currency ?? "CRC",
           occurred_on: c.occurred_on,
           category: plan.category,
           note: `${plan.description} (cuota ${c.no}/${c.of})`,

@@ -314,6 +314,8 @@ export const financingSchema = z.object({
   first_charge_on: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+  /** F10 (3.0.1): moneda del plan. */
+  currency: z.enum(CURRENCIES).optional(),
 });
 
 /** F9: lo único que se edita de un financiamiento. */

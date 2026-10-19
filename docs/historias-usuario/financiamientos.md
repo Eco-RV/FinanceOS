@@ -22,7 +22,10 @@ cuota), para que la app genere el cronograma y sepa cuánto me cuesta.
 - Desde el detalle de la tarjeta → "Nuevo financiamiento". Campos: descripción
   (1–80), categoría de gasto, monto, **tasa anual (%)** (0 a 100, por defecto
   0), meses (**2 a 72**) y fecha de la primera cuota (por defecto hoy). La
-  moneda es la del límite de la tarjeta.
+  moneda es por defecto la del límite de la tarjeta; desde 3.0.1 (F10) se
+  puede elegir la otra (p. ej. un plan en dólares en una tarjeta con límite
+  en colones): sus cuotas van al saldo en esa moneda (T1) y el disponible las
+  convierte con el último tipo de cambio (T2).
 - El formulario muestra la cuota mensual y, con tasa, el total de intereses
   y el costo total, con el mismo cálculo del dominio.
 - **Tasa 0**: el monto se divide en N cuotas iguales en céntimos; el residuo va
@@ -178,11 +181,10 @@ queda, para cobrarle a tiempo.
 - Reparto, reembolsos y avisos (`financing_shares`, `member_reimbursements`,
   `member_notices`) no tocan saldos. Borrar el plan o el Arranque de 0 los
   borra con él; los miembros se conservan.
-- La moneda del plan es la del límite de la tarjeta.
+- La moneda del plan se elige al crearlo (F10); por defecto, la del límite.
 
 ## Pendiente / fuera de alcance
 
-- Financiamiento en dólares sobre una tarjeta con límite en colones.
 - Envío automático de avisos (cron) o por la API de WhatsApp Business.
 - Abonos extraordinarios al capital de un financiamiento con interés.
 - Cada banco puede tener particularidades (redondeos, comisiones, IVA sobre
@@ -201,3 +203,6 @@ queda, para cobrarle a tiempo.
 - **2026-10-18 (v3.0.1, en desarrollo)** — La opción de corte de la tarjeta
   (T3) también se aplica a la fecha límite de las cuotas: tabla del plan,
   avisos a miembros y por cobrar.
+- **2026-10-18 (v3.0.1, en desarrollo)** — Financiamiento en la otra moneda
+  de la tarjeta (F10; SP `create_financing_v4`, SQL
+  `3.0.1/04_financing_currency.sql`).

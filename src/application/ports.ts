@@ -186,6 +186,8 @@ export type NewFinancing = {
   annual_rate: number;
   months: number;
   first_charge_on: ISODate;
+  /** F10 (3.0.1): moneda del plan; por defecto la del límite de la tarjeta. */
+  currency?: Currency;
 };
 
 export type FinancingFields = { description: string; category: string | null };
