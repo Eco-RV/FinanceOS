@@ -1,5 +1,70 @@
 # Changelog
 
+## 3.0.1 — en desarrollo
+
+Mejoras sobre la 3.0.0: auditoría de la lógica de negocio, historiales con
+filtros, leyes de UX, botones de gasto e ingreso y **Gastos compartidos**.
+SQL nuevo en `supabase/Versionamiento/3.0.1/` (correr `00_` y después `01_`).
+
+### Auditoría de la lógica de negocio
+- `docs/dominio/pendientes.md`: lo que falta, por regla, fase y proceso.
+- Avisos que faltaban:
+  - **C2**: un gasto que deja una cuenta en negativo avisa en cuánto quedará.
+  - **M4**: un abono mayor que la deuda avisa el saldo a favor que quedará.
+- **K9** completo: enviar USDC ya no advierte a las estrellas de tu familia
+  ni a las de tu agenda.
+- Las reglas de ahorro **S1–S3 pasan a A1–A3** (chocaban con S1 = SINPE).
+- Estados al día en reglas y glosario. Se corrigen las historias de cuentas,
+  gastos, ingresos, bancos, préstamos, constelación y tarjetas.
+
+### Historial de tarjeta y de cuenta con filtros
+- El detalle de tarjeta y el de cuenta traen **todos** los movimientos
+  (antes: tope de 1000 y de 500).
+- Filtros:
+  - A la vista: Buscar, Tipo (cargos, cuotas, pagos, saldo inicial…) e
+    **Incluir futuras** (las cuotas programadas de financiamientos y todo lo
+    que tiene fecha > hoy). Por defecto se ve hasta hoy.
+  - En "Más filtros": fechas y moneda.
+- **Filas por página** 5/10/20/50/todas, recordadas en el navegador (también
+  en Gastos).
+
+### Botones flotantes
+- **Nuevo gasto**: flecha hacia arriba, rojo coral.
+- **Nuevo ingreso**: flecha hacia abajo, verde. Va debajo del de gasto.
+- Tokens `--expense` e `--income` en claro y oscuro.
+
+### Leyes de UX
+- `docs/diseno/leyes-ux.md`: las seis leyes con su lista de chequeo para
+  futuros desarrollos.
+- Dónde se aplicaron:
+  - **Cierre**: en el carrusel de tarjetas asoma ~30 % de la siguiente.
+  - **Figura-fondo**: fondo más oscuro detrás de diálogos y confirmaciones.
+  - **Ceguera a banners**: el estado de la tarjeta va junto al título del
+    estado de cuenta.
+  - **Parkinson**: el gasto rápido recuerda cómo pagaste; el ingreso recuerda
+    la cuenta y la categoría.
+  - **Conexión**: `Stepper` en el alta de gasto compartido y en la wallet.
+  - **Exceso de opciones**: Procesos con los 4 frecuentes arriba y "Más
+    procesos".
+
+### Gastos compartidos (X1–X6)
+- `/procesos/compartidos`: pagas el total y lo divides entre personas
+  (miembros).
+- Alta en un asistente de 3 pasos:
+  - Gasto nuevo o "Compartir" sobre uno ya registrado.
+  - Reparto sugerido en partes iguales y ajustable.
+  - Fecha límite: la del estado de cuenta si fue con tarjeta; si no, la
+    eliges tú.
+- Registrar quién pagó, cuándo y por qué medio, con un **ingreso opcional** a
+  una cuenta. También se puede deshacer.
+- Avisos por WhatsApp o correo desde el primer día.
+- Cobros a miembros y el Resumen suman financiamientos y compartidos.
+- Dominio `src/domain/sharing/`, casos de uso
+  `src/application/shared-expenses.ts` y adaptador
+  `src/infrastructure/supabase/shared-expenses.ts`.
+- El agrupado de avisos queda común con F8 (`src/domain/shared/notices.ts`).
+- El Arranque de 0 borra los compartidos (`01_fresh_start_shared.sql`).
+
 ## 3.0.0 — 2026-10-17
 
 Constelación familiar: familia y bóveda de ahorro en USDC con aprobaciones,
