@@ -411,10 +411,19 @@ export interface BalanceRepository {
 }
 
 export interface ExchangeRateRepository {
-  /** Último tipo de cambio digitado (T2), o `null` si no hay ninguno. */
+  /** Último tipo de cambio guardado (T2), o `null` si no hay ninguno. */
   latest(): Promise<ExchangeRate | null>;
   /** Guarda (o reemplaza) el tipo de cambio de una fecha. */
   save(rate: ExchangeRate): Promise<void>;
+}
+
+/**
+ * Fuente oficial del tipo de cambio (3.0.1, T10): hoy la API pública de
+ * Hacienda, que publica el de referencia del BCCR (venta). Lanza
+ * `InfrastructureError` si no responde.
+ */
+export interface ExchangeRateSource {
+  today(): Promise<ExchangeRate>;
 }
 
 /** Error de un adaptador que se puede mostrar al usuario. */

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { fieldErrors, type FormResult } from "@/lib/forms";
-import { setExchangeRate } from "@/application";
+import { refreshExchangeRate, setExchangeRate } from "@/application";
+import { crToday, toISODate } from "@/domain";
 import { repositories } from "@/infrastructure/container";
 
 const rateSchema = z.object({
@@ -24,6 +25,17 @@ export async function saveExchangeRate(
   const result = await setExchangeRate(await repositories(), parsed.data);
   if (!result.ok) return { ok: false, message: result.message };
 
+  revalidatePath("/ajustes/tipo-cambio");
+  revalidatePath("/procesos/tarjetas", "layout");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** T10 (3.0.1): trae el tipo de cambio de hoy del BCCR (vía Hacienda) y lo guarda. */
+export async function fetchOfficialRate(): Promise<FormResult> {
+  await requireUser();
+  const result = await refreshExchangeRate(await repositories(), { today: toISODate(crToday()), force: true });
+  if (!result.ok) return { ok: false, message: result.message };
   revalidatePath("/ajustes/tipo-cambio");
   revalidatePath("/procesos/tarjetas", "layout");
   revalidatePath("/dashboard");

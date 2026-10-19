@@ -13,6 +13,7 @@
 | G4 | No se registra nada sobre algo desactivado (cuenta, tarjeta, categoría, banco): ni movimientos, ni edición, ni asociar una tarjeta a un banco desactivado. Al editar un movimiento se puede conservar la categoría que ya tenía aunque esté desactivada. | Rechaza | Decidido · Implementado 2.1.0 |
 | G5 | Lo que tiene historia se **desactiva** (se conserva y se puede reactivar); lo que no tiene, se puede **eliminar**. Historia: cuenta = movimientos como origen o destino; tarjeta = movimientos y financiamientos; categoría = movimientos de su tipo con ese nombre; banco = avisos importados. El saldo inicial (C1) no cuenta como historia. | Rechaza eliminar si tiene historia | Decidido 2026-10-12 · Implementado 2.1.0 |
 | G6 | "Hoy" es el día calendario en Costa Rica, no el del servidor. | — | Decidido |
+| G7 | Los totales del Resumen (débito disponible, pagos de contado, faltante, consumo sin cortar, patrimonio) están en colones: lo de dólares se convierte con el **último** tipo de cambio. Sin tipo de cambio, lo de dólares se lista pero no suma (y se indica). | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 
 ## Cuentas
 
@@ -49,6 +50,7 @@
 | T6 | Si el día de pago es ≤ al día de corte, la fecha límite cae el mes siguiente. | — | Decidido |
 | T7 | Estado: sin movimientos → sin saldo → al día → atrasada (vencida con saldo pendiente) → pendiente. | — | Decidido |
 | T8 | El pago mínimo lo digita el usuario desde el estado de cuenta; el sistema no lo calcula. | — | Propuesta |
+| T10 | El tipo de cambio de referencia es la **venta del BCCR**, que la app trae una vez al día (API pública de Hacienda) al abrir el Resumen, o a mano con "Traer del BCCR". El usuario lo puede digitar igual (T2); el más reciente manda. Si la fuente no responde, se sigue con el último. | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 | T9 | Un seguro genera un gasto mensual en una tarjeta de crédito o en una tarjeta de débito (sale de su cuenta, C3); una tarjeta puede tener varios. No se cobra desde la cuenta sola. | Rechaza | Decidido · Implementado 2.7.0 · Cambiado 3.0.1 (débito) |
 
 ## Financiamientos, préstamos y familia

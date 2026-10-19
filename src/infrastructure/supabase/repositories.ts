@@ -9,6 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAccount } from "./account";
 import { supabasePlans } from "./plans";
 import { supabaseSharedExpenses } from "./shared-expenses";
+import { haciendaExchangeRate } from "../exchange/hacienda";
 import { supabaseConstellation } from "./constellation";
 import { isCurrency, type Currency, type Movement } from "@/domain";
 import { decryptToken } from "@/lib/mail/crypto";
@@ -865,6 +866,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     merchantRules,
     balances,
     exchangeRates,
+    exchangeRateSource: haciendaExchangeRate,
     freshStart,
     ...supabaseAccount(supabase),
     ...supabasePlans(supabase),

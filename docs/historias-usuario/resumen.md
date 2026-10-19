@@ -6,8 +6,10 @@
 
 La pantalla de inicio (`/dashboard`): de un vistazo, cuánta liquidez hay,
 qué toca pagar, cuánto crédito queda y en qué se va el dinero. Cada card
-abre un modal con su detalle. Solo cuenta colones (las tarjetas y cuotas en
-dólares se listan aparte).
+abre un modal con su detalle. Todo suma en colones: desde 3.0.1 (G7) lo que
+está en dólares (cuentas corrientes, tarjetas, cuotas de préstamo) se
+convierte con el último tipo de cambio, que la app trae del BCCR una vez al
+día al abrir el Resumen (T10).
 
 ## Historias de usuario
 
@@ -85,11 +87,15 @@ débito alcanza para pagar de contado.
   (`src/domain/coverage/coverage.ts`).
 - Semáforo del disponible: `availabilityLevel`
   (`src/domain/cards/multicurrency.ts`).
-- Todo lo que suma en el Resumen es en colones.
+- Todo lo que suma en el Resumen es en colones (G7): la cobertura, el
+  faltante, los pagos de contado, el consumo sin cortar y el patrimonio neto
+  convierten lo de dólares con el último tipo de cambio. Sin tipo de cambio, lo
+  de dólares se lista pero no suma, y el patrimonio lo indica.
 
 ## Pendiente / fuera de alcance
 
-- Multimoneda real (sumar dólares convertidos en liquidez y gastos).
+- Sumar los **gastos** en dólares convertidos en las cards de período y el
+  gráfico (hoy se muestran aparte).
 - Comparar gastos contra meses anteriores o presupuestos.
 
 ## Historial
@@ -98,3 +104,5 @@ débito alcanza para pagar de contado.
   Resumen con modales de detalle, Liquidez, gráfico de gastos por categoría,
   Disponible en crédito con semáforo y Faltante (reemplaza el aviso de
   cobertura).
+- **2026-10-18 (v3.0.1, en desarrollo)** — Multimoneda en la cobertura y el
+  patrimonio (G7) con el tipo de cambio del BCCR traído una vez al día (T10).

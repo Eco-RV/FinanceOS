@@ -40,7 +40,7 @@ import { termsOf } from "@/application";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
 import { loadSharedBoard } from "@/lib/shared-board";
-import { ensurePlansUpToDate } from "@/lib/sync-plans";
+import { ensureExchangeRateToday, ensurePlansUpToDate } from "@/lib/sync-plans";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import type {
@@ -123,7 +123,7 @@ const rise = (i: number) => ({ "--rise-i": i }) as CSSProperties;
 
 export default async function DashboardPage() {
   await requireUser();
-  await ensurePlansUpToDate();
+  await Promise.all([ensurePlansUpToDate(), ensureExchangeRateToday()]);
 
   const today = crToday();
   const todayISO = toISODate(today);
@@ -313,10 +313,12 @@ export default async function DashboardPage() {
   });
 
   // Cobertura del débito contra los pagos de contado: regla de dominio.
-  const coverage = computeCoverage(accounts, cardEntries, loanEntries, today);
+  // G7 (3.0.1): lo de dólares se convierte con el último tipo de cambio.
+  const coverage = computeCoverage(accounts, cardEntries, loanEntries, today, rate?.usd_crc ?? null);
   const {
     availableDebit,
     netWorth,
+    unconverted,
     payments,
     overdue,
     overdueTotal,
@@ -669,7 +671,9 @@ export default async function DashboardPage() {
       </div>
 
       <p className="-mt-4 text-xs text-muted-foreground">
-        Patrimonio neto (cuentas − tarjetas − préstamos): {formatCurrency(netWorth)}
+        Patrimonio neto (cuentas − tarjetas − préstamos, en colones): {formatCurrency(netWorth)}
+        {rate ? ` · $1 = ${formatCurrency(rate.usd_crc)} (${formatDate(rate.rate_on)})` : ""}
+        {unconverted ? " · sin tipo de cambio, lo de dólares no suma" : ""}
         {loans.length > 0
           ? ` · Capital pendiente en préstamos: ${formatCurrency(loanPrincipalCrc)}`
           : ""}

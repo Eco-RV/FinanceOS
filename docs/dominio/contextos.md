@@ -65,5 +65,5 @@ Estos cambian sin tocar las reglas. Ver [`arquitectura.md`](./arquitectura.md).
 | Identidad | Supabase Auth (correo + contraseña, Google) | Otro proveedor |
 | Leer avisos bancarios | Gmail API (solo lectura) | Otro proveedor de correo |
 | Notificador | Gmail del usuario (`gmail.send`) y enlace `wa.me` (envío manual, 2.3.0) | API de WhatsApp Business, envío automático |
-| Tipo de cambio | Digitado a mano (Ajustes → Tipo de cambio, 2.0.0) | BCCR (pendiente) |
+| Tipo de cambio | API pública de Hacienda (venta BCCR, 3.0.1) + digitado a mano | Web service del BCCR (con token) |
 | Reloj ("hoy") | `crToday()` (America/Costa_Rica) | — |

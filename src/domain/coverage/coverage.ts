@@ -2,8 +2,9 @@
  * Cobertura: ¿alcanza el dinero de débito para los pagos de contado de las
  * tarjetas y las cuotas de préstamos? Antes vivía dentro de `dashboard/page.tsx`.
  *
- * Por ahora solo cuenta la moneda de referencia (CRC): las tarjetas en otra
- * moneda se listan pero no suman (pendiente multimoneda con tipo de cambio).
+ * Todo se lleva a la moneda de referencia (CRC). Desde 3.0.1 (G7), con un
+ * tipo de cambio, lo que está en dólares (cuentas, tarjetas, préstamos) se
+ * convierte y suma; sin tipo de cambio, lo de dólares se lista pero no suma.
  */
 
 import type { CardStatement } from "../cards/statement.ts";
@@ -41,16 +42,20 @@ export type CoveragePayment<C, L = never> = CoverageSource<C, L> & {
   /** Negativo si ya venció. */
   daysToDue: number;
   overdue: boolean;
-  /** Suma acumulada de pagos (solo moneda de referencia) hasta esta fila. */
+  /** Monto en la moneda de referencia (CRC), o `null` si no hay tipo de cambio. */
+  refAmount: number | null;
+  /** Suma acumulada de pagos en la moneda de referencia hasta esta fila. */
   cumulative: number;
   covered: boolean;
 };
 
 export type Coverage<C, L = never> = {
-  /** Débito disponible para pagar tarjetas y préstamos: cuentas corrientes en CRC. */
+  /** Débito disponible para pagar tarjetas y préstamos: cuentas corrientes (en CRC, G7). */
   availableDebit: number;
-  /** Suma naïve de todo (pendiente multimoneda): cuentas − tarjetas − capital de préstamos. */
+  /** Cuentas − tarjetas − capital de préstamos, en CRC (G7). */
   netWorth: number;
+  /** Hay montos en dólares que no se sumaron por falta de tipo de cambio. */
+  unconverted: boolean;
   /** Pagos pendientes o atrasados, del más urgente al de más tiempo. */
   payments: CoveragePayment<C, L>[];
   overdue: CoveragePayment<C, L>[];
@@ -79,19 +84,32 @@ export function computeCoverage<C extends CoverageCard, L = never>(
   cards: { card: C; st: CardStatement }[],
   loans: CoverageLoan<L>[] = [],
   today: Date = crToday(),
+  /** G7 (3.0.1): colones por dólar; `null` = lo de dólares no suma. */
+  usdCrc: number | null = null,
 ): Coverage<C, L> {
-  const inRef = (currency: string) => currency === COVERAGE_CURRENCY;
+  let unconverted = false;
+  /** Monto en CRC, o `null` si no se puede convertir. */
+  const toRef = (amount: number, currency: string): number | null => {
+    if (currency === COVERAGE_CURRENCY) return Number(amount);
+    if (currency === "USD" && usdCrc && usdCrc > 0) return Math.round(Number(amount) * usdCrc * 100) / 100;
+    if (Number(amount) !== 0) unconverted = true;
+    return null;
+  };
+  const sumRef = (rows: { amount: number; currency: string }[]) =>
+    rows.reduce((s, r) => s + (toRef(r.amount, r.currency) ?? 0), 0);
 
-  const availableDebit = accounts
-    .filter((a) => a.type === "checking" && inRef(a.currency))
-    .reduce((s, a) => s + Number(a.current_balance), 0);
+  const availableDebit = sumRef(
+    accounts
+      .filter((a) => a.type === "checking")
+      .map((a) => ({ amount: Number(a.current_balance), currency: a.currency })),
+  );
 
   const netWorth =
-    accounts.reduce((s, a) => s + Number(a.current_balance), 0) -
-    cards.reduce((s, { card }) => s + Number(card.current_balance), 0) -
-    loans.reduce((s, l) => s + Number(l.remainingPrincipal), 0);
+    sumRef(accounts.map((a) => ({ amount: Number(a.current_balance), currency: a.currency }))) -
+    sumRef(cards.map(({ card }) => ({ amount: Number(card.current_balance), currency: card.currency }))) -
+    sumRef(loans.map((l) => ({ amount: Number(l.remainingPrincipal), currency: l.currency })));
 
-  type Pending = Omit<CoveragePayment<C, L>, "cumulative" | "covered">;
+  type Pending = Omit<CoveragePayment<C, L>, "cumulative" | "covered" | "refAmount">;
   const cardDues: Pending[] = cards
     .filter(({ st }) => st.status === "pendiente" || st.status === "atrasada")
     .map(({ card, st }) => ({
@@ -125,20 +143,18 @@ export function computeCoverage<C extends CoverageCard, L = never>(
 
   const payments = pending.reduce<CoveragePayment<C, L>[]>((rows, p) => {
     const prev = rows.at(-1)?.cumulative ?? 0;
-    const cumulative = inRef(p.currency) ? prev + p.amount : prev;
-    return [...rows, { ...p, cumulative, covered: cumulative <= availableDebit } as CoveragePayment<C, L>];
+    const refAmount = toRef(p.amount, p.currency);
+    const cumulative = prev + (refAmount ?? 0);
+    return [...rows, { ...p, refAmount, cumulative, covered: cumulative <= availableDebit } as CoveragePayment<C, L>];
   }, []);
 
-  const refPayments = payments.filter((p) => inRef(p.currency));
-  const total = (rows: CoveragePayment<C, L>[]) => rows.reduce((s, p) => s + p.amount, 0);
+  const total = (rows: CoveragePayment<C, L>[]) => rows.reduce((s, p) => s + (p.refAmount ?? 0), 0);
 
   const overdue = payments.filter((p) => p.overdue);
-  const overdueTotal = total(overdue.filter((p) => inRef(p.currency)));
-  const totalDue = total(refPayments);
-  const dueSoon = total(refPayments.filter((p) => p.daysToDue <= DUE_SOON_DAYS));
-  const newCharges = cards
-    .filter(({ card }) => inRef(card.currency))
-    .reduce((s, { st }) => s + st.newCharges, 0);
+  const overdueTotal = total(overdue);
+  const totalDue = total(payments);
+  const dueSoon = total(payments.filter((p) => p.daysToDue <= DUE_SOON_DAYS));
+  const newCharges = sumRef(cards.map(({ card, st }) => ({ amount: st.newCharges, currency: card.currency })));
 
   const coverageRatio =
     availableDebit > 0 ? Math.min(dueSoon / availableDebit, 1) : dueSoon > 0 ? 1 : 0;
@@ -146,6 +162,7 @@ export function computeCoverage<C extends CoverageCard, L = never>(
   return {
     availableDebit,
     netWorth,
+    unconverted,
     payments,
     overdue,
     overdueTotal,

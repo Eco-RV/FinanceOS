@@ -157,9 +157,8 @@ sección "Financiamientos" y cada cuota aparece en el historial como "Cuota".
 
 ## Pendiente / fuera de alcance
 
-- Los saldos en `USD` de las tarjetas no entran en los cálculos de cobertura
-  del dashboard (se listan, pero no suman).
-- El tipo de cambio es manual; no se consulta el BCCR todavía.
+- (Resuelto en 3.0.1) Los saldos en USD ya suman en la cobertura convertidos
+  (G7), y el tipo de cambio se trae del BCCR (T10).
 
 ## Historial
 
