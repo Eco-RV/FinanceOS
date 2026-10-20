@@ -5,6 +5,7 @@
  */
 
 import { InfrastructureError, type ExchangeRateSource } from "@/application";
+import { parseHaciendaRate } from "./hacienda-parse";
 
 const URL = "https://api.hacienda.go.cr/indicadores/tc/dolar";
 
@@ -18,10 +19,8 @@ export const haciendaExchangeRate: ExchangeRateSource = {
     } catch {
       throw new InfrastructureError("No se pudo consultar el tipo de cambio del BCCR: inténtalo más tarde");
     }
-    const venta = (body as { venta?: { fecha?: string; valor?: number } }).venta;
-    if (!venta?.fecha || !/^d{4}-d{2}-d{2}$/.test(venta.fecha) || !(Number(venta.valor) > 0)) {
-      throw new InfrastructureError("La respuesta del tipo de cambio no tiene el formato esperado");
-    }
-    return { rate_on: venta.fecha, usd_crc: Number(venta.valor) };
+    const rate = parseHaciendaRate(body);
+    if (!rate) throw new InfrastructureError("La respuesta del tipo de cambio no tiene el formato esperado");
+    return rate;
   },
 };

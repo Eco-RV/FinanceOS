@@ -78,7 +78,7 @@ export async function setCardActive(formData: FormData): Promise<FormResult> {
 
 const minimumSchema = z.object({
   card_id: z.string().regex(/^[0-9a-fA-F-]{36}$/, "Tarjeta inválida"),
-  cutoff_on: z.string().regex(/^d{4}-d{2}-d{2}$/, "Fecha inválida"),
+  cutoff_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
   currency: z.enum(["CRC", "USD"]),
   amount: z.coerce.number().finite("Monto inválido").min(0, "No puede ser negativo"),
   statement_balance: z.coerce.number().finite(),
