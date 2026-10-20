@@ -4,7 +4,7 @@
 
 Mejoras sobre la 3.0.0: auditoría de la lógica de negocio, historiales con
 filtros, leyes de UX, botones de gasto e ingreso y **Gastos compartidos**.
-SQL nuevo en `supabase/Versionamiento/3.0.1/` (correr `00_`, `01_` y `02_` en orden).
+SQL nuevo en `supabase/Versionamiento/3.0.1/`: correr de `00_` a `09_` en orden.
 
 ### Auditoría de la lógica de negocio
 - `docs/dominio/pendientes.md`: lo que falta, por regla, fase y proceso.
@@ -54,6 +54,27 @@ SQL nuevo en `supabase/Versionamiento/3.0.1/` (correr `00_`, `01_` y `02_` en or
   corte", una cuota de financiamiento que cae el día del corte ahora vence en
   el corte siguiente también en la tabla del plan, los avisos a miembros y los
   gastos compartidos (el estado de cuenta ya lo hacía).
+
+### Pendientes del BusinessLogic cerrados
+- **T10 / G7**: tipo de cambio del BCCR (API pública de Hacienda) una vez al
+  día y "Traer del BCCR"; el Resumen convierte lo de dólares en la cobertura,
+  el faltante y el patrimonio.
+- **T8**: pago mínimo por corte y moneda, con cuánto falta para cubrirlo
+  (`03_card_minimum_payments.sql`).
+- **F10**: financiamiento en la otra moneda de la tarjeta
+  (`create_financing_v4`, `04_`).
+- **L7 / L8**: abono extraordinario (baja plazo o cuota) y tasa variable en
+  préstamos, por tramos (`segmentedAmortization`, `05_loan_adjustments.sql`).
+- **F11**: abono extraordinario a un financiamiento, con deshacer
+  (`06_financing_prepayments.sql`).
+- **P7 / P8**: planes con monto variable (por confirmar) y recordatorios en
+  el Resumen (`07_variable_plans.sql`).
+- **A4**: varias metas por cuenta con apartados (`08_goal_allocations.sql`).
+- **G8 / M9 / I6**: comprobantes adjuntos (bucket privado, `09_receipts.sql`),
+  consulta de lo archivado por el Arranque de 0 y pantalla de reglas de
+  comercio.
+- **U8 / U9 / U10**: borrar la cuenta, moneda base y formato de fecha, y
+  entrar con Google.
 
 ### Gastos compartidos (X1–X6)
 - `/procesos/compartidos`: pagas el total y lo divides entre personas

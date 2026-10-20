@@ -13,7 +13,7 @@
 | C2 | Avisar cuando un gasto deja la cuenta en negativo. | ✅ Implementado 3.0.1 (`overdraftWarning`) |
 | M4 | Avisar cuando un abono supera la deuda. | ✅ Implementado 3.0.1 (`overpaymentWarning`) |
 | K9 | El envío advertía **todas** las direcciones, incluidas las de la familia. | ✅ Completado 3.0.1 (`Pocket` pasa `knownAddresses`) |
-| T8 | Pago mínimo digitado desde el estado de cuenta. | 📝 Propuesta, sin implementar |
+| T8 | Pago mínimo digitado desde el estado de cuenta. | ✅ Implementado 3.0.1 (`minimumPaymentStatus`) |
 | G6 | "Hoy" = día en Costa Rica. Está en el código (`crToday`) y no necesita historia propia. | ✅ (sin historia, por diseño) |
 | M6, F3, I1–I3 | Están en el código, pero sin el id de la regla (I1–I3 viven en `src/lib/mail/`, fuera de `src/domain`). | ✅ Implementado · deuda menor: mover I1–I3 al dominio si crece la importación |
 
@@ -38,19 +38,25 @@ S1 ya era la regla de SINPE.
 
 ## 3. "Pendiente / fuera de alcance" por proceso
 
-| Proceso | Pendiente |
+Resuelto en 3.0.1 (2026-10-19): tipo de cambio del BCCR (T10) y multimoneda
+en el Resumen (G7), financiamiento en la otra moneda (F10), abonos
+extraordinarios (L7, F11) y tasa variable (L8), comprobantes (G8), reglas de
+comercio (I6), consulta de lo archivado (M9), entrar con Google (U10), borrar
+la cuenta (U8), moneda base y formato de fecha (U9), monto variable (P7),
+recordatorios en la app (P8) y varias metas por cuenta (A4).
+
+| Proceso | Lo que sigue pendiente |
 |---|---|
-| Tarjetas | El USD no entra en la cobertura; el tipo de cambio del BCCR. |
-| Financiamientos | Financiamiento en USD sobre una tarjeta con límite en CRC; avisos automáticos; abonos extraordinarios al capital; editar los términos. |
-| Gastos | Adjuntar comprobantes. |
-| Bancos | Solo Gmail; solo compras con crédito; no hay pantalla de reglas de comercio; solo existe el parser de BAC. |
-| Préstamos | Abonos extraordinarios; tasa variable; las cuotas en USD no entran en la cobertura. |
-| Arranque de 0 | Ver o restaurar lo archivado. |
-| Resumen | Multimoneda real; comparar períodos o contra presupuesto. |
-| Cuenta | Entrar con Google; borrar la cuenta; preferencias sincronizadas; moneda base y formato de fecha. |
-| Planes | Salario variable; recordatorios; línea base en USD. |
-| Ahorros | Varias metas por cuenta; aportes automáticos; las metas en USD no suman en los totales. |
-| Gastos compartidos (3.0.1) | Reparto por porcentajes; cobro en USDC (Fase 7); recordatorio automático. |
+| Financiamientos | Avisos automáticos (por decisión, solo dentro de la app, P8); editar los términos. |
+| Gastos | Sumar los gastos en dólares convertidos en las cards de período y el gráfico. |
+| Bancos | Solo Gmail; parsers de otros bancos (BCR, BN, Promerica) y de débitos de BAC: esperan correos de ejemplo. |
+| Préstamos | Seguros o comisiones dentro de la cuota. |
+| Arranque de 0 | Restaurar lo archivado (por diseño no se hace, M9). |
+| Resumen | Comparar períodos o contra presupuesto. |
+| Cuenta | El tema sigue siendo por dispositivo. |
+| Planes | Línea base en USD. |
+| Ahorros | Aportes automáticos; metas en USD en los totales. |
+| Gastos compartidos (3.0.1) | Reparto por porcentajes; cobro en USDC (Fase 7). |
 
 ## 4. Documentación corregida en 3.0.1
 
@@ -72,3 +78,7 @@ S1 ya era la regla de SINPE.
 ## Historial
 
 - **2026-10-18 (v3.0.1, en desarrollo)** — Primera auditoría.
+- **2026-10-19 (v3.0.1, en desarrollo)** — Se cierran T8 y los pendientes de
+  tarjetas, financiamientos, préstamos, gastos, bancos (pantalla de reglas),
+  arranque, resumen, cuenta, planes y ahorros. Quedan los de la tabla 3 y la
+  Constelación 3.1.0.

@@ -112,8 +112,8 @@ Como usuario quiero elegir mi moneda principal y cómo se ven las fechas.
 
 ## Pendiente / fuera de alcance
 
-- Eliminar la cuenta.
-- Preferencias que viajen entre dispositivos (el tema es por dispositivo).
+- (Hecho en 3.0.1) Entrar con Google (U10), borrar la cuenta (U8), moneda base y formato de fecha (U9).
+- El tema sigue siendo por dispositivo (moneda y fecha ya viajan con la cuenta).
 
 ## Historial
 
