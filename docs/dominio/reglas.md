@@ -135,6 +135,9 @@ Hasta 3.0.0 se llamaban S1–S3 (chocaban con S1 = SINPE); desde 3.0.1 son A1–
 | U4 | Contraseña de 8 caracteres o más, con letras y números. Para cambiarla se pide la actual; sin la actual solo desde el enlace de recuperación (sesión de recuperación de hace menos de una hora). | Rechaza | Decidido · Implementado 2.6.0 |
 | U5 | El correo nuevo es válido y distinto del actual; el cambio se completa desde el enlace que llega al correo nuevo. Hasta entonces se sigue entrando con el actual. | Rechaza | Decidido · Implementado 2.6.0 |
 | U6 | La foto de perfil es JPG, PNG o WebP de hasta 2 MB (la app la recorta a 512 px). | Rechaza | Decidido · Implementado 2.6.0 |
+| U8 | **Borrar la cuenta** pide escribir `ELIMINAR` y la contraseña actual. Borra el usuario y todos sus datos (movimientos, planes, metas, compartidos, fotos, comprobantes); no se deshace. Lo que está en Stellar no se toca. | Rechaza (sin confirmación o contraseña) | Decidido 2026-10-19 · Implementado 3.0.1 |
+| U9 | **Preferencias de la cuenta**: moneda base (CRC o USD: con la que abre el gasto rápido y en la que el Resumen muestra también el patrimonio) y formato de fecha (corto, numérico o largo, en toda la app). Se guardan en el perfil. | — | Decidido 2026-10-19 · Implementado 3.0.1 |
+| U10 | Se puede **entrar o registrarse con Google** (OAuth del proveedor de identidad); vuelve por el mismo enlace de confirmación (PKCE). | — | Decidido 2026-10-19 · Implementado 3.0.1 (requiere activar Google en Supabase) |
 | U7 | Una cuenta nueva se confirma por correo antes de poder entrar. Los enlaces del correo vuelven a la misma app desde donde se pidió (producción o local). | — | Decidido · Implementado 2.6.0 |
 
 ## Constelación · bolsillo (2.9.0, Stellar testnet)

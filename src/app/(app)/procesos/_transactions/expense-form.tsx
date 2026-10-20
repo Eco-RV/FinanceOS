@@ -68,6 +68,7 @@ export function ExpenseForm({
   triggerLabel,
   fab = false,
   initialMode,
+  defaultCurrency = "CRC",
 }: {
   accounts: Account[];
   cards: CreditCard[];
@@ -80,12 +81,14 @@ export function ExpenseForm({
   transaction?: Transaction;
   triggerLabel?: string;
   fab?: boolean;
+  /** U9 (3.0.1): moneda base. */
+  defaultCurrency?: Currency;
 }) {
   const editing = Boolean(transaction);
   const today = toISODate(crToday());
   const [amount, setAmount] = useState(transaction ? String(transaction.amount) : "");
   const [currency, setCurrency] = useState<Currency>(
-    transaction?.currency === "USD" ? "USD" : "CRC",
+    transaction ? (transaction.currency === "USD" ? "USD" : "CRC") : defaultCurrency,
   );
   const amountValue = cleanAmount(amount);
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(

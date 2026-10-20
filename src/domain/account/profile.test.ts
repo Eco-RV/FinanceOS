@@ -8,6 +8,8 @@ import {
   normalizeNewEmail,
   normalizeUsername,
   validateProfile,
+  assertDeleteConfirmation,
+  readPreferences,
 } from "./profile.ts";
 
 const rule = (id: string) => (e: unknown) => e instanceof DomainError && e.rule === id;
@@ -61,4 +63,15 @@ test("iniciales: del nombre o, si no hay, del correo", () => {
   assert.equal(initialsOf("Oswald Andrés Reid", "x@y.com"), "OR");
   assert.equal(initialsOf(null, "osw2156@gmail.com"), "OS");
   assert.equal(initialsOf("", "ana.mora@correo.com"), "AM");
+});
+
+test("U8: borrar la cuenta pide ELIMINAR", () => {
+  assert.doesNotThrow(() => assertDeleteConfirmation(" eliminar "));
+  assert.throws(() => assertDeleteConfirmation("borrar"));
+});
+
+test("U9: preferencias con valores por defecto", () => {
+  assert.deepEqual(readPreferences(null), { baseCurrency: "CRC", dateFormat: "corto" });
+  assert.deepEqual(readPreferences({ baseCurrency: "USD", dateFormat: "largo" }), { baseCurrency: "USD", dateFormat: "largo" });
+  assert.deepEqual(readPreferences({ baseCurrency: "EUR", dateFormat: "x" }), { baseCurrency: "CRC", dateFormat: "corto" });
 });

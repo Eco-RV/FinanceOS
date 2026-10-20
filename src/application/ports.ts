@@ -527,9 +527,10 @@ export interface IdentityService {
   isRecoverySession(): Promise<boolean>;
   /** Pide el cambio: el proveedor manda la confirmación al correo nuevo (y al actual). */
   changeEmail(next: string, redirectTo: string): Promise<void>;
+  /** U8 (3.0.1): borra la cuenta y TODOS sus datos (archivos incluidos). No se deshace. */
+  deleteAccount(): Promise<void>;
 }
 
-/** Foto de perfil en un almacenamiento de archivos. */
 /** G8 (3.0.1): comprobantes privados de los movimientos. */
 export interface ReceiptStorage {
   /** Sube el archivo y lo liga al movimiento (reemplaza el anterior). */
@@ -539,6 +540,7 @@ export interface ReceiptStorage {
   remove(movementId: string): Promise<void>;
 }
 
+/** Foto de perfil en un almacenamiento de archivos. */
 export interface AvatarStorage {
   /** Sube la foto y devuelve su URL pública. */
   upload(file: { bytes: ArrayBuffer; type: string }): Promise<string>;

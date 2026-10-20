@@ -64,7 +64,7 @@ Como usuario quiero ver los movimientos que archivó un Arranque de 0.
 
 ## Pendiente / fuera de alcance
 
-- No hay forma de ver ni restaurar los movimientos archivados desde la app.
+- Restaurar lo archivado (por diseño, M9: solo se consulta en "Ver lo archivado").
 
 ## Historial
 

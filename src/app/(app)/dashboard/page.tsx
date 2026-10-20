@@ -16,6 +16,7 @@ import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import {
   availabilityLevel,
   buildReminders,
+  readPreferences,
   minimumPaymentStatus,
   cardAvailability,
   cardStatementsByCurrency,
@@ -208,6 +209,8 @@ export default async function DashboardPage() {
     supabase.from("card_minimum_payments").select("card_id, cutoff_on, currency, amount"),
   ]);
   const goals = (goalData ?? []) as Goal[];
+  // U9 (3.0.1): moneda base para mostrar el patrimonio también en dólares.
+  const basePrefs = readPreferences((await (await repositories()).profiles.get().catch(() => null))?.preferences);
   const noticesToSend =
     board.groups.filter((g) => g.needsNotice).length + sharedBoard.groups.filter((g) => g.needsNotice).length;
   const receivableCrc = [...board.receivables, ...sharedBoard.receivables]
@@ -709,7 +712,8 @@ export default async function DashboardPage() {
       </div>
 
       <p className="-mt-4 text-xs text-muted-foreground">
-        Patrimonio neto (cuentas − tarjetas − préstamos, en colones): {formatCurrency(netWorth)}
+        Patrimonio neto (cuentas − tarjetas − préstamos): {formatCurrency(netWorth)}
+        {basePrefs.baseCurrency === "USD" && rate ? ` ≈ ${formatCurrency(netWorth / rate.usd_crc, "USD")}` : ""}
         {rate ? ` · $1 = ${formatCurrency(rate.usd_crc)} (${formatDate(rate.rate_on)})` : ""}
         {unconverted ? " · sin tipo de cambio, lo de dólares no suma" : ""}
         {loans.length > 0

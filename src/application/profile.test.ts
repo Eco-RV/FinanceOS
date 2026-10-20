@@ -11,6 +11,7 @@ import {
 import {
   changeEmail,
   changePassword,
+  deleteAccount,
   removeAvatar,
   savePreferences,
   saveProfile,
@@ -19,7 +20,7 @@ import {
 
 function fakes(opts: { password?: string; email?: string; takenUsernames?: string[]; recovery?: boolean } = {}) {
   let profile: Profile | null = null;
-  const calls = { password: null as string | null, email: null as string | null, removed: 0 };
+  const calls = { password: null as string | null, email: null as string | null, removed: 0, deleted: false };
   const profiles: ProfileRepository = {
     async get() {
       return profile;
@@ -59,6 +60,9 @@ function fakes(opts: { password?: string; email?: string; takenUsernames?: strin
     },
     async changeEmail(next) {
       calls.email = next;
+    },
+    async deleteAccount() {
+      calls.deleted = true;
     },
   };
   const storage: AvatarStorage = {
@@ -138,4 +142,15 @@ test("sin la contraseña actual solo se cambia con una sesión de recuperación"
   const r = await changePassword(f.identity, { current: null, next: "nueva2026" });
   assert.equal(r.ok, false);
   assert.equal(f.calls.password, null);
+});
+
+test("U8: borrar la cuenta pide ELIMINAR y la contraseña actual", async () => {
+  const f = fakes();
+  const sinPalabra = await deleteAccount(f, { confirmation: "borrar", password: "actual123" });
+  assert.equal(!sinPalabra.ok && sinPalabra.rule, "U8");
+  const malaClave = await deleteAccount(f, { confirmation: "ELIMINAR", password: "otra" });
+  assert.equal(!malaClave.ok && malaClave.rule, "U8");
+  assert.equal(f.calls.deleted, false);
+  assert.ok((await deleteAccount(f, { confirmation: "ELIMINAR", password: "actual123" })).ok);
+  assert.equal(f.calls.deleted, true);
 });

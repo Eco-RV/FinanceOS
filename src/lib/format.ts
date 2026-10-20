@@ -9,6 +9,23 @@ export function formatCurrency(amount: number, currency = "CRC") {
   }).format(amount);
 }
 
+/**
+ * U9 (3.0.1): formato de fecha elegido en Preferencias. Lo fija el layout de
+ * la app en cada render (servidor) y `DateFormatSync` en el navegador.
+ */
+export type DateFormatChoice = "corto" | "numerico" | "largo";
+let dateFormat: DateFormatChoice = "corto";
+
+export function setDateFormat(choice: DateFormatChoice) {
+  dateFormat = choice;
+}
+
+const DATE_OPTIONS: Record<DateFormatChoice, Intl.DateTimeFormatOptions> = {
+  corto: { day: "2-digit", month: "short", year: "numeric" },
+  numerico: { day: "2-digit", month: "2-digit", year: "numeric" },
+  largo: { day: "numeric", month: "long", year: "numeric" },
+};
+
 export function formatDate(date: Date | string) {
   // Una fecha "YYYY-MM-DD" se interpreta como día calendario local, no UTC
   // (evita el corrimiento de un día en zonas al oeste de UTC).
@@ -19,11 +36,7 @@ export function formatDate(date: Date | string) {
           return new Date(y, m - 1, d);
         })()
       : new Date(date);
-  return new Intl.DateTimeFormat(LOCALE, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(value);
+  return new Intl.DateTimeFormat(LOCALE, DATE_OPTIONS[dateFormat]).format(value);
 }
 
 /** "hace 2 días" / "hoy" / "mañana" / "en 5 días". */

@@ -6,7 +6,9 @@ import { AppBackdrop } from "@/components/app-backdrop";
 import { WelcomeSplash } from "@/components/welcome-splash";
 import { UrlNotice } from "@/components/url-notice";
 import { repositories } from "@/infrastructure/container";
-import { initialsOf } from "@/domain";
+import { initialsOf, readPreferences } from "@/domain";
+import { setDateFormat } from "@/lib/format";
+import { DateFormatSync } from "@/components/date-format-sync";
 import { ensurePlansUpToDate } from "@/lib/sync-plans";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
@@ -45,6 +47,9 @@ export default async function AppLayout({
 
   // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
   const profile = await (await repositories()).profiles.get().catch(() => null);
+  // U9 (3.0.1): formato de fecha (servidor) y moneda base del gasto rápido.
+  const prefs = readPreferences(profile?.preferences);
+  setDateFormat(prefs.dateFormat);
   const email = user.email ?? "";
   const account = {
     email,
@@ -62,6 +67,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-full flex-col">
+      <DateFormatSync value={prefs.dateFormat} />
       <AppBackdrop />
       <WelcomeSplash name={account.name?.split(" ")[0] ?? null} />
       <Suspense fallback={null}>
@@ -83,6 +89,7 @@ export default async function AppLayout({
             categories={categories}
             categoryIcons={iconsByName(options)}
             triggerLabel="Nuevo gasto"
+            defaultCurrency={prefs.baseCurrency}
             fab
           />
           {accounts.length > 0 ? (

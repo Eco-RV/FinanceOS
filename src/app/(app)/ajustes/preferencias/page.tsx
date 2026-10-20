@@ -1,10 +1,13 @@
 import type { ComponentType, ReactNode } from "react";
-import { CalendarDays, Coins, DollarSign, Landmark, Palette, Tags } from "lucide-react";
+import { Coins, DollarSign, Landmark, Palette, Tags } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { BackLink } from "@/components/back-link";
 import { Badge } from "@/components/ui/badge";
 import { NavCard, NavCardDisabled } from "@/components/nav-card";
 import { ThemeChoicePicker } from "./theme-choice";
+import { AppPreferencesForm } from "./app-preferences";
+import { repositories } from "@/infrastructure/container";
+import { readPreferences } from "@/domain";
 
 type IconType = ComponentType<{ className?: string }>;
 
@@ -16,14 +19,14 @@ const APP_SETTINGS: { href: string; label: string; description: string; icon: Ic
 ];
 
 /** Lo que viene: el lugar ya existe para sumarlas sin cambiar la pantalla. */
-const COMING: { label: string; description: string; icon: IconType }[] = [
-  { label: "Moneda base", description: "Colones hoy; elegir otra para el Resumen.", icon: Coins },
-  { label: "Formato de fecha", description: "Cómo se muestran las fechas.", icon: CalendarDays },
-];
+const COMING: { label: string; description: string; icon: IconType }[] = [];
 
 /** Preferencias de la app (2.6.0). */
 export default async function PreferenciasPage() {
   await requireUser();
+  // U9 (3.0.1): moneda base y formato de fecha guardados en el perfil.
+  const profile = await (await repositories()).profiles.get().catch(() => null);
+  const prefs = readPreferences(profile?.preferences);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -35,6 +38,13 @@ export default async function PreferenciasPage() {
 
       <Section icon={Palette} title="Apariencia" description="Se guarda en este dispositivo.">
         <ThemeChoicePicker />
+      </Section>
+
+      <Section icon={Coins} title="Moneda y fechas" description="Se guarda en tu cuenta (sirve en todos tus dispositivos).">
+        <AppPreferencesForm value={prefs} disabled={!profile} />
+        {!profile ? (
+          <p className="text-xs text-muted-foreground">Falta correr el SQL 2.6.0 (perfiles) para guardarlas.</p>
+        ) : null}
       </Section>
 
       <div className="flex flex-col gap-3">

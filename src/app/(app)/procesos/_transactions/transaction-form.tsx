@@ -59,6 +59,8 @@ type Props = {
   sinpe?: boolean;
   /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
   categoryIcons?: Record<string, CategoryIconKey>;
+  /** U9 (3.0.1): moneda con la que abre un gasto nuevo (moneda base). */
+  defaultCurrency?: "CRC" | "USD";
 };
 
 const NEW_LABEL: Record<FormTransactionType, string> = {
@@ -97,6 +99,7 @@ export function TransactionForm(props: Props) {
         transaction={props.transaction}
         triggerLabel={props.triggerLabel}
         fab={props.fab}
+        defaultCurrency={props.defaultCurrency}
       />
     );
   }
