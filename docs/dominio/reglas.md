@@ -9,11 +9,11 @@
 |---|---|---|---|
 | G1 | Los movimientos son la fuente de verdad. Todo saldo se deriva de ellos; un saldo guardado es una copia que debe coincidir (Ajustes → Verificar saldos). | — | Decidido · Implementado 2.0.0 |
 | G2 | Todo monto es mayor que 0; el sentido (entra/sale) lo da el tipo de movimiento. | Rechaza | Decidido · Implementado 2.0.0 |
-| G3 | No se suman ni comparan montos de distinta moneda sin tipo de cambio explícito. | Rechaza | Decidido |
+| G3 | No se suman ni comparan montos de distinta moneda sin tipo de cambio explícito. | Rechaza | Decidido · Implementado 2.0.0 |
 | G4 | No se registra nada sobre algo desactivado (cuenta, tarjeta, categoría, banco): ni movimientos, ni edición, ni asociar una tarjeta a un banco desactivado. Al editar un movimiento se puede conservar la categoría que ya tenía aunque esté desactivada. | Rechaza | Decidido · Implementado 2.1.0 |
 | G5 | Lo que tiene historia se **desactiva** (se conserva y se puede reactivar); lo que no tiene, se puede **eliminar**. Historia: cuenta = movimientos como origen o destino; tarjeta = movimientos y financiamientos; categoría = movimientos de su tipo con ese nombre; banco = avisos importados. El saldo inicial (C1) no cuenta como historia. | Rechaza eliminar si tiene historia | Decidido 2026-10-12 · Implementado 2.1.0 |
 | G8 | Un movimiento puede tener un **comprobante** adjunto (JPG, PNG, WebP o PDF de hasta 5 MB), privado del usuario. Adjuntarlo, reemplazarlo o quitarlo no cambia el movimiento. | Rechaza (tipo o tamaño) | Decidido 2026-10-19 · Implementado 3.0.1 |
-| G6 | "Hoy" es el día calendario en Costa Rica, no el del servidor. | — | Decidido |
+| G6 | "Hoy" es el día calendario en Costa Rica, no el del servidor. | — | Decidido · Implementado 2.0.0 |
 | G7 | Los totales del Resumen (débito disponible, pagos de contado, faltante, consumo sin cortar, patrimonio) están en colones: lo de dólares se convierte con el **último** tipo de cambio. Sin tipo de cambio, lo de dólares se lista pero no suma (y se indica). | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 
 ## Cuentas
@@ -23,19 +23,19 @@
 | C1 | Cada cuenta y tarjeta arranca con un **saldo inicial** oficial, que es un movimiento visible (`opening_balance`, monto con signo ≠ 0, máximo uno activo por cuenta/tarjeta). | Rechaza 0 o duplicado | Decidido · Implementado 2.0.0 |
 | C2 | Un gasto puede dejar una cuenta en negativo; el formulario avisa cuánto quedará. | Advierte | Decidido · Implementado 3.0.1 |
 | C3 | Una cuenta bancaria (corriente o ahorro, no efectivo) tiene como máximo **una** tarjeta de débito activa. La tarjeta no tiene saldo propio: un gasto con ella sale de su cuenta y recuerda la tarjeta. Un gasto fijo (P2) también se puede pagar con ella. | Rechaza | Decidido · Implementado 2.8.0 |
-| C4 | Una cuenta tiene una sola moneda. | — | Decidido |
+| C4 | Una cuenta tiene una sola moneda. | — | Decidido · Implementado 1.0.0 |
 
 ## Movimientos
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| M1 | Gasto, SINPE e ingreso exigen categoría del tipo correcto. | Rechaza | Decidido |
+| M1 | Gasto, SINPE e ingreso exigen categoría del tipo correcto. | Rechaza | Decidido · Implementado 1.2.1 |
 | M2 | Una transferencia es entre dos cuentas propias **distintas** y de la **misma moneda**, y no cuenta como gasto ni como ingreso. | Rechaza si origen = destino o monedas distintas | Decidido · Implementado 2.0.0 |
 | S1 | Un SINPE es un gasto desde una cuenta de débito (no tarjeta), con categoría; destinatario y teléfono (8 dígitos) opcionales. | Rechaza | Decidido · Implementado 2.0.0 |
-| M3 | Un abono sale siempre de una cuenta de débito hacia una tarjeta de crédito. | Rechaza | Decidido |
+| M3 | Un abono sale siempre de una cuenta de débito hacia una tarjeta de crédito. | Rechaza | Decidido · Implementado 1.2.0 |
 | M4 | Un abono puede superar la deuda; el formulario avisa el saldo a favor que quedará. | Advierte | Decidido · Implementado 3.0.1 |
-| M5 | Un abono baja el saldo de la tarjeta en la moneda que se elige (por defecto la de la cuenta). Si la cuenta es de otra moneda, sale de ella el equivalente con el **último tipo de cambio** digitado, que queda guardado en el movimiento; sin tipo de cambio se rechaza. | Rechaza (sin tipo de cambio) | Decidido · Cambiado 2.8.0 (antes: sin conversión) |
-| M6 | Un ingreso puede tener fecha futura. | — | Decidido |
+| M5 | Un abono baja el saldo de la tarjeta en la moneda que se elige (por defecto la de la cuenta). Si la cuenta es de otra moneda, sale de ella el equivalente con el **último tipo de cambio** digitado, que queda guardado en el movimiento; sin tipo de cambio se rechaza. | Rechaza (sin tipo de cambio) | Decidido · Implementado 2.0.0 · Cambiado 2.8.0 (antes: sin conversión) |
+| M6 | Un ingreso puede tener fecha futura. | — | Decidido · Implementado 1.2.0 |
 | M7 | Un movimiento con fecha futura es **programado**: no cuenta en saldos "de hoy" ni en el pago de contado hasta que llega su fecha. Sí cuenta en el disponible de la tarjeta si es cuota de un financiamiento. | — | Decidido · Implementado 2.0.0 (cuotas) y 2.7.0 (planes) |
 | M9 | Lo archivado por un Arranque de 0 se puede **consultar** (Ajustes → Arranque de 0 → Ver lo archivado), pero no se restaura ni se edita: restaurarlo duplicaría los saldos frente a los saldos iniciales nuevos. | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 | M8 | El Arranque de 0 pide confirmación escrita (`ARRANCAR`) y un saldo inicial nuevo (puede ser 0) por cada cuenta y tarjeta activa (tarjetas: CRC y USD). De forma atómica: borra las cuotas pendientes (fecha > hoy) de los financiamientos, **archiva** todos los movimientos (no visibles), elimina financiamientos y préstamos (sus cuotas cobradas quedan archivadas) y crea los saldos iniciales nuevos, que son lo único visible. | Rechaza sin confirmación o sin saldos | Decidido 2026-10-12 · Implementado 2.2.0 |
@@ -46,11 +46,11 @@
 |---|---|---|---|
 | T1 | La tarjeta lleva saldos y estados de cuenta separados por moneda (CRC y USD); el estado de la tarjeta es el más grave. | — | Decidido · Implementado 2.0.0 |
 | T2 | El límite está en la moneda del límite de la tarjeta (normalmente colones). Disponible = límite − (saldo CRC + saldo USD convertido con el último tipo de cambio manual). El capital de financiamientos ya está dentro del saldo. Sin tipo de cambio y con saldo en otra moneda, el disponible no se calcula. | — | Decidido · Implementado 2.0.0 |
-| T3 | Saldo al corte (por moneda) = cargos − abonos con fecha ≤ último corte. Pago de contado = saldo al corte − abonos posteriores al corte (mínimo 0). Si la tarjeta tiene la opción "las compras del día de corte pasan al siguiente corte" (bancos que cortan por fecha de proceso, como BAC), cuenta solo lo anterior al día de corte (vale para todo cargo: compras, cuotas de financiamiento y seguros; desde 3.0.1 también en la fecha límite de cada cuota). Lo abonado de más (por encima del pago de contado, o un saldo a favor al corte) se descuenta del consumo sin cortar (abono anticipado). | — | Decidido · Cambiado 2.8.0 (opción de corte y abono anticipado) |
-| T4 | Los cargos posteriores al corte entran al siguiente estado de cuenta. | — | Decidido |
-| T5 | Si el día de corte o de pago no existe en el mes, se usa el último día del mes. | — | Decidido |
-| T6 | Si el día de pago es ≤ al día de corte, la fecha límite cae el mes siguiente. | — | Decidido |
-| T7 | Estado: sin movimientos → sin saldo → al día → atrasada (vencida con saldo pendiente) → pendiente. | — | Decidido |
+| T3 | Saldo al corte (por moneda) = cargos − abonos con fecha ≤ último corte. Pago de contado = saldo al corte − abonos posteriores al corte (mínimo 0). Si la tarjeta tiene la opción "las compras del día de corte pasan al siguiente corte" (bancos que cortan por fecha de proceso, como BAC), cuenta solo lo anterior al día de corte (vale para todo cargo: compras, cuotas de financiamiento y seguros; desde 3.0.1 también en la fecha límite de cada cuota). Lo abonado de más (por encima del pago de contado, o un saldo a favor al corte) se descuenta del consumo sin cortar (abono anticipado). | — | Decidido · Implementado 1.2.1 · Cambiado 2.8.0 (opción de corte y abono anticipado) |
+| T4 | Los cargos posteriores al corte entran al siguiente estado de cuenta. | — | Decidido · Implementado 1.2.1 |
+| T5 | Si el día de corte o de pago no existe en el mes, se usa el último día del mes. | — | Decidido · Implementado 1.2.1 |
+| T6 | Si el día de pago es ≤ al día de corte, la fecha límite cae el mes siguiente. | — | Decidido · Implementado 1.2.1 |
+| T7 | Estado: sin movimientos → sin saldo → al día → atrasada (vencida con saldo pendiente) → pendiente. | — | Decidido · Implementado 1.2.1 |
 | T8 | El pago mínimo lo digita el usuario desde el estado de cuenta (por corte y moneda; ≥ 0 y no mayor que el saldo al corte); el sistema no lo calcula. Con lo abonado después del corte, la app dice cuánto falta para cubrirlo antes de la fecha límite. | Rechaza (fuera de rango) | Decidido · Implementado 3.0.1 |
 | T10 | El tipo de cambio de referencia es la **venta del BCCR**, que la app trae una vez al día (API pública de Hacienda) al abrir el Resumen, o a mano con "Traer del BCCR". El usuario lo puede digitar igual (T2); el más reciente manda. Si la fuente no responde, se sigue con el último. | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 | T9 | Un seguro genera un gasto mensual en una tarjeta de crédito o en una tarjeta de débito (sale de su cuenta, C3); una tarjeta puede tener varios. No se cobra desde la cuenta sola. | Rechaza | Decidido · Implementado 2.7.0 · Cambiado 3.0.1 (débito) |
@@ -59,10 +59,10 @@
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| F1 | Al crear un financiamiento se eligen tarjeta, monto, tasa (0 = sin interés), de 2 a 72 meses y fecha de primera cuota; el **capital** resta al disponible desde el día 1 (en tasa 0, el total). El interés de cada cuota cuenta solo cuando llega su fecha. | Rechaza (fuera de rango) | Decidido · Cambiado 2.3.0 (72 meses, solo capital) |
+| F1 | Al crear un financiamiento se eligen tarjeta, monto, tasa (0 = sin interés), de 2 a 72 meses y fecha de primera cuota; el **capital** resta al disponible desde el día 1 (en tasa 0, el total). El interés de cada cuota cuenta solo cuando llega su fecha. | Rechaza (fuera de rango) | Decidido · Implementado 1.2.2 · Cambiado 2.3.0 (72 meses, solo capital) |
 | F10 | La moneda del financiamiento se elige al crearlo (CRC o USD, por defecto la del límite). Sus cuotas van al saldo de esa moneda de la tarjeta (T1) y cuentan en el disponible convertidas con el último tipo de cambio (T2). | Rechaza (moneda no soportada) | Decidido 2026-10-18 · Implementado 3.0.1 |
-| F2 | Las cuotas caen el mismo día cada mes (ajustado al último día en meses cortos). | — | Decidido |
-| F3 | Las cuotas se consultan en una sección propia de la tarjeta, separadas de los gastos. | — | Decidido |
+| F2 | Las cuotas caen el mismo día cada mes (ajustado al último día en meses cortos). | — | Decidido · Implementado 1.2.2 |
+| F3 | Las cuotas se consultan en una sección propia de la tarjeta, separadas de los gastos. | — | Decidido · Implementado 1.2.2 |
 | F4 | Al eliminar un financiamiento se borran solo sus cuotas **futuras**; las ya ocurridas y los abonos ya hechos quedan y se quitan a mano. | — | Decidido · Implementado 2.0.0 (fecha ≤ hoy se conserva) |
 | F5 | Financiamiento con interés y préstamo usan la misma **tabla de amortización** (sistema francés: cuota fija; tasa mensual = anual / 12, de 0 a 100 %; interés redondeado a céntimos por cuota; la última cuota cierra en 0). | — | Decidido · Implementado 2.1.0 en préstamos y 2.3.0 en financiamientos |
 | L1 | Un préstamo tiene capital > 0, tasa anual de 0 a 100 % y de 1 a 480 meses, en una sola moneda. Su calendario se deriva de esos términos (no se guarda) y los términos no se editan. | Rechaza | Decidido · Implementado 2.1.0 |
@@ -118,12 +118,12 @@ Hasta 3.0.0 se llamaban S1–S3 (chocaban con S1 = SINPE); desde 3.0.1 son A1–
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| I1 | Solo se leen correos de remitentes de bancos activos. | — | Decidido |
-| I2 | Sincronizar es siempre manual. | — | Decidido |
-| I3 | Un aviso se importa una sola vez (idempotente). | — | Decidido |
-| I4 | Un pendiente no toca saldos hasta aprobarse. | — | Decidido |
+| I1 | Solo se leen correos de remitentes de bancos activos. | — | Decidido · Implementado 1.3.0 |
+| I2 | Sincronizar es siempre manual. | — | Decidido · Implementado 1.3.0 |
+| I3 | Un aviso se importa una sola vez (idempotente). | — | Decidido · Implementado 1.3.0 |
+| I4 | Un pendiente no toca saldos hasta aprobarse. | — | Decidido · Implementado 1.3.0 |
 | I6 | Las **reglas de comercio** (comercio → categoría) se aprenden al aprobar un pendiente; el usuario las cambia (a una categoría de gasto activa, G4) o las borra en Ajustes → Bancos → Reglas de comercio. Una regla borrada se vuelve a aprender. | Rechaza (categoría desactivada) | Decidido 2026-10-19 · Implementado 3.0.1 |
-| I5 | Un pendiente se aprueba contra cualquier tarjeta (bimoneda, T1) y va al saldo de su moneda; se rechaza una moneda no soportada. | Rechaza | Decidido · Cambiado 2.0.0 |
+| I5 | Un pendiente se aprueba contra cualquier tarjeta (bimoneda, T1) y va al saldo de su moneda; se rechaza una moneda no soportada. | Rechaza | Decidido · Implementado 1.3.0 · Cambiado 2.0.0 |
 
 ## Cuenta del usuario (2.6.0)
 

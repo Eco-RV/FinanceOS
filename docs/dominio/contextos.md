@@ -66,4 +66,6 @@ Estos cambian sin tocar las reglas. Ver [`arquitectura.md`](./arquitectura.md).
 | Leer avisos bancarios | Gmail API (solo lectura) | Otro proveedor de correo |
 | Notificador | Gmail del usuario (`gmail.send`) y enlace `wa.me` (envío manual, 2.3.0) | API de WhatsApp Business, envío automático |
 | Tipo de cambio | API pública de Hacienda (venta BCCR, 3.0.1) + digitado a mano | Web service del BCCR (con token) |
+| Archivos (fotos y comprobantes) | Supabase Storage: `avatars` (público) y `receipts` (privado, enlace firmado de 10 min, 3.0.1) | Otro almacenamiento de objetos |
+| Administración de la cuenta (borrarla, U8) | Supabase Auth Admin con la service role, solo en el servidor (3.0.1) | Otro proveedor |
 | Reloj ("hoy") | `crToday()` (America/Costa_Rica) | — |

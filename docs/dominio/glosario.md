@@ -69,6 +69,8 @@
 | **Ingreso** | Entrada de dinero a una cuenta. Lleva **categoría de ingreso**. Puede tener fecha futura (p. ej. salario). | Decidido |
 | **Transferencia** | Movimiento de dinero **entre cuentas propias**. Tiene dos lados (sale de una, entra a otra) y **no es gasto**. | Decidido |
 | **SINPE** | Salida de dinero desde una cuenta de débito hacia un tercero vía SINPE Móvil. **Es un gasto** y lleva categoría. | Decidido |
+| **Comprobante** | Archivo (factura, recibo, foto del voucher) adjunto a un movimiento; privado del usuario (G8). | Decidido · Implementado 3.0.1 |
+| **Regla de comercio** | Comercio → categoría que la app aprende al aprobar una compra importada y sugiere la próxima vez; se edita o borra (I6). | Decidido · Implementado 3.0.1 |
 | **Abono** | Pago a una tarjeta de crédito. Sale **siempre** de una cuenta de débito: baja la cuenta y baja la deuda. Puede superar la deuda. Puede abonar el saldo en la otra moneda de la tarjeta: la cuenta paga el equivalente con el último tipo de cambio (M5, 2.8.0). | Decidido |
 | **Categoría de gasto** / **de ingreso** | Clasificación de un gasto (comida, transporte…) o un ingreso. El usuario parte de una lista sugerida y puede editar, deshabilitar y consultar. | Decidido |
 | **Movimiento programado** | Movimiento con fecha futura que nace de un plan (salario, suscripción, seguro, cuota). Se muestra como **proyección** y no se confunde con lo ocurrido hasta que llega su fecha. | Decidido · Implementado 2.0.0 (cuotas) y 2.7.0 (planes, M7) |
@@ -85,7 +87,10 @@
 | **Línea base financiera** | Lista de gastos fijos del usuario, repartidos por periodo (semana, quincena, mes), para controlar liquidez. Muestra qué porcentaje del salario ocupa cada gasto. | Decidido |
 | **Tope de línea base** | Porcentaje máximo del salario que deberían sumar los gastos fijos. Default 35 %, configurable. | Decidido · Implementado 2.7.0 |
 | **Ocurrencia programada** | Fecha futura de un plan. No es un movimiento todavía: se registra cuando llega su día. | Decidido · 2.7.0 |
-| **Meta de ahorro** | Objetivo (monto, moneda y fecha opcional) ligado a una cuenta. Lo ahorrado es el saldo de la cuenta; aportar es transferirle. | Decidido · Implementado 2.7.0 |
+| **Meta de ahorro** | Objetivo (monto, moneda y fecha opcional) ligado a una cuenta. Con una sola meta, lo ahorrado es el saldo de la cuenta; aportar es transferirle. | Decidido · Implementado 2.7.0 |
+| **Apartado** | Parte del saldo de una cuenta que se asigna a una de sus metas cuando la cuenta tiene varias (A4). Lo no apartado queda **libre**. | Decidido · Implementado 3.0.1 |
+| **Monto variable / por confirmar** | Plan cuyo monto es un estimado (salario variable, luz, agua): cada ocurrencia entra con el estimado y queda **por confirmar** hasta poner el real (P7). | Decidido · Implementado 3.0.1 |
+| **Recordatorio** | Aviso **dentro de la app** (card del Resumen) de lo que viene en los próximos días o está pendiente; no se envía nada solo (P8). | Decidido · Implementado 3.0.1 |
 
 ## Financiamientos y préstamos
 
@@ -101,6 +106,8 @@
 | **Reembolso de miembro** | Registro de que un miembro pagó su parte de una cuota (SINPE, efectivo, transferencia u otro). Es un control interno: **no toca la tarjeta**. | Decidido · Implementado 2.3.0 |
 | **Aviso de cuota** | Mensaje informativo (correo y/o WhatsApp) a cada miembro con su parte y cuántas quincenas (1, 2 o 3) faltan para la fecha límite. El usuario lo envía a mano desde Cobros a miembros. | Decidido · Implementado 2.3.0 |
 | **Por cobrar (a un miembro)** | Partes de cuotas que ya entraron a la tarjeta y el miembro todavía no reembolsó. | Decidido · 2.3.0 |
+| **Abono extraordinario** | Pago extra al capital de un préstamo (L7) o de un financiamiento (F11), fuera de las cuotas. Al hacerlo se elige si **baja el plazo** (misma cuota, menos cuotas) o **baja la cuota** (mismo plazo). Sale de una cuenta como un gasto. | Decidido · Implementado 3.0.1 |
+| **Tasa variable** | Cambio de la tasa anual de un préstamo desde una cuota todavía sin pagar; el plazo se mantiene y la cuota se recalcula (L8). | Decidido · Implementado 3.0.1 |
 | **Préstamo** | Deuda con un banco por un monto, a N meses, con tasa de interés anual fija. | Decidido |
 | **Desembolso** | Dinero que el banco deposita al dar un préstamo. Se registra (opcional) como ingreso en una cuenta. | Decidido |
 | **Cuota a cobro (préstamo)** | Lo que hay que pagar ya de un préstamo: las cuotas vencidas, o la próxima si vence dentro de 31 días (L6). | Decidido |
