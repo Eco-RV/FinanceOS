@@ -11,6 +11,8 @@ import {
   setFinancingShares,
   undoReimbursement as undoReimbursementUseCase,
   updateFinancing as updateFinancingUseCase,
+  prepayFinancing,
+  undoFinancingPrepayment,
   type NewNotice,
   type NoticeChannel,
 } from "@/application";
@@ -183,5 +185,48 @@ export async function recordWhatsappNotice(formData: FormData): Promise<FormResu
   if (!notice) return { ok: false, message: "Ese aviso ya no está pendiente" };
   const result = await recordNotices((await repositories()).notices, notice.items("whatsapp"));
   if (result.ok) revalidateNotices();
+  return toFormResult(result);
+}
+
+const uuidRe = /^[0-9a-fA-F-]{36}$/;
+
+/** F11 (3.0.1): abono extraordinario al capital de un financiamiento. */
+export async function prepayFinancingAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const financing_id = String(formData.get("financing_id") ?? "");
+  const account_id = String(formData.get("account_id") ?? "");
+  const amount = Number(formData.get("amount"));
+  const mode = formData.get("mode") === "payment" ? "payment" : "term";
+  const occurred_on = String(formData.get("occurred_on") ?? "");
+  const errors: Record<string, string> = {};
+  if (!uuidRe.test(account_id)) errors.account_id = "Elige la cuenta";
+  if (!(amount > 0)) errors.amount = "Debe ser mayor que 0";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(occurred_on)) errors.occurred_on = "Fecha inválida";
+  if (!uuidRe.test(financing_id) || Object.keys(errors).length > 0) return { ok: false, errors };
+  const result = await prepayFinancing(await repositories(), {
+    financing_id,
+    account_id,
+    amount,
+    mode,
+    occurred_on,
+    today: toISODate(crToday()),
+  });
+  if (result.ok) {
+    revalidateFinancing(result.value.cardId);
+    revalidatePath("/procesos/gastos");
+    revalidatePath("/procesos/cuentas", "layout");
+  }
+  return toFormResult(result);
+}
+
+export async function undoFinancingPrepaymentAction(formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const financing_id = String(formData.get("financing_id") ?? "");
+  const result = await undoFinancingPrepayment(await repositories(), { financing_id, today: toISODate(crToday()) });
+  if (result.ok) {
+    revalidateFinancing(result.value.cardId);
+    revalidatePath("/procesos/gastos");
+    revalidatePath("/procesos/cuentas", "layout");
+  }
   return toFormResult(result);
 }

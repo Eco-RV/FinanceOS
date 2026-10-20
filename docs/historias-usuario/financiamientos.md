@@ -169,6 +169,20 @@ queda, para cobrarle a tiempo.
 - El envío es **manual**: el Resumen y Procesos muestran cuántos avisos hay por
   enviar; no hay envío automático.
 
+### 10. Abono extraordinario al capital (3.0.1)
+Como usuario quiero abonar extra a un financiamiento para pagar menos interés o
+terminarlo antes.
+
+**Criterios de aceptación**
+- En el detalle del plan → **Abono extraordinario**: monto, fecha y cuenta (de
+  la moneda del plan). Eliges **Baja el plazo** o **Baja la cuota** (F11). El
+  monto no puede pasar el capital de las cuotas programadas.
+- El abono es un gasto de la cuenta; las cuotas programadas (fecha > hoy) se
+  reemplazan por un plan nuevo con menos capital desde la próxima cuota, el
+  mismo día cada mes. La deuda de la tarjeta baja por el abono una sola vez.
+- **Deshacer abono** vuelve a las cuotas de antes y borra el gasto (solo el
+  último y mientras no haya llegado ninguna cuota del plan nuevo).
+
 ## Reglas de negocio
 
 - El plan lo calcula el dominio (`financingSchedule` en
@@ -186,7 +200,6 @@ queda, para cobrarle a tiempo.
 ## Pendiente / fuera de alcance
 
 - Envío automático de avisos (cron) o por la API de WhatsApp Business.
-- Abonos extraordinarios al capital de un financiamiento con interés.
 - Cada banco puede tener particularidades (redondeos, comisiones, IVA sobre
   intereses): conviene comparar la tabla con el estado de cuenta real.
 - Cambiar los términos de un plan existente (se elimina y se crea otro).
@@ -206,3 +219,6 @@ queda, para cobrarle a tiempo.
 - **2026-10-18 (v3.0.1, en desarrollo)** — Financiamiento en la otra moneda
   de la tarjeta (F10; SP `create_financing_v4`, SQL
   `3.0.1/04_financing_currency.sql`).
+- **2026-10-19 (v3.0.1, en desarrollo)** — Abono extraordinario al capital
+  (F11; SP `prepay_financing`/`undo_financing_prepayment`, SQL
+  `3.0.1/06_financing_prepayments.sql`).
