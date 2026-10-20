@@ -491,6 +491,8 @@ export const planSchema = z.object({
     .optional()
     .transform((v) => (v ? v : null)),
   note: optionalNote,
+  /** P7 (3.0.1): monto variable (casilla). */
+  variable: z.enum(["on"]).optional().transform((v) => v === "on"),
 });
 
 export type PlanInput = z.infer<typeof planSchema>;

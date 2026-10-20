@@ -9,6 +9,7 @@ import { categoryOptions, iconsByName } from "@/lib/categories";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/schema";
 import { ensurePlansUpToDate } from "@/lib/sync-plans";
 import { loadPlansBoard, type PlanRow } from "@/lib/plans-board";
+import { ConfirmOccurrenceRow } from "./confirm-occurrence";
 import type { Account, Category, CreditCard } from "@/lib/types";
 import { loadDebitCards } from "@/lib/debit-cards";
 import { debitCardLabel } from "@/domain";
@@ -38,12 +39,14 @@ export default async function PlanesPage() {
   const supabase = await createClient();
   const repos = await repositories();
   const todayISO = toISODate(crToday());
-  const [board, { data: accData }, { data: cardData }, { data: catData }, allDebitCards] = await Promise.all([
+  const [board, { data: accData }, { data: cardData }, { data: catData }, allDebitCards, estimated] = await Promise.all([
     loadPlansBoard(supabase, repos, todayISO),
     supabase.from("accounts").select("*").order("created_at", { ascending: true }),
     supabase.from("credit_cards").select("*").order("created_at", { ascending: true }),
     supabase.from("categories").select("*").eq("archived", false).order("name", { ascending: true }),
     loadDebitCards(supabase, { includeArchived: true }),
+    // P7 (3.0.1): ocurrencias con monto estimado.
+    repos.plans.estimatedOccurrences(),
   ]);
 
   const allAccounts = (accData ?? []) as Account[];
@@ -98,6 +101,28 @@ export default async function PlanesPage() {
           <PlanFormDialog {...formProps} />
         </div>
       </div>
+
+      {/* P7 (3.0.1): montos por confirmar, arriba porque piden acción. */}
+      {estimated.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">Por confirmar</h2>
+          <p className="text-sm text-muted-foreground">
+            Entraron con el monto estimado. Pon el real (el saldo se ajusta solo).
+          </p>
+          <ul className="surface flex flex-col divide-y">
+            {estimated.map((o) => (
+              <ConfirmOccurrenceRow
+                key={o.movement_id}
+                movementId={o.movement_id}
+                name={o.plan_name}
+                occurredOn={o.occurred_on}
+                amount={o.amount}
+                currency={o.currency}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {/* P4: línea base */}
       <section className="surface rise flex flex-col gap-5 p-4 sm:p-6">

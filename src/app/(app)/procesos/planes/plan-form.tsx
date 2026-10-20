@@ -334,6 +334,25 @@ export function PlanFormDialog({
             />
           </div>
 
+          {kind !== "insurance" ? (
+            <label className="flex cursor-pointer items-start gap-2 text-sm select-none">
+              <input
+                type="checkbox"
+                name="variable"
+                defaultChecked={Boolean(plan?.variable)}
+                className="mt-0.5 size-4 accent-foreground"
+              />
+              <span>
+                El monto varía
+                <span className="block text-xs text-muted-foreground">
+                  {kind === "salary"
+                    ? "Salario variable: cada pago entra con este monto estimado y lo confirmas en Planes."
+                    : "Luz, agua…: cada cobro entra con este monto estimado y lo confirmas en Planes."}
+                </span>
+              </span>
+            </label>
+          ) : null}
+
           <FormField label="Nota (opcional)" htmlFor="plan-note" error={errors?.note}>
             <Input id="plan-note" name="note" defaultValue={plan?.note ?? ""} maxLength={200} />
           </FormField>

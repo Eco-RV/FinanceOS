@@ -142,6 +142,8 @@ export function occurrenceMovement(plan: Plan, date: ISODate): NewMovement {
     card_id: plan.card_id,
     debit_card_id: plan.debit_card_id ?? null,
     plan_id: plan.id,
+    // P7: un plan variable entra con el estimado y queda por confirmar.
+    estimated: Boolean(plan.variable),
   };
 }
 
@@ -256,6 +258,27 @@ export function deleteGoal(goals: GoalRepository, id: string): Promise<UseCaseRe
   return run(async () => {
     if (!(await goals.find(id))) return fail(GOAL_NOT_FOUND);
     await goals.delete(id);
+    return ok();
+  });
+}
+
+/**
+ * P7 (3.0.1): confirma el monto real de una ocurrencia de un plan variable
+ * (salario, luz…). El saldo lo ajusta la persistencia (trigger).
+ */
+export function confirmPlanOccurrence(
+  plans: PlanRepository,
+  input: { movement_id: string; amount: number },
+): Promise<UseCaseResult> {
+  return run(async () => {
+    if (!(Number.isFinite(input.amount) && input.amount > 0)) {
+      throw new DomainError("P5", "El monto debe ser mayor que cero");
+    }
+    const pending = await plans.estimatedOccurrences();
+    if (!pending.some((o) => o.movement_id === input.movement_id)) {
+      return fail("Ese movimiento ya no está por confirmar");
+    }
+    await plans.confirmOccurrence(input.movement_id, input.amount);
     return ok();
   });
 }

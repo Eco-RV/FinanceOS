@@ -59,6 +59,8 @@ export type NewMovement = {
   account_amount?: number | null;
   /** Abono en otra moneda (M5, 2.8.0): colones por dólar usados. */
   exchange_rate?: number | null;
+  /** P7 (3.0.1): ocurrencia de un plan variable con el monto estimado. */
+  estimated?: boolean;
 };
 
 export type AccountFields = {
@@ -547,6 +549,19 @@ export type PlanFields = {
   debit_card_id?: string | null;
   category: string | null;
   note: string | null;
+  /** P7 (3.0.1): el monto es un estimado; cada ocurrencia se confirma. */
+  variable?: boolean;
+};
+
+/** P7: ocurrencia registrada con el monto estimado, por confirmar. */
+export type EstimatedOccurrence = {
+  movement_id: string;
+  plan_id: string;
+  plan_name: string;
+  kind: PlanKind;
+  occurred_on: ISODate;
+  amount: number;
+  currency: Currency;
 };
 
 export type Plan = PlanFields & {
@@ -567,6 +582,10 @@ export interface PlanRepository {
   delete(planId: string): Promise<void>;
   /** Registra ocurrencias (idempotente por fecha) y avanza `generated_through`. */
   materialize(planId: string, through: ISODate, rows: NewMovement[]): Promise<number>;
+  /** P7 (3.0.1): ocurrencias con monto estimado que falta confirmar. */
+  estimatedOccurrences(): Promise<EstimatedOccurrence[]>;
+  /** P7: fija el monto real (el saldo se ajusta) y la marca como confirmada. */
+  confirmOccurrence(movementId: string, amount: number): Promise<void>;
 }
 
 export type GoalFields = {

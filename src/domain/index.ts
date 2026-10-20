@@ -31,3 +31,4 @@ export * from "./banking/debit-card.ts";
 export * from "./constellation/usdc.ts";
 export * from "./constellation/family.ts";
 export * from "./constellation/directory.ts";
+export * from "./plans/reminders.ts";

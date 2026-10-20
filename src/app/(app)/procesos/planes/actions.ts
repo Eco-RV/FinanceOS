@@ -6,7 +6,14 @@ import { planSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 import { lifecycleForm, toFormResult } from "@/lib/catalog-actions";
 import { crToday, toISODate } from "@/domain";
-import { deletePlan, savePlan, setBaselineCap, setPlanActive, syncPlans } from "@/application";
+import {
+  confirmPlanOccurrence,
+  deletePlan,
+  savePlan,
+  setBaselineCap,
+  setPlanActive,
+  syncPlans,
+} from "@/application";
 import { repositories } from "@/infrastructure/container";
 
 function revalidate() {
@@ -78,4 +85,14 @@ export async function setBaselineCapAction(_prev: FormResult, formData: FormData
   if (!result.ok) return { ok: false, errors: { cap: result.message } };
   revalidate();
   return { ok: true };
+}
+
+/** P7 (3.0.1): confirma el monto real de una ocurrencia de un plan variable. */
+export async function confirmOccurrenceAction(formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const movement_id = String(formData.get("movement_id") ?? "");
+  const amount = Number(formData.get("amount"));
+  const result = await confirmPlanOccurrence((await repositories()).plans, { movement_id, amount });
+  if (result.ok) revalidate();
+  return toFormResult(result);
 }

@@ -21,6 +21,7 @@ import {
   savePlan,
   setPlanActive,
   syncPlans,
+  confirmPlanOccurrence,
 } from "./plans.ts";
 
 function fakePlans() {
@@ -66,6 +67,25 @@ function fakePlans() {
       const p = plans.get(id)!;
       plans.set(id, { ...p, generated_through: p.generated_through && p.generated_through > through ? p.generated_through : through });
       return added;
+    },
+    async estimatedOccurrences() {
+      return movements
+        .map((m, i) => ({ m, i }))
+        .filter(({ m }) => m.estimated)
+        .map(({ m, i }) => ({
+          movement_id: `m${i}`,
+          plan_id: m.plan_id!,
+          plan_name: plans.get(m.plan_id!)?.name ?? "",
+          kind: plans.get(m.plan_id!)?.kind ?? "salary",
+          occurred_on: m.occurred_on,
+          amount: m.amount,
+          currency: m.currency,
+        }));
+    },
+    async confirmOccurrence(movementId, amount) {
+      const m = movements[Number(movementId.slice(1))];
+      m.amount = amount;
+      m.estimated = false;
     },
   };
   return { repo, plans, movements };
@@ -275,4 +295,18 @@ test("P2 (2.8.0): gasto fijo con tarjeta de débito, cobrado a su cuenta", async
   assert.equal(stored?.debit_card_id, "deb");
   assert.equal(stored?.account_id, "bac");
   assert.equal(stored?.category, "Seguros");
+});
+
+test("P7: un salario variable entra con el estimado y se confirma el real", async () => {
+  const { p, deps: d } = deps();
+  const r = await savePlan(d, { id: null, fields: { ...salary, variable: true }, today: "2026-10-14" });
+  assert.ok(r.ok);
+  await syncPlans(p.repo, "2026-10-16");
+  assert.equal(p.movements.length, 1);
+  assert.equal(p.movements[0].estimated, true);
+  const [pending] = await p.repo.estimatedOccurrences();
+  assert.equal((await confirmPlanOccurrence(p.repo, { movement_id: pending.movement_id, amount: 0 })).ok, false);
+  assert.ok((await confirmPlanOccurrence(p.repo, { movement_id: pending.movement_id, amount: 812_345 })).ok);
+  assert.equal(p.movements[0].amount, 812_345);
+  assert.equal((await p.repo.estimatedOccurrences()).length, 0);
 });

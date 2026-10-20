@@ -20,6 +20,8 @@ const PLAN_COLUMNS =
   "id, kind, name, amount, currency, frequency, starts_on, ends_on, account_id, card_id, category, note, generated_through, archived";
 /** 2.8.0: tarjeta de débito del plan (columna nueva). */
 const PLAN_COLUMNS_V280 = `${PLAN_COLUMNS}, debit_card_id`;
+/** 3.0.1 (P7): monto variable. */
+const PLAN_COLUMNS_V301 = `${PLAN_COLUMNS_V280}, variable`;
 /** La columna no existe (SQL 2.8.0 sin correr): se lee y guarda sin ella. */
 const MISSING_COLUMN = new Set(["42703", "PGRST204"]);
 
@@ -35,7 +37,8 @@ export function supabasePlans(supabase: SupabaseClient) {
     async list() {
       const read = (columns: string) =>
         supabase.from("plans").select(columns).order("created_at", { ascending: true });
-      let { data, error } = await read(PLAN_COLUMNS_V280);
+      let { data, error } = await read(PLAN_COLUMNS_V301);
+      if (error?.code && MISSING_COLUMN.has(error.code)) ({ data, error } = await read(PLAN_COLUMNS_V280));
       if (error?.code && MISSING_COLUMN.has(error.code)) ({ data, error } = await read(PLAN_COLUMNS));
       if (error) {
         if (error.code && MISSING_TABLE.has(error.code)) return [];
@@ -46,7 +49,8 @@ export function supabasePlans(supabase: SupabaseClient) {
     async find(id) {
       const read = (columns: string) =>
         supabase.from("plans").select(columns).eq("id", id).maybeSingle();
-      let { data, error } = await read(PLAN_COLUMNS_V280);
+      let { data, error } = await read(PLAN_COLUMNS_V301);
+      if (error?.code && MISSING_COLUMN.has(error.code)) ({ data, error } = await read(PLAN_COLUMNS_V280));
       if (error?.code && MISSING_COLUMN.has(error.code)) ({ data, error } = await read(PLAN_COLUMNS));
       return data ? toPlan(data as unknown as Record<string, unknown>) : null;
     },
@@ -59,13 +63,21 @@ export function supabasePlans(supabase: SupabaseClient) {
               .insert({ ...row, generated_through: generatedThrough ?? null })
               .select("id")
               .single();
-      let { data, error } = await write({ ...fields, debit_card_id: fields.debit_card_id ?? null });
+      const { variable, ...rest } = fields;
+      let { data, error } = await write({ ...rest, debit_card_id: fields.debit_card_id ?? null, variable: Boolean(variable) });
+      // Sin el SQL 3.0.1 (P7) se guarda sin la columna, salvo que el plan sea variable.
+      if (error?.code && MISSING_COLUMN.has(error.code) && !variable) {
+        ({ data, error } = await write({ ...rest, debit_card_id: fields.debit_card_id ?? null }));
+      } else if (error?.code && MISSING_COLUMN.has(error.code)) {
+        throw new InfrastructureError("Falta correr el SQL de la versión 3.0.1 (planes con monto variable)");
+      }
       // Sin el SQL 2.8.0 se guarda igual, salvo que el plan use tarjeta de débito.
       if (error?.code && MISSING_COLUMN.has(error.code)) {
         if (fields.debit_card_id) {
           throw new InfrastructureError("Falta correr el SQL de la versión 2.8.0 (tarjetas de débito)");
         }
-        const { debit_card_id: _omit, ...legacy } = fields;
+        const { debit_card_id: _omit, variable: _v, ...legacy } = fields;
+        void _v;
         void _omit;
         ({ data, error } = await write(legacy));
       }
@@ -99,10 +111,40 @@ export function supabasePlans(supabase: SupabaseClient) {
           account_id: r.account_id ?? "",
           card_id: r.card_id ?? "",
           debit_card_id: r.debit_card_id ?? "",
+          estimated: Boolean(r.estimated),
         })),
       });
       if (error) throw new InfrastructureError("No se pudieron registrar los movimientos del plan");
       return Number(data ?? 0);
+    },
+    async estimatedOccurrences() {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("id, plan_id, occurred_on, amount, currency, plans(name, kind)")
+        .eq("estimated", true)
+        .eq("archived", false)
+        .not("plan_id", "is", null)
+        .order("occurred_on", { ascending: true });
+      if (error) return [];
+      return ((data ?? []) as Record<string, unknown>[]).map((r) => {
+        const plan = r.plans as { name: string; kind: Plan["kind"] } | null;
+        return {
+          movement_id: r.id as string,
+          plan_id: r.plan_id as string,
+          plan_name: plan?.name ?? "Plan",
+          kind: plan?.kind ?? "salary",
+          occurred_on: r.occurred_on as string,
+          amount: Number(r.amount),
+          currency: r.currency === "USD" ? "USD" : "CRC",
+        };
+      });
+    },
+    async confirmOccurrence(movementId, amount) {
+      const { error } = await supabase
+        .from("transactions")
+        .update({ amount, estimated: false })
+        .eq("id", movementId);
+      if (error) throw new InfrastructureError("No se pudo confirmar el monto");
     },
   };
 

@@ -106,3 +106,4 @@ débito alcanza para pagar de contado.
   cobertura).
 - **2026-10-18 (v3.0.1, en desarrollo)** — Multimoneda en la cobertura y el
   patrimonio (G7) con el tipo de cambio del BCCR traído una vez al día (T10).
+- **2026-10-19 (v3.0.1, en desarrollo)** — Card "Recordatorios" (P8).

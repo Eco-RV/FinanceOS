@@ -15,6 +15,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import {
   availabilityLevel,
+  buildReminders,
+  minimumPaymentStatus,
   cardAvailability,
   cardStatementsByCurrency,
   computeCoverage,
@@ -60,6 +62,7 @@ import { cn } from "@/lib/utils";
 import { StatBody, StatDialog, type StatTone } from "./stat-dialog";
 import { ExpenseOverview, type ExpensePoint } from "./expense-overview";
 import { PlansAndGoals } from "./plans-goals";
+import { Reminders } from "./reminders";
 import { loadPlansBoard } from "@/lib/plans-board";
 import { repositories } from "@/infrastructure/container";
 import type { Goal } from "@/application";
@@ -192,7 +195,7 @@ export default async function DashboardPage() {
   // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
   // 2.7.0: planes (línea base y programados) y metas de ahorro.
   // 3.0.1: también los gastos compartidos (X5).
-  const [board, sharedBoard, plansBoard, { data: goalData }] = await Promise.all([
+  const [board, sharedBoard, plansBoard, { data: goalData }, estimated, { data: minimumData }] = await Promise.all([
     loadFinancingBoard(supabase, todayISO),
     loadSharedBoard(supabase, todayISO),
     repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
@@ -200,6 +203,9 @@ export default async function DashboardPage() {
       .from("savings_goals")
       .select("id, name, target_amount, currency, target_date, account_id, icon, archived")
       .eq("archived", false),
+    // P8 (3.0.1): montos por confirmar (P7) y pagos mínimos digitados (T8).
+    repositories().then((repos) => repos.plans.estimatedOccurrences()),
+    supabase.from("card_minimum_payments").select("card_id, cutoff_on, currency, amount"),
   ]);
   const goals = (goalData ?? []) as Goal[];
   const noticesToSend =
@@ -662,6 +668,36 @@ export default async function DashboardPage() {
             </div>
           )}
         </StatDialog>
+
+        {/* P8 (3.0.1): recordatorios, como una card más (no un banner). */}
+        <Reminders
+          style={rise(14)}
+          items={buildReminders({
+            todayISO,
+            upcoming: plansBoard.upcoming.map((u) => ({
+              name: u.plan.name,
+              kind: u.plan.kind,
+              date: u.date,
+              amount: Number(u.plan.amount),
+              currency: u.plan.currency,
+            })),
+            toConfirm: estimated.length,
+            noticesToSend,
+            minimums: cards.flatMap((card) => {
+              const multi = multiByCard.get(card.id);
+              if (!multi) return [];
+              return multi.currencies.flatMap((cur) => {
+                const st = multi.byCurrency[cur]!;
+                const m = ((minimumData ?? []) as { card_id: string; cutoff_on: string; currency: string; amount: number }[]).find(
+                  (x) => x.card_id === card.id && x.currency === cur && x.cutoff_on === toISODate(st.lastCutoff),
+                );
+                if (!m) return [];
+                const status = minimumPaymentStatus(Number(m.amount), st.paidAfterCutoff);
+                return [{ card: card.name, remaining: status.remaining, currency: cur, dueOn: toISODate(st.dueDate) }];
+              });
+            }),
+          })}
+        />
 
         {/* Fila 6 · Línea base y metas (2.7.0) */}
         <PlansAndGoals

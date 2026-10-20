@@ -72,6 +72,29 @@ controlar mi liquidez.
 - **Próximos 30 días** en Planes; en el Resumen, la card **Línea base** muestra
   el % y lo próximo de 15 días.
 
+### 6. Monto variable (3.0.1)
+Como usuario quiero registrar un salario (o la luz, el agua) que cambia cada
+vez, para no tener que editar el movimiento a mano.
+
+**Criterios de aceptación**
+- En el formulario del plan (salario o gasto fijo) → **El monto varía**. El
+  monto del plan pasa a ser un estimado.
+- Cuando llega la fecha, el movimiento entra con el estimado y aparece en
+  Planes → **Por confirmar** (arriba), ya lleno con el estimado. Pones el real
+  y **Confirmar**: el saldo se ajusta (P7).
+- El Resumen lo recuerda en "Recordatorios" mientras quede algo por confirmar.
+
+### 7. Recordatorios (3.0.1)
+Como usuario quiero ver en el Resumen lo que viene pronto, para no olvidar
+nada.
+
+**Criterios de aceptación**
+- Card **Recordatorios** en el Resumen (P8): montos por confirmar, avisos de
+  cobro por enviar, pagos mínimos sin cubrir que vencen en 3 días o menos, y
+  salarios o cobros de planes de los próximos 3 días. Cada fila lleva a donde
+  se resuelve.
+- Es solo dentro de la app: no se envían correos ni notificaciones solas.
+
 ## Reglas de negocio
 
 - P1–P6 y T9 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
@@ -82,7 +105,6 @@ controlar mi liquidez.
 
 ## Pendiente / fuera de alcance
 
-- Salario variable (cada ocurrencia se puede editar a mano).
 - Recordatorio antes de un cargo.
 - Línea base en dólares.
 
@@ -95,3 +117,5 @@ controlar mi liquidez.
   base y programados.
 - **2026-10-18 (v3.0.1, en desarrollo)** — Un seguro también se cobra a una
   tarjeta de débito (T9; SQL `3.0.1/02_insurance_debit_card.sql`).
+- **2026-10-19 (v3.0.1, en desarrollo)** — Monto variable con confirmación
+  (P7; SQL `3.0.1/07_variable_plans.sql`) y recordatorios en el Resumen (P8).

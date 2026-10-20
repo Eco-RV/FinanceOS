@@ -97,6 +97,8 @@
 | P3 | Al eliminar un plan (salario, suscripción, seguro) no quedan movimientos futuros; los ocurridos quedan (sin plan). Pausar deja de registrar; al reanudar sigue desde ese día, sin lo pausado. | — | Decidido · Implementado 2.7.0 |
 | P4 | Si los gastos fijos de la línea base superan el tope (default 35 % del salario, configurable entre 1 y 100 %), se advierte. Línea base = salarios vs. gastos fijos, seguros, cuota de préstamos y cuota de financiamientos, en colones y por mes. | Advierte | Decidido · Implementado 2.7.0 |
 | P5 | Un plan tiene monto mayor que 0; la fecha final, si la hay, no es anterior al inicio. | Rechaza | Decidido · Implementado 2.7.0 |
+| P7 | Un plan (salario o gasto fijo, no seguro) puede tener **monto variable**: cada ocurrencia se registra con el monto estimado del plan, marcada "por confirmar", y el usuario pone el real (mayor que 0); el saldo se ajusta. | Rechaza (monto ≤ 0) | Decidido 2026-10-18 · Implementado 3.0.1 |
+| P8 | **Recordatorios dentro de la app**: el Resumen muestra lo que viene en los próximos 3 días (cobros y salarios de planes, pagos mínimos sin cubrir) y lo pendiente (montos por confirmar, avisos de cobro por enviar). No se envía nada solo (I2, F8). | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 | P6 | Cada ocurrencia de un plan se registra como movimiento cuando llega su fecha (M7: lo programado no cuenta en los saldos de hoy); las futuras solo se calculan. Un plan nuevo registra desde el día en que se crea, nunca hacia atrás (esa plata ya está en los saldos); nunca se registra dos veces la misma fecha. | — | Decidido · Implementado 2.7.0 |
 
 ## Ahorros y metas (2.7.0)
