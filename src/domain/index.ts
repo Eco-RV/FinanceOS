@@ -12,6 +12,7 @@ export * from "./shared/calendar.ts";
 export * from "./shared/notices.ts";
 export * from "./ledger/movement.ts";
 export * from "./ledger/receipt.ts";
+export * from "./ledger/spending.ts";
 export * from "./cards/statement.ts";
 export * from "./cards/multicurrency.ts";
 export * from "./cards/minimum.ts";

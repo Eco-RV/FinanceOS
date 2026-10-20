@@ -8,6 +8,8 @@ import {
   sharedDueDate,
   sharedNoticeGroups,
   sharedReceivables,
+  splitByPercent,
+  suggestPercents,
   suggestSplit,
   validateSharedParts,
   type SharedPart,
@@ -120,4 +122,19 @@ test("Por cobrar: partes sin pagar de gastos ya ocurridos", () => {
   const [r] = sharedReceivables(parts, "2026-10-18");
   assert.equal(r.total, 5_000);
   assert.equal(r.parts.length, 1);
+});
+
+test("X7: reparto por porcentaje; los céntimos sobrantes quedan al usuario", () => {
+  assert.deepEqual(splitByPercent(100, [{ member_id: "ana", percent: 33.33 }, { member_id: "beto", percent: 33.33 }]), [
+    { member_id: "ana", amount: 33.33 },
+    { member_id: "beto", amount: 33.33 },
+  ]);
+  assert.deepEqual(splitByPercent(30_000, [{ member_id: "ana", percent: 50 }]), [{ member_id: "ana", amount: 15_000 }]);
+  assert.throws(() => splitByPercent(100, [{ member_id: "a", percent: 60 }, { member_id: "b", percent: 41 }]), rule("X7"));
+  assert.throws(() => splitByPercent(100, [{ member_id: "a", percent: 0 }]), rule("X7"));
+  assert.deepEqual(suggestPercents(["a", "b"], true), [
+    { member_id: "a", percent: 33.33 },
+    { member_id: "b", percent: 33.33 },
+  ]);
+  assert.deepEqual(suggestPercents(["a"], false), [{ member_id: "a", percent: 100 }]);
 });

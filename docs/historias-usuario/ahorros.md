@@ -48,6 +48,15 @@ emergencias) y decidir cuánto va a cada una.
 - **Apartar**: el monto para esa meta, sin pasar lo libre + lo que ya tenía.
 - El Resumen usa la misma regla para el avance de las metas.
 
+### 6. Metas en dólares en el total (3.1.0)
+Como usuario quiero que el total de mis metas incluya las que están en dólares.
+
+**Criterios de aceptación**
+- "Ahorrado en tus metas" está en colones: lo ahorrado y el objetivo de las
+  metas en dólares se convierten con el último tipo de cambio (A5), que se
+  muestra junto al título.
+- Sin tipo de cambio, esas metas no suman y se indica cuántas.
+
 ## Reglas de negocio
 
 - A1–A3 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
@@ -57,10 +66,11 @@ emergencias) y decidir cuánto va a cada una.
 
 - (Hecho en 3.0.1) Varias metas en una misma cuenta con apartados (A4).
 - Aportes automáticos (un plan de "ahorro" mensual).
-- Metas en dólares en el total del Resumen.
+- (Hecho en 3.1.0) Metas en dólares en el total, convertidas (A5).
 
 ## Historial
 
 - **2026-10-14 (v2.7.0)** — Archivo nuevo.
 - **2026-10-19 (v3.0.1, en desarrollo)** — Varias metas por cuenta con
   apartados (A4; SQL `3.0.1/08_goal_allocations.sql`).
+- **2026-10-20 (v3.1.0, en desarrollo)** — Metas en dólares en el total (A5).

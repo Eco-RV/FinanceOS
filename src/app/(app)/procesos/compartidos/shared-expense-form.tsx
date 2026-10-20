@@ -12,6 +12,8 @@ import {
   crToday,
   defaultSharedDueDate,
   sharedDueDate,
+  splitByPercent,
+  suggestPercents,
   suggestSplit,
   toISODate,
   type CardCycle,
@@ -122,7 +124,36 @@ export function SharedExpenseForm({
     Object.fromEntries(existing?.parts.map((p) => [p.member_id, String(p.amount)]) ?? []),
   );
 
+  // X7 (3.1.0): repartir por porcentaje. Los porcentajes se convierten en montos
+  // (lo que se guarda); los céntimos que sobran quedan en tu parte.
+  const [byPercent, setByPercent] = useState(false);
+  const [percents, setPercents] = useState<Record<string, string>>({});
+  const [percentError, setPercentError] = useState<string | null>(null);
+
+  function applyPercents(ids: string[], next: Record<string, string>, t = total) {
+    setPercents(next);
+    try {
+      const split = splitByPercent(
+        t,
+        ids.map((id) => ({ member_id: id, percent: Number(next[id]) || 0 })).filter((s) => s.percent > 0),
+      );
+      setPercentError(null);
+      setAmounts((prev) => ({
+        ...prev,
+        ...Object.fromEntries(ids.map((id) => [id, ""])),
+        ...Object.fromEntries(split.map((s) => [s.member_id, String(s.amount)])),
+      }));
+    } catch (err) {
+      setPercentError(err instanceof Error ? err.message : "Porcentajes inválidos");
+    }
+  }
+
   function resplit(ids: string[], me: boolean, t = total) {
+    if (byPercent) {
+      const pcts = suggestPercents(ids, me);
+      applyPercents(ids, Object.fromEntries(pcts.map((p) => [p.member_id, String(p.percent)])), t);
+      return;
+    }
     // Las partes ya pagadas no se tocan (X6); el resto se reparte en partes iguales.
     const paidCents = ids.filter((id) => paid.has(id)).reduce((s, id) => s + Math.round(Number(amounts[id]) * 100), 0);
     const free = ids.filter((id) => !paid.has(id));
@@ -184,6 +215,7 @@ export function SharedExpenseForm({
     }
     if (i === 1) {
       if (selected.length === 0) e.people = "Elige al menos una persona";
+      else if (byPercent && percentError) e.people = percentError;
       else if (selected.some((id) => !(Number(amounts[id]) > 0))) e.people = "Cada persona necesita un monto mayor que 0";
       else if (ownCents < 0) e.people = "Las partes pasan el total del gasto";
     }
@@ -420,11 +452,46 @@ export function SharedExpenseForm({
 
           {selected.length > 0 ? (
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">Cuánto paga cada uno ({currency})</p>
-                <Button type="button" variant="ghost" size="sm" onClick={() => resplit(selected, includeMe)}>
-                  <Equal className="size-4" /> Partes iguales
-                </Button>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                  Cuánto paga cada uno {byPercent ? "(%)" : `(${currency})`}
+                </p>
+                <div className="flex items-center gap-2">
+                  {paid.size === 0 ? (
+                    <div role="radiogroup" aria-label="Repartir por" className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-0.5 text-xs">
+                      {(
+                        [
+                          [false, "Monto"],
+                          [true, "%"],
+                        ] as const
+                      ).map(([v, label]) => (
+                        <button
+                          key={label}
+                          type="button"
+                          role="radio"
+                          aria-checked={byPercent === v}
+                          onClick={() => {
+                            setByPercent(v);
+                            setPercentError(null);
+                            if (v) {
+                              const pcts = suggestPercents(selected, includeMe);
+                              applyPercents(selected, Object.fromEntries(pcts.map((p) => [p.member_id, String(p.percent)])));
+                            }
+                          }}
+                          className={cn(
+                            "h-7 rounded-md px-3 transition-[background-color,color,box-shadow] duration-150",
+                            byPercent === v ? "bg-card font-medium shadow-sm dark:bg-background" : "text-muted-foreground",
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  <Button type="button" variant="ghost" size="sm" onClick={() => resplit(selected, includeMe)}>
+                    <Equal className="size-4" /> Partes iguales
+                  </Button>
+                </div>
               </div>
               <ul className="flex flex-col divide-y rounded-xl bg-muted/40">
                 {selected.map((id) => {
@@ -432,16 +499,37 @@ export function SharedExpenseForm({
                   return (
                     <li key={id} className="flex items-center justify-between gap-3 px-3 py-2">
                       <span className="min-w-0 truncate text-sm">{person?.name ?? "Persona"}</span>
-                      <Input
-                        aria-label={`Parte de ${person?.name ?? "la persona"}`}
-                        inputMode="decimal"
-                        value={amounts[id] ?? ""}
-                        disabled={paid.has(id)}
-                        onChange={(e) =>
-                          setAmounts((a) => ({ ...a, [id]: e.target.value.replace(/[^\d.,]/g, "").replace(",", ".") }))
-                        }
-                        className="w-32 text-right tabular-nums"
-                      />
+                      {byPercent ? (
+                        <span className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            {money(Number(amounts[id]) || 0)}
+                          </span>
+                          <Input
+                            aria-label={`Porcentaje de ${person?.name ?? "la persona"}`}
+                            inputMode="decimal"
+                            value={percents[id] ?? ""}
+                            onChange={(e) =>
+                              applyPercents(selected, {
+                                ...percents,
+                                [id]: e.target.value.replace(/[^\d.,]/g, "").replace(",", "."),
+                              })
+                            }
+                            className="w-20 text-right tabular-nums"
+                          />
+                          <span className="text-sm text-muted-foreground">%</span>
+                        </span>
+                      ) : (
+                        <Input
+                          aria-label={`Parte de ${person?.name ?? "la persona"}`}
+                          inputMode="decimal"
+                          value={amounts[id] ?? ""}
+                          disabled={paid.has(id)}
+                          onChange={(e) =>
+                            setAmounts((a) => ({ ...a, [id]: e.target.value.replace(/[^\d.,]/g, "").replace(",", ".") }))
+                          }
+                          className="w-32 text-right tabular-nums"
+                        />
+                      )}
                     </li>
                   );
                 })}
@@ -454,6 +542,7 @@ export function SharedExpenseForm({
               </ul>
             </div>
           ) : null}
+          {byPercent && percentError ? <p className="text-sm text-destructive">{percentError}</p> : null}
           {errors.people ? <p className="text-sm text-destructive">{errors.people}</p> : null}
         </div>
       ) : null}

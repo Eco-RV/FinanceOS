@@ -16,6 +16,8 @@ import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import {
   availabilityLevel,
   buildReminders,
+  spendingFrom,
+  spendingInColones,
   readPreferences,
   minimumPaymentStatus,
   cardAvailability,
@@ -162,13 +164,18 @@ export default async function DashboardPage() {
         .order("id")
         .range(from, to),
     ).then((data) => ({ data })),
-    supabase
-      .from("transactions")
-      .select("amount, occurred_on, category, currency")
-      .eq("type", "expense")
-      .eq("archived", false)
-      .gte("occurred_on", expensesFrom)
-      .lte("occurred_on", todayISO),
+    // G10 (3.1.0): desde el inicio del año pasado, para comparar períodos (todas las filas).
+    allRows<Pick<Transaction, "amount" | "occurred_on" | "category" | "currency">>((from, to) =>
+      supabase
+        .from("transactions")
+        .select("id, amount, occurred_on, category, currency")
+        .eq("type", "expense")
+        .eq("archived", false)
+        .gte("occurred_on", spendingFrom(todayISO) < expensesFrom ? spendingFrom(todayISO) : expensesFrom)
+        .lte("occurred_on", todayISO)
+        .order("id")
+        .range(from, to),
+    ).then((data) => ({ data })),
     supabase.from("financings").select("*").eq("archived", false).is("cancelled_on", null),
     supabase
       .from("transactions")
@@ -270,14 +277,21 @@ export default async function DashboardPage() {
     .filter((l) => l.currency === "CRC")
     .reduce((s, l) => s + l.remainingPrincipal, 0);
 
-  // Gastos en colones ya ocurridos (para las cards de período y el gráfico).
+  // G9 (3.1.0): gastos ya ocurridos, los de dólares convertidos a colones.
   const expenseRows = (expenseData ?? []) as Pick<
     Transaction,
     "amount" | "occurred_on" | "category" | "currency"
   >[];
-  const expensePoints: ExpensePoint[] = expenseRows
-    .filter((t) => t.currency !== "USD")
-    .map((t) => ({ d: t.occurred_on, a: Number(t.amount), c: t.category }));
+  const spending = spendingInColones(
+    expenseRows.map((t) => ({
+      d: t.occurred_on,
+      a: Number(t.amount),
+      c: t.category,
+      currency: t.currency === "USD" ? "USD" : "CRC",
+    })),
+    rate?.usd_crc ?? null,
+  );
+  const expensePoints: ExpensePoint[] = spending.points;
   const categoryIcons = iconsByName(
     categoryOptions((categoryData ?? []) as Category[], EXPENSE_CATEGORIES),
   );
@@ -544,7 +558,7 @@ export default async function DashboardPage() {
           points={expensePoints}
           todayISO={todayISO}
           icons={categoryIcons}
-          hasUsd={expenseRows.some((t) => t.currency === "USD")}
+          unconverted={spending.unconverted}
         />
 
         {/* Fila 5 · Disponible en crédito · Cobros a miembros · Financiamientos */}

@@ -48,15 +48,15 @@ recordatorios en la app (P8) y varias metas por cuenta (A4).
 | Proceso | Lo que sigue pendiente |
 |---|---|
 | Financiamientos | Avisos automáticos (por decisión, solo dentro de la app, P8); editar los términos. |
-| Gastos | Sumar los gastos en dólares convertidos en las cards de período y el gráfico. |
+| Gastos | (Hecho en 3.1.0, G9) Gastos en dólares en las cards y el gráfico. |
 | Bancos | Solo Gmail; parsers de otros bancos (BCR, BN, Promerica) y de débitos de BAC: esperan correos de ejemplo. |
 | Préstamos | Seguros o comisiones dentro de la cuota. |
 | Arranque de 0 | Restaurar lo archivado (por diseño no se hace, M9). |
-| Resumen | Comparar períodos o contra presupuesto. |
+| Resumen | Comparar contra un presupuesto (comparar períodos ya existe, G10, 3.1.0). |
 | Cuenta | El tema sigue siendo por dispositivo. |
-| Planes | Línea base en USD. |
-| Ahorros | Aportes automáticos; metas en USD en los totales. |
-| Gastos compartidos (3.0.1) | Reparto por porcentajes; cobro en USDC (Fase 7). |
+| Planes | (Hecho en 3.1.0, P4) Línea base con dólares. |
+| Ahorros | Aportes automáticos (metas en USD en el total: hecho en 3.1.0, A5). |
+| Gastos compartidos (3.0.1) | Cobro en USDC (Fase 7). Por porcentaje: hecho en 3.1.0 (X7). |
 
 ## 4. Documentación corregida en 3.0.1
 
@@ -82,3 +82,5 @@ recordatorios en la app (P8) y varias metas por cuenta (A4).
   tarjetas, financiamientos, préstamos, gastos, bancos (pantalla de reglas),
   arranque, resumen, cuenta, planes y ahorros. Quedan los de la tabla 3 y la
   Constelación 3.1.0.
+- **2026-10-20 (v3.1.0, en desarrollo)** — Se cierran las mejoras chicas: G9,
+  G10, P4 con dólares, A5 y X7.

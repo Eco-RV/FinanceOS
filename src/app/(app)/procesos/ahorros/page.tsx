@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { PiggyBank } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { crToday, goalProgress, goalsSaved, toISODate, type GoalStatus } from "@/domain";
+import { crToday, goalProgress, goalsSaved, toColones, toISODate, type GoalStatus } from "@/domain";
 import { AllocateDialog } from "./allocate-dialog";
 import type { Goal } from "@/application";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -29,13 +29,22 @@ export default async function AhorrosPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const [{ data: goalData, error }, { data: accData }] = await Promise.all([
+  const [{ data: goalData, error }, { data: accData }, { data: rateData }] = await Promise.all([
     supabase
       .from("savings_goals")
       .select("*")
       .order("created_at", { ascending: true }),
     supabase.from("accounts").select("*").order("created_at", { ascending: true }),
+    // A5 (3.1.0): las metas en dólares suman al total convertidas.
+    supabase
+      .from("exchange_rates")
+      .select("usd_crc")
+      .eq("archived", false)
+      .order("rate_on", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
+  const usdCrc = rateData ? Number(rateData.usd_crc) : null;
   const missingSql = Boolean(error);
   const goals = ((goalData ?? []) as Goal[]).map((g) => ({ ...g, target_amount: Number(g.target_amount) }));
   const allAccounts = (accData ?? []) as Account[];
@@ -80,10 +89,15 @@ export default async function AhorrosPage() {
     const progress = goalProgress({ targetAmount: g.target_amount, saved, targetDate: g.target_date, today: todayISO });
     return { g, account, progress, shared };
   });
-  const totalSavedCrc = rows
-    .filter((r) => r.g.currency === "CRC")
-    .reduce((s, r) => s + r.progress.saved, 0);
-  const totalTargetCrc = rows.filter((r) => r.g.currency === "CRC").reduce((s, r) => s + r.g.target_amount, 0);
+  // A5: en colones; las metas en dólares se convierten (sin tipo de cambio no suman).
+  const inCrc = rows.flatMap((r) => {
+    const saved = toColones(r.progress.saved, r.g.currency === "USD" ? "USD" : "CRC", usdCrc);
+    const target = toColones(r.g.target_amount, r.g.currency === "USD" ? "USD" : "CRC", usdCrc);
+    return saved === null || target === null ? [] : [{ saved, target }];
+  });
+  const totalSavedCrc = inCrc.reduce((s, x) => s + x.saved, 0);
+  const totalTargetCrc = inCrc.reduce((s, x) => s + x.target, 0);
+  const usdLeftOut = rows.length - inCrc.length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -117,7 +131,10 @@ export default async function AhorrosPage() {
           {totalTargetCrc > 0 ? (
             <div className="surface rise flex flex-wrap items-end justify-between gap-3 p-4 sm:p-5">
               <div>
-                <p className="text-sm text-muted-foreground">Ahorrado en tus metas (colones)</p>
+                <p className="text-sm text-muted-foreground">
+                  Ahorrado en tus metas (en colones{usdCrc && rows.some((r) => r.g.currency === "USD") ? `, $1 = ${formatCurrency(usdCrc)}` : ""})
+                  {usdLeftOut > 0 ? ` · ${usdLeftOut} meta${usdLeftOut === 1 ? "" : "s"} en dólares sin tipo de cambio` : ""}
+                </p>
                 <p className="text-3xl font-semibold tracking-tight tabular-nums">{formatCurrency(totalSavedCrc)}</p>
               </div>
               <p className="text-sm text-muted-foreground">

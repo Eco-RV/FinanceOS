@@ -95,6 +95,17 @@ nada.
   se resuelve.
 - Es solo dentro de la app: no se envían correos ni notificaciones solas.
 
+### 8. Línea base con dólares (3.1.0)
+Como usuario quiero que mi salario, suscripciones, cuotas y seguros en dólares
+cuenten en la línea base.
+
+**Criterios de aceptación**
+- La línea base suma en colones lo que está en dólares (salarios, gastos fijos,
+  seguros, cuotas de préstamos y financiamientos), convertido con el último tipo
+  de cambio; esos renglones dicen "(US$)" (P4).
+- Sin tipo de cambio, lo de dólares no suma y la línea base dice cuántos montos
+  quedaron fuera.
+
 ## Reglas de negocio
 
 - P1–P6 y T9 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
@@ -106,7 +117,7 @@ nada.
 ## Pendiente / fuera de alcance
 
 - (Hecho en 3.0.1) Recordatorios dentro de la app (P8); no hay notificaciones push.
-- Línea base en dólares.
+- (Hecho en 3.1.0) Lo de dólares entra a la línea base convertido (P4).
 
 ## Historial
 
@@ -119,3 +130,5 @@ nada.
   tarjeta de débito (T9; SQL `3.0.1/02_insurance_debit_card.sql`).
 - **2026-10-19 (v3.0.1, en desarrollo)** — Monto variable con confirmación
   (P7; SQL `3.0.1/07_variable_plans.sql`) y recordatorios en el Resumen (P8).
+- **2026-10-20 (v3.1.0, en desarrollo)** — Línea base con lo de dólares
+  convertido (P4).

@@ -81,6 +81,21 @@ débito alcanza para pagar de contado.
   "Próximos cortes"; en pantallas anchas van lado a lado.
 - El aviso de atraso (tarjetas o préstamos) sigue arriba de todo.
 
+### 6. Gastos en dólares y comparar períodos (3.1.0)
+Como usuario quiero ver todos mis gastos (también los de dólares) y saber si
+estoy gastando más o menos que antes.
+
+**Criterios de aceptación**
+- Las cards 7 días / Mes / Año y el gráfico por categoría suman los gastos en
+  dólares convertidos a colones con el último tipo de cambio (G9). Sin tipo de
+  cambio, quedan fuera y la card dice cuántos.
+- Cada card muestra la variación contra el período anterior equivalente (G10):
+  los 7 días previos, el mes pasado hasta el mismo día y el año pasado hasta el
+  mismo día. Más gasto en rojo (↑), menos en verde (↓); "nuevo" si antes no hubo
+  gastos.
+- El gráfico muestra debajo del total "vs. ₡X en el mes pasado a esta fecha" y,
+  en cada categoría, su variación.
+
 ## Reglas de negocio
 
 - Cobertura y faltante: `computeCoverage` y `coverageShortfall`
@@ -94,9 +109,7 @@ débito alcanza para pagar de contado.
 
 ## Pendiente / fuera de alcance
 
-- Sumar los **gastos** en dólares convertidos en las cards de período y el
-  gráfico (hoy se muestran aparte).
-- Comparar gastos contra meses anteriores o presupuestos.
+- Comparar contra un presupuesto (comparar períodos ya existe, G10).
 
 ## Historial
 
@@ -107,3 +120,5 @@ débito alcanza para pagar de contado.
 - **2026-10-18 (v3.0.1, en desarrollo)** — Multimoneda en la cobertura y el
   patrimonio (G7) con el tipo de cambio del BCCR traído una vez al día (T10).
 - **2026-10-19 (v3.0.1, en desarrollo)** — Card "Recordatorios" (P8).
+- **2026-10-20 (v3.1.0, en desarrollo)** — Gastos en dólares en el gráfico y
+  las cards (G9) y comparación con el período anterior (G10).

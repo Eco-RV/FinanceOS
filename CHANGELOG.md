@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.1.0 — en desarrollo
+
+Mejoras chicas sobre la 3.0.1 (rama `feature/3.1.0`, sale de `feature/3.0.1`).
+**Sin SQL nuevo**: basta con el de la 3.0.1. Apoyos (Trustless Work) y
+Academia pasan a la 3.2.0.
+
+- **G9**: los gastos en dólares suman en las cards 7 días / Mes / Año y en el
+  gráfico por categoría del Resumen, convertidos con el último tipo de cambio
+  (`spendingInColones`, `src/domain/ledger/spending.ts`).
+- **G10**: comparar períodos: cada card y cada categoría dicen cuánto cambió
+  contra el período anterior equivalente (`spendingRanges`, `compareSpending`).
+  El Resumen lee los gastos desde el inicio del año pasado (todas las filas).
+- **P4 con dólares**: la línea base suma salarios, gastos fijos, seguros y
+  cuotas en dólares convertidos (`toColones`, `plans-board.ts`).
+- **A5**: las metas en dólares suman al total de Ahorros convertidas.
+- **X7**: reparto de un gasto compartido por porcentaje (`splitByPercent`,
+  `suggestPercents`) con selector Monto · %.
+
 ## 3.0.1 — en desarrollo
 
 Mejoras sobre la 3.0.0: auditoría de la lógica de negocio, historiales con

@@ -55,6 +55,11 @@ monto de cada persona.
   a mi parte (o a la última persona si no participo). El botón **"Partes
   iguales"** vuelve a la sugerencia.
 - Cada monto se puede subir o bajar. Mi parte (el resto) se actualiza en vivo.
+- **Por porcentaje** (3.1.0, X7): el selector Monto · % cambia a
+  porcentajes. Se sugieren iguales (incluyéndome si participo); cada uno se
+  puede cambiar y se ve el monto que resulta. La suma no puede pasar 100 %.
+  Se guardan los montos; los céntimos que sobran quedan en mi parte. Si alguien
+  ya pagó, el reparto sigue por monto.
   No se puede seguir si las partes pasan el total, si alguna es 0 o si no hay
   nadie elegido.
 - Paso 3 (revisar): muestra el gasto, la parte de cada uno, la mía y la
@@ -129,7 +134,7 @@ Como usuario quiero corregir el reparto o dejar de compartir un gasto.
 
 ## Pendiente / fuera de alcance
 
-- Repartir por porcentajes o por consumo de cada persona.
+- Repartir por consumo de cada persona (por porcentaje ya existe, X7).
 - Cobrar en USDC desde la Constelación (Fase 7 de 3.x).
 - Recordatorios automáticos (el envío es manual, como en F8).
 - Compartir un gasto entre usuarios de Finance OS (hoy las personas son
@@ -141,3 +146,4 @@ Como usuario quiero corregir el reparto o dejar de compartir un gasto.
   con reparto sugerido en partes iguales, fecha límite por tarjeta o elegida,
   pagos con ingreso opcional, avisos por WhatsApp/correo y Cobros con las dos
   fuentes.
+- **2026-10-20 (v3.1.0, en desarrollo)** — Reparto por porcentaje (X7).

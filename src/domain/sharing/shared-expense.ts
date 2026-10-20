@@ -169,3 +169,35 @@ export function sharedReceivables(parts: SharedPart[], todayISO: ISODate): Share
   }
   return [...out.values()];
 }
+
+export type PercentShare = { member_id: string; percent: number };
+
+/**
+ * X7 (3.1.0): reparto por **porcentaje**. Cada porcentaje es > 0 y la suma no
+ * pasa 100 %; el resto es del usuario. Se convierte a montos (lo que se
+ * guarda, X2): cada parte se redondea hacia abajo a céntimos y los céntimos
+ * que sobran quedan en la parte del usuario.
+ */
+export function splitByPercent(total: number, shares: PercentShare[]): SharedShare[] {
+  const seen = new Set<string>();
+  let sum = 0;
+  for (const s of shares) {
+    if (seen.has(s.member_id)) throw new DomainError("X7", "Una persona aparece dos veces");
+    seen.add(s.member_id);
+    if (!(Number.isFinite(s.percent) && s.percent > 0)) {
+      throw new DomainError("X7", "El porcentaje de cada persona debe ser mayor que 0");
+    }
+    sum += s.percent;
+  }
+  if (sum > 100 + 1e-9) throw new DomainError("X7", `Los porcentajes suman ${Math.round(sum * 100) / 100} %: no pueden pasar 100 %`);
+  const totalCents = toCents(total);
+  return shares.map((s) => ({ member_id: s.member_id, amount: fromCents(Math.floor((totalCents * s.percent) / 100)) }));
+}
+
+/** X7: porcentajes iguales sugeridos (el usuario cuenta como una parte si participa). */
+export function suggestPercents(memberIds: string[], includeMe: boolean): PercentShare[] {
+  const n = memberIds.length + (includeMe ? 1 : 0);
+  if (n === 0) return [];
+  const each = Math.floor(10000 / n) / 100; // dos decimales, hacia abajo
+  return memberIds.map((member_id) => ({ member_id, percent: each }));
+}

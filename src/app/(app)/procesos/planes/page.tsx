@@ -134,7 +134,11 @@ export default async function PlanesPage() {
             <div>
               <h2 className="font-semibold tracking-tight">Línea base</h2>
               <p className="text-sm text-muted-foreground">
-                Gastos fijos del mes contra tu salario (en colones).
+                Gastos fijos del mes contra tu salario, en colones
+                {board.usdCrc ? ` (lo de dólares a $1 = ${formatCurrency(board.usdCrc)})` : ""}.
+                {board.unconverted > 0
+                  ? ` ${board.unconverted} monto${board.unconverted === 1 ? "" : "s"} en dólares no suma${board.unconverted === 1 ? "" : "n"}: registra el tipo de cambio.`
+                  : ""}
               </p>
             </div>
           </div>
@@ -143,7 +147,7 @@ export default async function PlanesPage() {
 
         {b.ratio === null ? (
           <p className="text-sm text-muted-foreground">
-            Agrega un salario en colones para comparar tus gastos fijos ({formatCurrency(b.monthlyFixed)} al mes).
+            Agrega un salario para comparar tus gastos fijos ({formatCurrency(b.monthlyFixed)} al mes).
           </p>
         ) : (
           <>
