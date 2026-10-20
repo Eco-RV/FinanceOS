@@ -254,7 +254,7 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 | 4 | Ahorros y metas | ✅ v2.7.0 |
 | 2.9 | Mi bolsillo en Stellar (testnet): wallet con Cavos o extensión, USDC de persona a persona (enviar con revisión, recibir con QR), pestaña Constelación | ✅ v2.9.0 (en `main`) |
 | 3.0 | Constelación familiar: contrato `family` desplegado, dominio, Supabase y pantallas de familia, invitaciones y bóveda | ✅ v3.0.0 (en `main`) |
-| 3.1.0 | Auditoría y cierre de pendientes del BusinessLogic (`docs/dominio/pendientes.md`), historial con filtros, leyes de UX, botones de gasto e ingreso, Gastos compartidos (X1–X7), tipo de cambio del BCCR y multimoneda (G7, G9, G10), pago mínimo, abonos extraordinarios y tasa variable, monto variable y recordatorios, varias metas por cuenta, comprobantes, cuenta (Google, borrar, preferencias). La 3.0.1 de desarrollo quedó dentro | 🚧 en `dev_main`, por publicar |
+| 3.1 | Auditoría y cierre de pendientes del BusinessLogic (`docs/dominio/pendientes.md`), historial con filtros, leyes de UX, botones de gasto e ingreso, Gastos compartidos (X1–X7), tipo de cambio del BCCR y multimoneda (G7, G9, G10), pago mínimo, abonos extraordinarios y tasa variable, monto variable y recordatorios, varias metas por cuenta, comprobantes, cuenta (Google, borrar, preferencias). La 3.0.1 de desarrollo quedó dentro | ✅ v3.1.0 (en `main`) |
 | 3.2 | Apoyos (Trustless Work) y Academia | 📝 plan |
 | 2.8 | Correcciones: día de corte al siguiente corte (BAC), abono anticipado, abono en otra moneda con tipo de cambio, SINPE y débito en el gasto rápido, tarjetas de débito y detalle de cuenta, gasto fijo con débito | ✅ v2.8.0 (en `main`) |
 

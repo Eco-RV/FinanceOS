@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.1.0 — en desarrollo
+## 3.1.0 — 2026-10-20
 
 Versión oficial después de la 3.0.0 (la 3.0.1 de desarrollo quedó dentro de
 esta). Auditoría de la lógica de negocio y cierre de sus pendientes,
@@ -8,7 +8,8 @@ historiales con filtros, leyes de UX, botones de gasto e ingreso, **Gastos
 compartidos**, tipo de cambio del BCCR y multimoneda. Apoyos (Trustless Work)
 y Academia pasan a la 3.2.0.
 
-SQL nuevo en `supabase/Versionamiento/3.1.0/`: correr de `00_` a `09_` en orden.
+SQL nuevo en `supabase/Versionamiento/3.1.0/`: correr de `00_` a `09_` en orden
+(ver "Base de datos" al final de esta sección).
 
 ### Auditoría de la lógica de negocio
 - `docs/dominio/pendientes.md`: lo que falta, por regla, fase y proceso.
@@ -110,6 +111,34 @@ SQL nuevo en `supabase/Versionamiento/3.1.0/`: correr de `00_` a `09_` en orden.
   `src/infrastructure/supabase/shared-expenses.ts`.
 - El agrupado de avisos queda común con F8 (`src/domain/shared/notices.ts`).
 - El Arranque de 0 borra los compartidos (`01_fresh_start_shared.sql`).
+
+### Arreglos antes de publicar
+- Traer el tipo de cambio del BCCR, el abono extraordinario y el cambio de tasa
+  de un préstamo y el pago mínimo rechazaban toda fecha (una expresión regular
+  había perdido sus barras). El parseo de Hacienda queda en
+  `parseHaciendaRate`, con test.
+
+### Base de datos (correr a mano, en orden, DESPUÉS de todo 3.0.0 y ANTES de desplegar)
+1. `supabase/Versionamiento/3.1.0/00_shared_expenses.sql` — gastos compartidos.
+2. `01_fresh_start_shared.sql` — el Arranque de 0 también borra los compartidos.
+3. `02_insurance_debit_card.sql` — seguro con tarjeta de débito.
+4. `03_card_minimum_payments.sql` — pago mínimo.
+5. `04_financing_currency.sql` — financiamiento en la otra moneda (`create_financing_v4`).
+6. `05_loan_adjustments.sql` — abonos extraordinarios y tasa variable de préstamos.
+7. `06_financing_prepayments.sql` — abonos extraordinarios a financiamientos.
+8. `07_variable_plans.sql` — planes con monto variable.
+9. `08_goal_allocations.sql` — varias metas por cuenta (apartados).
+10. `09_receipts.sql` — comprobantes (bucket privado `receipts`).
+
+### Configuración
+- **Borrar la cuenta** necesita `SUPABASE_SERVICE_ROLE_KEY` en las variables
+  del servidor (Vercel → Settings → Environment Variables). Ya la usaba el cron
+  de correo; nunca con prefijo `NEXT_PUBLIC_`.
+- **Entrar con Google**: activar Google en Supabase → Authentication →
+  Providers (cliente OAuth de Google Cloud con el callback de Supabase).
+- Las Server Actions aceptan hasta 6 MB (`next.config.ts`), por los
+  comprobantes de hasta 5 MB.
+- El tipo de cambio sale de la API pública de Hacienda: no hace falta token.
 
 ## 3.0.0 — 2026-10-17
 

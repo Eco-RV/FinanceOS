@@ -4,9 +4,10 @@ App personal de finanzas para Costa Rica (un solo usuario): cuentas de débito,
 tarjetas de crédito con su corte y fecha de pago, gastos e ingresos,
 transferencias, financiamientos con o sin interés, préstamos bancarios y cobros
 a la familia. Pensada para el celular (web) e **instalable** en la pantalla de
-inicio. Colones (₡) por defecto, con dólares en tarjetas bimoneda.
+inicio. Colones (₡) por defecto; lo que está en dólares se convierte con el tipo de
+cambio del BCCR, que la app trae sola cada día.
 
-**Versión actual:** 3.0.0 — ver [`CHANGELOG.md`](./CHANGELOG.md) y los
+**Versión actual:** 3.1.0 — ver [`CHANGELOG.md`](./CHANGELOG.md) y los
 [releases](https://github.com/Eco-RV/FinanceOS/releases).
 
 **Stack:** Next.js 16 (App Router, Turbopack) · React 19 · TypeScript ·
@@ -17,16 +18,18 @@ en Vercel.
 
 | Sección | Qué podés hacer |
 |---|---|
-| **Resumen** | Disponible en débito, lo que hay que pagar de contado, consumo sin cortar, gasto del mes, pagos próximos (tarjetas y cuotas de préstamos) con alerta de atraso, cobertura del débito, próximos cortes y avisos de cuota por enviar. |
+| **Resumen** | Disponible en débito, lo que hay que pagar de contado, consumo sin cortar, gastos de 7 días / mes / año comparados con el período anterior (también por categoría), pagos próximos con alerta de atraso, cobertura del débito, próximos cortes, recordatorios y avisos por enviar. Todo en colones, con lo de dólares convertido. |
 | **Cuentas** | Débito, ahorro y efectivo, con saldo inicial y saldos que se mueven solos. |
-| **Tarjetas** | Corte, fecha de pago, estado de cuenta (saldo al corte, pago de contado, consumo sin cortar), saldo en ₡ y $, límite y disponible con tipo de cambio manual, abonos. |
-| **Financiamientos** | Compras a cuotas sobre una tarjeta, a tasa 0 o con interés (tabla de amortización), de 2 a 72 meses; editar, cancelar conservando lo cobrado y repartir cuotas entre miembros de la familia. |
-| **Gastos / Ingresos** | Registro con categorías configurables; gastos por SINPE. |
+| **Tarjetas** | Corte, fecha de pago, estado de cuenta (saldo al corte, pago de contado, consumo sin cortar, pago mínimo), saldo en ₡ y $, límite y disponible con el tipo de cambio, abonos, e historial con filtros y filas por página. |
+| **Financiamientos** | Compras a cuotas sobre una tarjeta (en colones o dólares), a tasa 0 o con interés, de 2 a 72 meses; abonos extraordinarios (baja plazo o cuota), editar, cancelar conservando lo cobrado y repartir cuotas entre miembros de la familia. |
+| **Gastos / Ingresos** | Registro rápido (botones flotantes ↑ gasto / ↓ ingreso) con categorías configurables, SINPE, tarjeta de débito y comprobante adjunto. |
+| **Gastos compartidos** | Pagas el total y lo divides entre varias personas (por monto o porcentaje); registras quién te pagó y por qué medio y les avisas por WhatsApp o correo. |
 | **Transferencias** | Entre cuentas propias de la misma moneda (no cuentan como gasto). |
-| **Préstamos** | Préstamos bancarios a cuota fija: calendario, intereses, capital pendiente, pago en orden. |
-| **Cobros a miembros** | Lo que te debe cada familiar y avisos de su parte por WhatsApp o correo, una vez por quincena. |
+| **Préstamos** | Préstamos bancarios a cuota fija: calendario, intereses, capital pendiente, pago en orden, abonos extraordinarios y tasa variable. |
+| **Planes y ahorros** | Salario (fijo o variable), gastos fijos y seguros que se registran solos, línea base contra el salario, y metas de ahorro (varias por cuenta, con apartados). |
+| **Cobros a miembros** | Lo que te deben de cuotas y gastos compartidos, y avisos de su parte por WhatsApp o correo. |
 | **Por confirmar** | Compras leídas de los correos del banco (Gmail, sin IA) para aprobar o descartar. |
-| **Ajustes** | Categorías, bancos y Gmail, miembros, verificar saldos, tipo de cambio y Arranque de 0. |
+| **Ajustes** | Categorías, bancos y Gmail (con reglas de comercio), miembros, verificar saldos, tipo de cambio (BCCR), Arranque de 0 (con consulta de lo archivado), cuenta (Google, borrar la cuenta) y preferencias (moneda base, formato de fecha). |
 
 El detalle funcional de cada proceso está en
 [`docs/historias-usuario/`](./docs/historias-usuario/) y las reglas de negocio
@@ -63,6 +66,7 @@ en [`docs/dominio/`](./docs/dominio/).
    | 2.7.0 | `00_plans.sql`, `01_savings_goals.sql` |
    | 2.8.0 | `00_card_cutoff_rollover.sql`, `01_debit_cards.sql`, `02_card_payment_exchange.sql` |
    | 3.0.0 | `00_stellar_wallets.sql`, `01_constellation_stars.sql`, `02_family_invites.sql`, `03_academy_progress.sql` |
+   | 3.1.0 | `00_shared_expenses.sql`, `01_fresh_start_shared.sql`, `02_insurance_debit_card.sql`, `03_card_minimum_payments.sql`, `04_financing_currency.sql`, `05_loan_adjustments.sql`, `06_financing_prepayments.sql`, `07_variable_plans.sql`, `08_goal_allocations.sql`, `09_receipts.sql` |
 
    Al actualizar una base existente, corré solo las carpetas de las versiones
    nuevas, **antes** de desplegar el código.
