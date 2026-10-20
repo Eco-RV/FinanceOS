@@ -20,7 +20,7 @@ const PLAN_COLUMNS =
   "id, kind, name, amount, currency, frequency, starts_on, ends_on, account_id, card_id, category, note, generated_through, archived";
 /** 2.8.0: tarjeta de débito del plan (columna nueva). */
 const PLAN_COLUMNS_V280 = `${PLAN_COLUMNS}, debit_card_id`;
-/** 3.0.1 (P7): monto variable. */
+/** 3.1.0 (P7): monto variable. */
 const PLAN_COLUMNS_V301 = `${PLAN_COLUMNS_V280}, variable`;
 /** La columna no existe (SQL 2.8.0 sin correr): se lee y guarda sin ella. */
 const MISSING_COLUMN = new Set(["42703", "PGRST204"]);
@@ -65,11 +65,11 @@ export function supabasePlans(supabase: SupabaseClient) {
               .single();
       const { variable, ...rest } = fields;
       let { data, error } = await write({ ...rest, debit_card_id: fields.debit_card_id ?? null, variable: Boolean(variable) });
-      // Sin el SQL 3.0.1 (P7) se guarda sin la columna, salvo que el plan sea variable.
+      // Sin el SQL 3.1.0 (P7) se guarda sin la columna, salvo que el plan sea variable.
       if (error?.code && MISSING_COLUMN.has(error.code) && !variable) {
         ({ data, error } = await write({ ...rest, debit_card_id: fields.debit_card_id ?? null }));
       } else if (error?.code && MISSING_COLUMN.has(error.code)) {
-        throw new InfrastructureError("Falta correr el SQL de la versión 3.0.1 (planes con monto variable)");
+        throw new InfrastructureError("Falta correr el SQL de la versión 3.1.0 (planes con monto variable)");
       }
       // Sin el SQL 2.8.0 se guarda igual, salvo que el plan use tarjeta de débito.
       if (error?.code && MISSING_COLUMN.has(error.code)) {
@@ -159,7 +159,7 @@ export function supabasePlans(supabase: SupabaseClient) {
         ? ({ ...data, target_amount: Number(data.target_amount), allocated: Number(data.allocated ?? 0) } as Goal)
         : null;
     },
-    // A4 (3.0.1): apartados de varias metas en una cuenta.
+    // A4 (3.1.0): apartados de varias metas en una cuenta.
     async onAccount(accountId) {
       const { data } = await supabase
         .from("savings_goals")
@@ -177,14 +177,14 @@ export function supabasePlans(supabase: SupabaseClient) {
     },
     async setAllocated(id, allocated) {
       const { error } = await supabase.from("savings_goals").update({ allocated }).eq("id", id);
-      if (error) throw new InfrastructureError("No se pudo apartar (¿corriste el SQL 3.0.1?)");
+      if (error) throw new InfrastructureError("No se pudo apartar (¿corriste el SQL 3.1.0?)");
     },
     async save(id, fields) {
       const { data, error } = id
         ? await supabase.from("savings_goals").update(fields).eq("id", id).select("id").single()
         : await supabase.from("savings_goals").insert(fields).select("id").single();
       if (error?.code === UNIQUE_VIOLATION) {
-        throw new InfrastructureError("Esa cuenta ya tiene una meta activa (corre el SQL 3.0.1 para tener varias)");
+        throw new InfrastructureError("Esa cuenta ya tiene una meta activa (corre el SQL 3.1.0 para tener varias)");
       }
       if (error?.code && MISSING_TABLE.has(error.code)) {
         throw new InfrastructureError("Falta correr el SQL de la versión 2.7.0 (metas)");

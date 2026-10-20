@@ -7,7 +7,7 @@ import { EmptyRows } from "@/components/row-list";
 import { RuleRow } from "./rule-row";
 
 /**
- * I6 (3.0.1): reglas de comercio. Al aprobar una compra importada, la app
+ * I6 (3.1.0): reglas de comercio. Al aprobar una compra importada, la app
  * aprende qué categoría le das a ese comercio; aquí se corrigen o se borran.
  */
 export default async function MerchantRulesPage() {

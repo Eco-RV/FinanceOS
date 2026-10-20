@@ -87,7 +87,7 @@ export async function setBaselineCapAction(_prev: FormResult, formData: FormData
   return { ok: true };
 }
 
-/** P7 (3.0.1): confirma el monto real de una ocurrencia de un plan variable. */
+/** P7 (3.1.0): confirma el monto real de una ocurrencia de un plan variable. */
 export async function confirmOccurrenceAction(formData: FormData): Promise<FormResult> {
   await requireUser();
   const movement_id = String(formData.get("movement_id") ?? "");

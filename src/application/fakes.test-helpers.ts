@@ -436,7 +436,7 @@ export function fakeStore(seed: {
       notices.push(...items);
     },
   };
-  // 3.0.1: gastos compartidos (X1–X6).
+  // 3.1.0: gastos compartidos (X1–X6).
   const sharedRows = new Map<string, Omit<StoredSharedExpense, "id">>();
   const sharedNotices: NewSharedNotice[] = [];
   const sharedRepo: SharedExpenseRepository = {

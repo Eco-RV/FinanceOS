@@ -1,4 +1,4 @@
--- v3.0.1 · 03 — Pago mínimo de la tarjeta (T8).
+-- v3.1.0 · 03 — Pago mínimo de la tarjeta (T8).
 --
 -- Lo calcula el banco; el usuario lo digita del estado de cuenta. Uno por
 -- tarjeta, fecha de corte y moneda. No toca saldos: solo dice cuánto falta

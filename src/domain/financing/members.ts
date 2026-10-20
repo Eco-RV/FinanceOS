@@ -60,7 +60,7 @@ export function installmentParts(
 
 /**
  * Fecha límite de pago del estado de cuenta en el que cae un cargo (compra o
- * cuota). T3 (3.0.1): si la tarjeta pasa las compras del día de corte al
+ * cuota). T3 (3.1.0): si la tarjeta pasa las compras del día de corte al
  * corte siguiente, un cargo de ese día (también una cuota de financiamiento)
  * cae en el corte siguiente, igual que en `cardStatement`.
  */

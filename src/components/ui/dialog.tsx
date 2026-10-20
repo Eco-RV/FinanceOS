@@ -27,7 +27,7 @@ function DialogOverlay({
   className,
   ...props
 }: DialogPrimitive.Backdrop.Props) {
-  // 3.0.1 · figura-fondo: lo de atrás baja a ~3:1 de contraste para que el
+  // 3.1.0 · figura-fondo: lo de atrás baja a ~3:1 de contraste para que el
   // diálogo sea lo único en foco (ver docs/diseno/leyes-ux.md).
   return (
     <DialogPrimitive.Backdrop

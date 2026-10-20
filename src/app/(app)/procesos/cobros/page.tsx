@@ -39,7 +39,7 @@ export default async function CobrosPage() {
 
   const toSend = board.groups.filter((g) => g.needsNotice);
   const notified = board.groups.filter((g) => !g.needsNotice);
-  // 3.0.1: avisos y por cobrar de gastos compartidos (X5).
+  // 3.1.0: avisos y por cobrar de gastos compartidos (X5).
   const sharedToSend = shared.groups.filter((g) => g.needsNotice);
   const sharedNotified = shared.groups.filter((g) => !g.needsNotice);
 

@@ -6,7 +6,7 @@ import { PRESSABLE_ROW } from "@/lib/interactive";
 import { cn } from "@/lib/utils";
 
 /**
- * P8 (3.0.1): recordatorios dentro de la app. Va como una card más de la
+ * P8 (3.1.0): recordatorios dentro de la app. Va como una card más de la
  * grilla del Resumen (ley 03: nada con forma de banner) y cada fila lleva a
  * donde se resuelve.
  */

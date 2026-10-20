@@ -14,7 +14,7 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 **Criterios de aceptación**
 - Nombre, ícono (del kit de la app), objetivo y moneda, fecha opcional
   (futura) y cuenta ligada (se sugieren primero las de ahorro, de la misma
-  moneda; desde 3.0.1 una cuenta puede tener varias metas, A4).
+  moneda; desde 3.1.0 una cuenta puede tener varias metas, A4).
 
 ### 2. Ver mi avance
 **Criterios de aceptación**
@@ -36,7 +36,7 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 - **Archivar** saca la meta de la lista (se puede recuperar). **Eliminar** la
   borra. Ninguno toca la cuenta ni sus movimientos.
 
-### 5. Varias metas en una misma cuenta (3.0.1)
+### 5. Varias metas en una misma cuenta (3.1.0)
 Como usuario quiero tener varias metas en mi cuenta de ahorro (viaje, carro,
 emergencias) y decidir cuánto va a cada una.
 
@@ -64,13 +64,13 @@ Como usuario quiero que el total de mis metas incluya las que están en dólares
 
 ## Pendiente / fuera de alcance
 
-- (Hecho en 3.0.1) Varias metas en una misma cuenta con apartados (A4).
+- (Hecho en 3.1.0) Varias metas en una misma cuenta con apartados (A4).
 - Aportes automáticos (un plan de "ahorro" mensual).
 - (Hecho en 3.1.0) Metas en dólares en el total, convertidas (A5).
 
 ## Historial
 
 - **2026-10-14 (v2.7.0)** — Archivo nuevo.
-- **2026-10-19 (v3.0.1, en desarrollo)** — Varias metas por cuenta con
-  apartados (A4; SQL `3.0.1/08_goal_allocations.sql`).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Varias metas por cuenta con
+  apartados (A4; SQL `3.1.0/08_goal_allocations.sql`).
 - **2026-10-20 (v3.1.0, en desarrollo)** — Metas en dólares en el total (A5).

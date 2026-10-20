@@ -81,7 +81,7 @@ export function ExpenseForm({
   transaction?: Transaction;
   triggerLabel?: string;
   fab?: boolean;
-  /** U9 (3.0.1): moneda base. */
+  /** U9 (3.1.0): moneda base. */
   defaultCurrency?: Currency;
 }) {
   const editing = Boolean(transaction);
@@ -153,7 +153,7 @@ export function ExpenseForm({
   );
 
   // Al abrir un gasto nuevo: formulario limpio y, si ya se usó, la forma de
-  // pago de la última vez (3.0.1, ley de Parkinson); si no, la primera tarjeta.
+  // pago de la última vez (3.1.0, ley de Parkinson); si no, la primera tarjeta.
   function onOpenChange(next: boolean) {
     if (next && !editing) {
       setAmount("");

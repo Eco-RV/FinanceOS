@@ -45,7 +45,7 @@ export default async function PlanesPage() {
     supabase.from("credit_cards").select("*").order("created_at", { ascending: true }),
     supabase.from("categories").select("*").eq("archived", false).order("name", { ascending: true }),
     loadDebitCards(supabase, { includeArchived: true }),
-    // P7 (3.0.1): ocurrencias con monto estimado.
+    // P7 (3.1.0): ocurrencias con monto estimado.
     repos.plans.estimatedOccurrences(),
   ]);
 
@@ -102,7 +102,7 @@ export default async function PlanesPage() {
         </div>
       </div>
 
-      {/* P7 (3.0.1): montos por confirmar, arriba porque piden acción. */}
+      {/* P7 (3.1.0): montos por confirmar, arriba porque piden acción. */}
       {estimated.length > 0 ? (
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold tracking-tight">Por confirmar</h2>

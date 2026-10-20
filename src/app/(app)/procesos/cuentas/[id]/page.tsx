@@ -48,7 +48,7 @@ export default async function AccountDetailPage({ params }: PageProps<"/procesos
     debitCards,
   ] = await Promise.all([
     supabase.from("accounts").select("*").eq("id", id).maybeSingle(),
-    // 3.0.1: todos (antes, los 500 más recientes); la vista filtra y pagina.
+    // 3.1.0: todos (antes, los 500 más recientes); la vista filtra y pagina.
     allRows<Transaction>((from, to) =>
       supabase
         .from("transactions")

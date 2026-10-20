@@ -1,4 +1,4 @@
--- v3.0.1 · 01 — Arranque de 0 (M8) también borra los gastos compartidos.
+-- v3.1.0 · 01 — Arranque de 0 (M8) también borra los gastos compartidos.
 --
 -- Misma función que `2.2.0/00_fresh_start.sql` con un paso más (2b): borra
 -- `shared_expenses` (y en cascada sus partes y avisos). Los movimientos del
@@ -49,7 +49,7 @@ begin
    where user_id = v_user
      and (financing_id is not null or loan_id is not null);
 
-  -- 2b) Gastos compartidos (3.0.1): sus movimientos quedan archivados; el
+  -- 2b) Gastos compartidos (3.1.0): sus movimientos quedan archivados; el
   --     reparto, los cobros y los avisos se borran (los miembros se conservan).
   delete from public.shared_expenses where user_id = v_user;
 

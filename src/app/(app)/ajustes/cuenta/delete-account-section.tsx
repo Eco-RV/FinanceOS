@@ -9,7 +9,7 @@ import { PasswordInput } from "@/app/login/login-form";
 import { deleteAccountAction } from "./actions";
 
 /**
- * U8 (3.0.1): borrar la cuenta. Va al final, separado del resto, y pide
+ * U8 (3.1.0): borrar la cuenta. Va al final, separado del resto, y pide
  * escribir ELIMINAR y la contraseña: no se puede deshacer.
  */
 export function DeleteAccountSection() {

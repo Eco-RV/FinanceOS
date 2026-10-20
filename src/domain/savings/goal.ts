@@ -1,7 +1,7 @@
 /**
  * Ahorros y metas (2.7.0). Una meta tiene un objetivo (monto, moneda y fecha
  * opcional) y se liga a una cuenta: lo ahorrado es el saldo de esa cuenta y
- * los aportes son transferencias hacia ella. Reglas A1–A4 (A4, 3.0.1: varias
+ * los aportes son transferencias hacia ella. Reglas A1–A4 (A4, 3.1.0: varias
  * metas en una cuenta con apartados).
  */
 
@@ -95,7 +95,7 @@ export function goalProgress(input: {
 }
 
 /**
- * A4 (3.0.1): lo ahorrado de cada meta de una cuenta. Con una sola meta, es
+ * A4 (3.1.0): lo ahorrado de cada meta de una cuenta. Con una sola meta, es
  * el saldo de la cuenta (A1). Con varias, cada una tiene lo que se le
  * **apartó**; lo que no se apartó queda libre.
  */

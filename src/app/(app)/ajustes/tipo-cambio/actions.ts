@@ -31,7 +31,7 @@ export async function saveExchangeRate(
   return { ok: true };
 }
 
-/** T10 (3.0.1): trae el tipo de cambio de hoy del BCCR (vía Hacienda) y lo guarda. */
+/** T10 (3.1.0): trae el tipo de cambio de hoy del BCCR (vía Hacienda) y lo guarda. */
 export async function fetchOfficialRate(): Promise<FormResult> {
   await requireUser();
   const result = await refreshExchangeRate(await repositories(), { today: toISODate(crToday()), force: true });

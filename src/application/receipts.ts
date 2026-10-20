@@ -1,4 +1,4 @@
-/** G8 (3.0.1): adjuntar, ver y quitar el comprobante de un movimiento. */
+/** G8 (3.1.0): adjuntar, ver y quitar el comprobante de un movimiento. */
 
 import { validateReceipt } from "../domain/index.ts";
 import type { ReceiptStorage } from "./ports.ts";

@@ -1,4 +1,4 @@
--- v3.0.1 · 08 — Varias metas por cuenta con apartados (A4).
+-- v3.1.0 · 08 — Varias metas por cuenta con apartados (A4).
 --
 -- Se quita "una meta activa por cuenta" (A1 de 2.7.0). Con varias metas en la
 -- misma cuenta, cada una tiene lo que se le apartó (`allocated`); lo demás

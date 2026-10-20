@@ -1,5 +1,5 @@
 /**
- * I6 (3.0.1): reglas de comercio (comercio → categoría) que se aprenden al
+ * I6 (3.1.0): reglas de comercio (comercio → categoría) que se aprenden al
  * aprobar un pendiente. El usuario las puede corregir o borrar; una regla
  * borrada se vuelve a aprender la próxima vez que apruebe ese comercio.
  */

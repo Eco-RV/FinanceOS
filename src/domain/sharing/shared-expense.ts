@@ -1,5 +1,5 @@
 /**
- * Gastos compartidos (3.0.1, X1–X6). Un gasto que el usuario paga completo y
+ * Gastos compartidos (3.1.0, X1–X6). Un gasto que el usuario paga completo y
  * divide entre N personas (miembros): cada una tiene una parte fija, el
  * usuario se queda con el resto, y se lleva el control de avisos y cobros.
  *

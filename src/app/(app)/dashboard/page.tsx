@@ -202,7 +202,7 @@ export default async function DashboardPage() {
 
   // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
   // 2.7.0: planes (línea base y programados) y metas de ahorro.
-  // 3.0.1: también los gastos compartidos (X5).
+  // 3.1.0: también los gastos compartidos (X5).
   const [board, sharedBoard, plansBoard, { data: goalData }, estimated, { data: minimumData }] = await Promise.all([
     loadFinancingBoard(supabase, todayISO),
     loadSharedBoard(supabase, todayISO),
@@ -211,12 +211,12 @@ export default async function DashboardPage() {
       .from("savings_goals")
       .select("*")
       .eq("archived", false),
-    // P8 (3.0.1): montos por confirmar (P7) y pagos mínimos digitados (T8).
+    // P8 (3.1.0): montos por confirmar (P7) y pagos mínimos digitados (T8).
     repositories().then((repos) => repos.plans.estimatedOccurrences()),
     supabase.from("card_minimum_payments").select("card_id, cutoff_on, currency, amount"),
   ]);
   const goals = (goalData ?? []) as Goal[];
-  // U9 (3.0.1): moneda base para mostrar el patrimonio también en dólares.
+  // U9 (3.1.0): moneda base para mostrar el patrimonio también en dólares.
   const basePrefs = readPreferences((await (await repositories()).profiles.get().catch(() => null))?.preferences);
   const noticesToSend =
     board.groups.filter((g) => g.needsNotice).length + sharedBoard.groups.filter((g) => g.needsNotice).length;
@@ -338,7 +338,7 @@ export default async function DashboardPage() {
   });
 
   // Cobertura del débito contra los pagos de contado: regla de dominio.
-  // G7 (3.0.1): lo de dólares se convierte con el último tipo de cambio.
+  // G7 (3.1.0): lo de dólares se convierte con el último tipo de cambio.
   const coverage = computeCoverage(accounts, cardEntries, loanEntries, today, rate?.usd_crc ?? null);
   const {
     availableDebit,
@@ -686,7 +686,7 @@ export default async function DashboardPage() {
           )}
         </StatDialog>
 
-        {/* P8 (3.0.1): recordatorios, como una card más (no un banner). */}
+        {/* P8 (3.1.0): recordatorios, como una card más (no un banner). */}
         <Reminders
           style={rise(14)}
           items={buildReminders({

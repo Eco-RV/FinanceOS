@@ -67,7 +67,7 @@ export default async function AhorrosPage() {
 
   const active = goals.filter((g) => !g.archived);
   const archived = goals.filter((g) => g.archived);
-  // A4 (3.0.1): una cuenta puede tener varias metas; ya no se excluye ninguna.
+  // A4 (3.1.0): una cuenta puede tener varias metas; ya no se excluye ninguna.
   const taken: string[] = [];
   const byAccount = new Map<string, ReturnType<typeof goalsSaved> & { count: number }>();
   for (const id of new Set(active.map((g) => g.account_id).filter((x): x is string => Boolean(x)))) {

@@ -1,4 +1,4 @@
--- v3.0.1 · 00 — Gastos compartidos (X1–X6).
+-- v3.1.0 · 00 — Gastos compartidos (X1–X6).
 --
 --   shared_expenses          un gasto (movimiento `expense`) que el usuario pagó
 --                            completo y divide entre personas. Guarda el total, la

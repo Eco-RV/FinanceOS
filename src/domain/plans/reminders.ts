@@ -1,5 +1,5 @@
 /**
- * P8 (3.0.1): recordatorios dentro de la app. No se envía nada solo: el
+ * P8 (3.1.0): recordatorios dentro de la app. No se envía nada solo: el
  * Resumen junta lo que pide atención pronto (cobros de planes, montos por
  * confirmar, avisos de cobro por enviar y pagos mínimos por cubrir).
  */

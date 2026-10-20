@@ -264,7 +264,7 @@ export function deleteGoal(goals: GoalRepository, id: string): Promise<UseCaseRe
 }
 
 /**
- * P7 (3.0.1): confirma el monto real de una ocurrencia de un plan variable
+ * P7 (3.1.0): confirma el monto real de una ocurrencia de un plan variable
  * (salario, luz…). El saldo lo ajusta la persistencia (trigger).
  */
 export function confirmPlanOccurrence(
@@ -284,7 +284,7 @@ export function confirmPlanOccurrence(
   });
 }
 
-/** A4 (3.0.1): aparta parte del saldo de la cuenta para una meta. */
+/** A4 (3.1.0): aparta parte del saldo de la cuenta para una meta. */
 export function allocateToGoal(
   goals: GoalRepository,
   input: { goal_id: string; allocated: number },

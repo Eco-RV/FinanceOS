@@ -110,7 +110,7 @@ export async function saveTransfer(
   return { ok: true };
 }
 
-/** G8 (3.0.1): adjuntar el comprobante de un movimiento. */
+/** G8 (3.1.0): adjuntar el comprobante de un movimiento. */
 export async function attachReceiptAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
   await requireUser();
   const file = formData.get("file");

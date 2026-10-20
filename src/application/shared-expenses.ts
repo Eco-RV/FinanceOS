@@ -1,5 +1,5 @@
 /**
- * Gastos compartidos (3.0.1, X1–X6): compartir un gasto entre personas
+ * Gastos compartidos (3.1.0, X1–X6): compartir un gasto entre personas
  * (miembros), registrar quién pagó y avisar. El gasto es un movimiento normal
  * (X1); el pago de una parte puede, si el usuario quiere, entrar como ingreso
  * a una cuenta (X4).

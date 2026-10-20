@@ -15,7 +15,7 @@
 | **Movimientos (libro)** | El registro de hechos que cambian saldos. **Fuente de verdad.** | Movimiento, gasto, ingreso, transferencia, SINPE, abono, archivar, arranque de 0 |
 | **Planes** | Cosas que generan movimientos a futuro. | Salario, suscripción, seguro, movimiento programado |
 | **Financiamientos y préstamos** | Deuda a plazos. | Financiamiento con o sin interés, préstamo, cuota, tabla de amortización, abono a cuota |
-| **Familia** | Repartir cuotas y gastos compartidos (3.0.1) con contactos, cobrarles y avisarles. | Familia, miembro, persona, parte, reembolso, gasto compartido, cobro, aviso |
+| **Familia** | Repartir cuotas y gastos compartidos (3.1.0) con contactos, cobrarles y avisarles. | Familia, miembro, persona, parte, reembolso, gasto compartido, cobro, aviso |
 | **Constelación** (2.9.0 · 3.0.0) | Bolsillo en USDC sobre Stellar testnet (2.9.0); familia, bóveda con aprobaciones, apoyos y academia (3.0.0). Fuente de verdad: la cadena. No confundir con **Familia** (cobros de cuotas). | Wallet, bolsillo, USDC, trustline, estrella, núcleo, guardián, bóveda, retiro, apoyo |
 | **Presupuesto** | Liquidez y gastos fijos. | Línea base financiera, periodo, tope de línea base |
 | **Importación** | Traer compras desde los correos del banco. | Aviso bancario, plantilla, sincronizar, pendiente, aprobar, regla de comercio |
@@ -34,7 +34,7 @@ Movimientos ── derivan saldos ──► Tarjetas de crédito (estado de cuen
 
 Familia ── lee cuotas y fechas límite ── de Financiamientos y Tarjetas
 Familia ── envía avisos ──► (puerto Notificador: correo, WhatsApp)
-Familia ── comparte un gasto ── de Movimientos (3.0.1; el cobro puede
+Familia ── comparte un gasto ── de Movimientos (3.1.0; el cobro puede
            crear un ingreso en Movimientos)
 
 Presupuesto ── lee salario ── de Planes
@@ -49,7 +49,7 @@ Reglas de la relación:
   movimientos **futuros**; los ya ocurridos quedan.
 - **Familia no toca la tarjeta.** Los reembolsos de miembros son su propio
   registro; el abono al banco es un movimiento normal. En un gasto compartido
-  (3.0.1) el gasto es un movimiento normal y el cobro solo crea un ingreso si
+  (3.1.0) el gasto es un movimiento normal y el cobro solo crea un ingreso si
   el usuario lo pide (X4).
 - **Importación no toca saldos** hasta que el usuario aprueba.
 - **Constelación no toca el libro** (2.9.0): su dinero vive en la cadena;
@@ -65,7 +65,7 @@ Estos cambian sin tocar las reglas. Ver [`arquitectura.md`](./arquitectura.md).
 | Identidad | Supabase Auth (correo + contraseña, Google) | Otro proveedor |
 | Leer avisos bancarios | Gmail API (solo lectura) | Otro proveedor de correo |
 | Notificador | Gmail del usuario (`gmail.send`) y enlace `wa.me` (envío manual, 2.3.0) | API de WhatsApp Business, envío automático |
-| Tipo de cambio | API pública de Hacienda (venta BCCR, 3.0.1) + digitado a mano | Web service del BCCR (con token) |
-| Archivos (fotos y comprobantes) | Supabase Storage: `avatars` (público) y `receipts` (privado, enlace firmado de 10 min, 3.0.1) | Otro almacenamiento de objetos |
-| Administración de la cuenta (borrarla, U8) | Supabase Auth Admin con la service role, solo en el servidor (3.0.1) | Otro proveedor |
+| Tipo de cambio | API pública de Hacienda (venta BCCR, 3.1.0) + digitado a mano | Web service del BCCR (con token) |
+| Archivos (fotos y comprobantes) | Supabase Storage: `avatars` (público) y `receipts` (privado, enlace firmado de 10 min, 3.1.0) | Otro almacenamiento de objetos |
+| Administración de la cuenta (borrarla, U8) | Supabase Auth Admin con la service role, solo en el servidor (3.1.0) | Otro proveedor |
 | Reloj ("hoy") | `crToday()` (America/Costa_Rica) | — |

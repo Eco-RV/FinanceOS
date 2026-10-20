@@ -2,27 +2,13 @@
 
 ## 3.1.0 — en desarrollo
 
-Mejoras chicas sobre la 3.0.1 (rama `feature/3.1.0`, sale de `feature/3.0.1`).
-**Sin SQL nuevo**: basta con el de la 3.0.1. Apoyos (Trustless Work) y
-Academia pasan a la 3.2.0.
+Versión oficial después de la 3.0.0 (la 3.0.1 de desarrollo quedó dentro de
+esta). Auditoría de la lógica de negocio y cierre de sus pendientes,
+historiales con filtros, leyes de UX, botones de gasto e ingreso, **Gastos
+compartidos**, tipo de cambio del BCCR y multimoneda. Apoyos (Trustless Work)
+y Academia pasan a la 3.2.0.
 
-- **G9**: los gastos en dólares suman en las cards 7 días / Mes / Año y en el
-  gráfico por categoría del Resumen, convertidos con el último tipo de cambio
-  (`spendingInColones`, `src/domain/ledger/spending.ts`).
-- **G10**: comparar períodos: cada card y cada categoría dicen cuánto cambió
-  contra el período anterior equivalente (`spendingRanges`, `compareSpending`).
-  El Resumen lee los gastos desde el inicio del año pasado (todas las filas).
-- **P4 con dólares**: la línea base suma salarios, gastos fijos, seguros y
-  cuotas en dólares convertidos (`toColones`, `plans-board.ts`).
-- **A5**: las metas en dólares suman al total de Ahorros convertidas.
-- **X7**: reparto de un gasto compartido por porcentaje (`splitByPercent`,
-  `suggestPercents`) con selector Monto · %.
-
-## 3.0.1 — en desarrollo
-
-Mejoras sobre la 3.0.0: auditoría de la lógica de negocio, historiales con
-filtros, leyes de UX, botones de gasto e ingreso y **Gastos compartidos**.
-SQL nuevo en `supabase/Versionamiento/3.0.1/`: correr de `00_` a `09_` en orden.
+SQL nuevo en `supabase/Versionamiento/3.1.0/`: correr de `00_` a `09_` en orden.
 
 ### Auditoría de la lógica de negocio
 - `docs/dominio/pendientes.md`: lo que falta, por regla, fase y proceso.
@@ -67,7 +53,7 @@ SQL nuevo en `supabase/Versionamiento/3.0.1/`: correr de `00_` a `09_` en orden.
 
 ### Correcciones
 - **T9**: un seguro en Planes también se cobra a una **tarjeta de débito**
-  (sale del saldo de su cuenta). SQL `3.0.1/02_insurance_debit_card.sql`.
+  (sale del saldo de su cuenta). SQL `3.1.0/02_insurance_debit_card.sql`.
 - **T3 en cuotas**: con "las compras del día de corte pasan al siguiente
   corte", una cuota de financiamiento que cae el día del corte ahora vence en
   el corte siguiente también en la tabla del plan, los avisos a miembros y los
@@ -93,6 +79,19 @@ SQL nuevo en `supabase/Versionamiento/3.0.1/`: correr de `00_` a `09_` en orden.
   comercio.
 - **U8 / U9 / U10**: borrar la cuenta, moneda base y formato de fecha, y
   entrar con Google.
+
+### Resumen, planes, metas y compartidos con dólares y porcentajes
+- **G9**: los gastos en dólares suman en las cards 7 días / Mes / Año y en el
+  gráfico por categoría del Resumen, convertidos con el último tipo de cambio
+  (`spendingInColones`, `src/domain/ledger/spending.ts`).
+- **G10**: comparar períodos: cada card y cada categoría dicen cuánto cambió
+  contra el período anterior equivalente (`spendingRanges`, `compareSpending`).
+  El Resumen lee los gastos desde el inicio del año pasado (todas las filas).
+- **P4 con dólares**: la línea base suma salarios, gastos fijos, seguros y
+  cuotas en dólares convertidos (`toColones`, `plans-board.ts`).
+- **A5**: las metas en dólares suman al total de Ahorros convertidas.
+- **X7**: reparto de un gasto compartido por porcentaje (`splitByPercent`,
+  `suggestPercents`) con selector Monto · %.
 
 ### Gastos compartidos (X1–X6)
 - `/procesos/compartidos`: pagas el total y lo divides entre personas

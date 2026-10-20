@@ -97,7 +97,7 @@ export function changeEmail(
 }
 
 /**
- * U8 (3.0.1): borra la cuenta. Pide escribir ELIMINAR y la contraseña actual;
+ * U8 (3.1.0): borra la cuenta. Pide escribir ELIMINAR y la contraseña actual;
  * después no hay vuelta atrás (se borran movimientos, planes, metas, archivos…).
  */
 export function deleteAccount(

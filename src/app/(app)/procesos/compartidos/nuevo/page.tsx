@@ -13,7 +13,7 @@ import { SharedExpenseForm, type SharedSourceView } from "../shared-expense-form
 const UUID = /^[0-9a-fA-F-]{36}$/;
 
 /**
- * Nuevo gasto compartido (3.0.1). Con `?movimiento=<id>` comparte un gasto ya
+ * Nuevo gasto compartido (3.1.0). Con `?movimiento=<id>` comparte un gasto ya
  * registrado (acción "Compartir" de las listas) y empieza en el paso 2.
  */
 export default async function NewSharedExpensePage({

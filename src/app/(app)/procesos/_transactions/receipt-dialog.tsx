@@ -19,7 +19,7 @@ import { confirmAction } from "@/lib/confirm";
 import { cn } from "@/lib/utils";
 import { attachReceiptAction, openReceiptAction, removeReceiptAction } from "./actions";
 
-/** G8 (3.0.1): adjuntar, ver o quitar el comprobante de un movimiento. */
+/** G8 (3.1.0): adjuntar, ver o quitar el comprobante de un movimiento. */
 export function ReceiptDialog({ movementId, hasReceipt }: { movementId: string; hasReceipt: boolean }) {
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(attachReceiptAction, "Comprobante guardado");
   const [busy, start] = useTransition();

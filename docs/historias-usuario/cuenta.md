@@ -73,7 +73,7 @@ me reconozca.
   "Próximamente".
 - El perfil guarda `preferences` (jsonb) para sumar ajustes sin migrar.
 
-### 8. Entrar con Google (3.0.1)
+### 8. Entrar con Google (3.1.0)
 Como usuario quiero entrar con mi cuenta de Google, sin otra contraseña.
 
 **Criterios de aceptación**
@@ -85,7 +85,7 @@ Como usuario quiero entrar con mi cuenta de Google, sin otra contraseña.
   Providers (cliente OAuth de Google Cloud con la URL de callback de
   Supabase).
 
-### 9. Borrar mi cuenta (3.0.1)
+### 9. Borrar mi cuenta (3.1.0)
 Como usuario quiero borrar mi cuenta y todos mis datos.
 
 **Criterios de aceptación**
@@ -94,7 +94,7 @@ Como usuario quiero borrar mi cuenta y todos mis datos.
   cierra la sesión y el login lo confirma.
 - Necesita `SUPABASE_SERVICE_ROLE_KEY` en el servidor.
 
-### 10. Moneda base y formato de fecha (3.0.1)
+### 10. Moneda base y formato de fecha (3.1.0)
 Como usuario quiero elegir mi moneda principal y cómo se ven las fechas.
 
 **Criterios de aceptación**
@@ -112,7 +112,7 @@ Como usuario quiero elegir mi moneda principal y cómo se ven las fechas.
 
 ## Pendiente / fuera de alcance
 
-- (Hecho en 3.0.1) Entrar con Google (U10), borrar la cuenta (U8), moneda base y formato de fecha (U9).
+- (Hecho en 3.1.0) Entrar con Google (U10), borrar la cuenta (U8), moneda base y formato de fecha (U9).
 - El tema sigue siendo por dispositivo (moneda y fecha ya viajan con la cuenta).
 
 ## Historial
@@ -120,5 +120,5 @@ Como usuario quiero elegir mi moneda principal y cómo se ven las fechas.
 - **2026-10-14 (v2.6.0)** — Archivo nuevo: registro con
   confirmación por correo, recuperar contraseña, perfil con foto, cambio de
   correo y contraseña, y preferencias.
-- **2026-10-19 (v3.0.1, en desarrollo)** — Entrar con Google (U10), borrar
+- **2026-10-19 (v3.1.0, en desarrollo)** — Entrar con Google (U10), borrar
   la cuenta (U8) y moneda base y formato de fecha (U9).

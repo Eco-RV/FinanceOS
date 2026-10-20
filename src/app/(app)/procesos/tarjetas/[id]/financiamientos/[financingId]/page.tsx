@@ -87,7 +87,7 @@ export default async function FinancingDetailPage({
       .eq("kind", "expense")
       .eq("archived", false)
       .order("name", { ascending: true }),
-    // F11 (3.0.1): abonos extraordinarios (sin el SQL 3.0.1, vacío).
+    // F11 (3.1.0): abonos extraordinarios (sin el SQL 3.1.0, vacío).
     supabase
       .from("financing_prepayments")
       .select("id, amount, occurred_on")

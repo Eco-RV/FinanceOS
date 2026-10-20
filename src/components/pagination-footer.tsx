@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/form-field";
 import { PAGE_SIZES, type PageSize, type PaginationState } from "@/lib/use-pagination";
 
-/** Pie de una lista paginada (3.0.1): "Filas" 5/10/20/50/Todas, "a–b de N" y flechas. */
+/** Pie de una lista paginada (3.1.0): "Filas" 5/10/20/50/Todas, "a–b de N" y flechas. */
 export function PaginationFooter({ state }: { state: PaginationState }) {
   if (state.total === 0) return null;
   return (

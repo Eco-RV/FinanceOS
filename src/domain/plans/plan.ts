@@ -57,7 +57,7 @@ export function validatePlan(p: PlanTerms): void {
   if (p.kind === "salary" && (!p.accountId || p.cardId)) {
     throw new DomainError("P1", "Un salario entra a una cuenta de débito");
   }
-  // T9 (3.0.1): a una tarjeta de crédito o a una tarjeta de débito (sale de su cuenta).
+  // T9 (3.1.0): a una tarjeta de crédito o a una tarjeta de débito (sale de su cuenta).
   const insuranceOnCredit = Boolean(p.cardId) && !p.accountId && !p.debitCardId;
   const insuranceOnDebit = !p.cardId && Boolean(p.accountId) && Boolean(p.debitCardId);
   if (p.kind === "insurance" && !insuranceOnCredit && !insuranceOnDebit) {

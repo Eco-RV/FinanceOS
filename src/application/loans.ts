@@ -44,7 +44,7 @@ export type LoanDeps = {
 
 export function termsOf(
   loan: Pick<Loan, "principal" | "annual_rate" | "months" | "first_payment_on" | "currency">,
-  /** 3.0.1: abonos (L7) y cambios de tasa (L8), en orden. */
+  /** 3.1.0: abonos (L7) y cambios de tasa (L8), en orden. */
   adjustments: AmortizationEvent[] = [],
 ): LoanTerms {
   return {
@@ -222,7 +222,7 @@ export type PrepayLoanInput = {
 };
 
 /**
- * L7 (3.0.1): abono extraordinario al capital. Sale de una cuenta activa de la
+ * L7 (3.1.0): abono extraordinario al capital. Sale de una cuenta activa de la
  * moneda del préstamo como un gasto con `loan_id` (sin número de cuota) y
  * recalcula el calendario: baja el plazo (misma cuota) o la cuota (mismo plazo).
  */
@@ -278,7 +278,7 @@ export function prepayLoan(
   });
 }
 
-/** L8 (3.0.1): la tasa cambia desde una cuota sin pagar; se recalcula la cuota. */
+/** L8 (3.1.0): la tasa cambia desde una cuota sin pagar; se recalcula la cuota. */
 export function changeLoanRate(
   deps: Pick<LoanDeps, "loans">,
   input: { loan_id: string; from_no: number; annual_rate: number; occurred_on: ISODate; today: ISODate },

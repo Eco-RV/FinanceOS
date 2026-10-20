@@ -96,7 +96,7 @@ listados cuando ya lo liquidé, sin perder su historia.
   queda en "Desactivados", desde donde se activa de nuevo.
 - G4: un préstamo desactivado no se paga ni se edita.
 
-### 7. Abono extraordinario y tasa variable (3.0.1)
+### 7. Abono extraordinario y tasa variable (3.1.0)
 Como usuario quiero abonar extra al capital de un préstamo y registrar cuando
 el banco cambia la tasa, para que el calendario refleje lo que de verdad debo.
 
@@ -130,7 +130,7 @@ el banco cambia la tasa, para que el calendario refleje lo que de verdad debo.
 
 - Seguros o comisiones dentro de la cuota; cada banco puede tener
   particularidades: conviene comparar el calendario con el del banco.
-- (Hecho en 3.0.1) Abonos extraordinarios (L7), tasa variable (L8) y las
+- (Hecho en 3.1.0) Abonos extraordinarios (L7), tasa variable (L8) y las
   cuotas en dólares suman en la cobertura convertidas (G7).
 - (Hecho en 2.3.0) El financiamiento con interés sobre una tarjeta usa la
   misma tabla de amortización: ver [`financiamientos.md`](./financiamientos.md).
@@ -142,7 +142,7 @@ el banco cambia la tasa, para que el calendario refleje lo que de verdad debo.
   (`supabase/Versionamiento/2.1.0/01_loans.sql`).
 - **2026-10-12 (v2.1.0)** — Las cuotas a cobro entran al Resumen y a la
   cobertura del débito (L6); el patrimonio neto resta el capital pendiente.
-- **2026-10-18 (v3.0.1, en desarrollo)** — La historia 6 suma su enunciado
+- **2026-10-18 (v3.1.0, en desarrollo)** — La historia 6 suma su enunciado
   "Como usuario…" (no cambia el comportamiento).
-- **2026-10-19 (v3.0.1, en desarrollo)** — Abono extraordinario (L7) y tasa
-  variable (L8); SQL `3.0.1/05_loan_adjustments.sql`.
+- **2026-10-19 (v3.1.0, en desarrollo)** — Abono extraordinario (L7) y tasa
+  variable (L8); SQL `3.1.0/05_loan_adjustments.sql`.

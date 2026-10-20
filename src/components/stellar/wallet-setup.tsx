@@ -75,7 +75,7 @@ export function WalletSetup() {
           Tres pasos, una sola vez. {connector === "cavos" ? "Puede aparecer una ventana para confirmar." : "Tu wallet te pedirá firmar."}
         </p>
       </div>
-      {/* 3.0.1 · ley de conexión: los tres pasos se ven unidos. */}
+      {/* 3.1.0 · ley de conexión: los tres pasos se ven unidos. */}
       <Stepper steps={steps.map((s) => s.label)} current={current} />
       <p className="text-sm text-muted-foreground">
         Paso {current + 1}: {steps[current].detail}.

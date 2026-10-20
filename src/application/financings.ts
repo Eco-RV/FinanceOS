@@ -29,7 +29,7 @@ export type FinancingDeps = {
 
 export type CreateFinancingInput = {
   card_id: string;
-  /** F10 (3.0.1): CRC o USD; sin elegir, la moneda del límite de la tarjeta. */
+  /** F10 (3.1.0): CRC o USD; sin elegir, la moneda del límite de la tarjeta. */
   currency?: Currency;
   description: string;
   category: string | null;
@@ -55,7 +55,7 @@ export function createFinancing(
   return run(async () => {
     const cardCurrency = await deps.cards.currencyOf(input.card_id);
     if (!cardCurrency) return fail("Tarjeta no encontrada");
-    // F10 (3.0.1): el plan puede ir en la otra moneda de la tarjeta (T1).
+    // F10 (3.1.0): el plan puede ir en la otra moneda de la tarjeta (T1).
     const currency = input.currency ?? cardCurrency;
 
     const annual_rate = input.annual_rate ?? 0;
@@ -118,7 +118,7 @@ export type PrepayFinancingInput = {
 };
 
 /**
- * F11 (3.0.1): abono extraordinario al capital de un financiamiento. El dinero
+ * F11 (3.1.0): abono extraordinario al capital de un financiamiento. El dinero
  * sale de una cuenta como un gasto (la misma plata que antes iba a salir en
  * cuotas) y las cuotas programadas se reemplazan por un plan con menos
  * capital: la deuda de la tarjeta baja una sola vez, por el abono.

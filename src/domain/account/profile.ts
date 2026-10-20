@@ -99,7 +99,7 @@ export function initialsOf(fullName: string | null | undefined, email: string): 
   return (parts.length > 1 ? parts[0][0] + parts[1][0] : local.slice(0, 2)).toUpperCase();
 }
 
-/** U8 (3.0.1): palabra que confirma borrar la cuenta. */
+/** U8 (3.1.0): palabra que confirma borrar la cuenta. */
 export const DELETE_ACCOUNT_CONFIRMATION = "ELIMINAR";
 
 /** U8: borrar la cuenta pide escribir ELIMINAR (y la contraseña, que valida el caso de uso). */
@@ -109,7 +109,7 @@ export function assertDeleteConfirmation(text: string | null | undefined): void 
   }
 }
 
-/** U9 (3.0.1): formatos de fecha que se pueden elegir. */
+/** U9 (3.1.0): formatos de fecha que se pueden elegir. */
 export const DATE_FORMATS = ["corto", "numerico", "largo"] as const;
 export type DateFormat = (typeof DATE_FORMATS)[number];
 

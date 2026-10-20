@@ -1,4 +1,4 @@
--- v3.0.1 · 05 — Abonos extraordinarios (L7) y tasa variable (L8) de préstamos.
+-- v3.1.0 · 05 — Abonos extraordinarios (L7) y tasa variable (L8) de préstamos.
 --
 -- El calendario sigue sin guardarse: se deriva de los términos + estos
 -- ajustes, en orden (tabla francesa por tramos).

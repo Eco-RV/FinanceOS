@@ -37,7 +37,7 @@ export function PocketBalance({ rate, compact = false }: { rate: ExchangeRateVie
 
 /**
  * Mi bolsillo (2.9.0): saldo, enviar, recibir y la puesta a punto de la wallet.
- * K9 (3.0.1): no se advierten las estrellas de mi familia ni las de mi agenda.
+ * K9 (3.1.0): no se advierten las estrellas de mi familia ni las de mi agenda.
  */
 export function Pocket({ rate, directory = [] }: { rate: ExchangeRateView; directory?: string[] }) {
   const { address, balances, updateBalances } = useWallet();

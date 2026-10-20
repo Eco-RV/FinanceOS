@@ -180,7 +180,7 @@ export function scheduledInterest(
 export type PendingInstallment = { no: number; occurred_on: ISODate; amount: number; interest: number };
 
 /**
- * F11 (3.0.1): abono extraordinario al capital de un financiamiento. Las
+ * F11 (3.1.0): abono extraordinario al capital de un financiamiento. Las
  * cuotas programadas se reemplazan por un plan nuevo con el capital que queda
  * menos el abono: "term" conserva la cuota (menos cuotas), "payment" conserva
  * cuántas quedan (cuota menor). Mismas fechas: desde la próxima cuota, el

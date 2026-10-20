@@ -130,7 +130,7 @@ financiamientos activos de todas las tarjetas.
   `/procesos/financiamientos`: cantidad, próximas cuotas y cuotas por
   cobrar; cada fila abre el detalle del financiamiento.
 
-### 8. Adjuntar el comprobante (3.0.1)
+### 8. Adjuntar el comprobante (3.1.0)
 Como usuario quiero guardar la factura o la foto del voucher con el gasto,
 para tenerla a mano si la necesito.
 
@@ -146,7 +146,7 @@ para tenerla a mano si la necesito.
 - Un gasto puede tener como origen una cuenta **o** una tarjeta — no ambas ni
   ninguna. El formulario rápido ofrece crédito, débito, SINPE y efectivo
   (débito y SINPE desde 2.8.0).
-- C2 (3.0.1): si el gasto deja la cuenta en negativo, el formulario avisa en
+- C2 (3.1.0): si el gasto deja la cuenta en negativo, el formulario avisa en
   cuánto quedará y deja registrarlo igual.
 - `category` es texto libre guardado en el movimiento, no una referencia a
   `categories`.
@@ -158,7 +158,7 @@ para tenerla a mano si la necesito.
 
 - Los gastos recurrentes son gastos fijos de Planes (ver
   [`planes.md`](./planes.md)); no hay otro tipo de gasto automático.
-- (Hecho en 3.0.1) Comprobantes adjuntos (G8).
+- (Hecho en 3.1.0) Comprobantes adjuntos (G8).
 
 
 ## Historial
@@ -179,9 +179,9 @@ para tenerla a mano si la necesito.
   opciones" para fecha y nota) y confirmación animada al centro. Ya no se
   registra un gasto sobre una cuenta de débito. Lista con filtros y filas
   por página; botón y pantalla de Financiamientos.
-- **2026-10-18 (v3.0.1, en desarrollo)** — Aviso C2 (cuenta en negativo) en
+- **2026-10-18 (v3.1.0, en desarrollo)** — Aviso C2 (cuenta en negativo) en
   el gasto rápido; acción "Compartir" para volver un gasto un gasto compartido
   (ver [`compartidos.md`](./compartidos.md)). Se corrigen las reglas del
   formulario rápido y el pendiente de gastos recurrentes.
-- **2026-10-19 (v3.0.1, en desarrollo)** — Comprobante adjunto (G8; SQL
-  `3.0.1/09_receipts.sql`, bucket privado `receipts`).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Comprobante adjunto (G8; SQL
+  `3.1.0/09_receipts.sql`, bucket privado `receipts`).

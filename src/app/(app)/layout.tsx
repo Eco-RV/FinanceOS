@@ -47,7 +47,7 @@ export default async function AppLayout({
 
   // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
   const profile = await (await repositories()).profiles.get().catch(() => null);
-  // U9 (3.0.1): formato de fecha (servidor) y moneda base del gasto rápido.
+  // U9 (3.1.0): formato de fecha (servidor) y moneda base del gasto rápido.
   const prefs = readPreferences(profile?.preferences);
   setDateFormat(prefs.dateFormat);
   const email = user.email ?? "";
@@ -78,7 +78,7 @@ export default async function AppLayout({
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-56 sm:px-6 sm:pb-40 lg:px-8 2xl:max-w-[1600px]">
         {children}
       </main>
-      {/* 3.0.1: acceso rápido — gasto (sale ↑, rojo) arriba e ingreso (entra ↓, verde) abajo. */}
+      {/* 3.1.0: acceso rápido — gasto (sale ↑, rojo) arriba e ingreso (entra ↓, verde) abajo. */}
       {canRegister ? (
         <div className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex flex-col gap-3 sm:right-6 sm:bottom-6">
           <TransactionForm

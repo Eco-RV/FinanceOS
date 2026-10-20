@@ -56,7 +56,7 @@ const EMPTY: SharedBoard = {
 
 /**
  * Lee los gastos compartidos activos y los pasa por el dominio (X2–X5). Sin el
- * SQL 3.0.1 devuelve todo vacío.
+ * SQL 3.1.0 devuelve todo vacío.
  */
 export async function loadSharedBoard(
   supabase: SupabaseClient,

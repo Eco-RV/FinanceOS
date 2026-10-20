@@ -36,7 +36,7 @@ Como usuario quiero enviar USDC a otra persona sin miedo a equivocarme.
   la mía, más de 7 decimales o más que mi saldo.
 - Pantalla de revisión: "Vas a enviar $X a GABC…WXYZ", la dirección completa,
   aviso de que no está en mi constelación (K9) y "No se puede deshacer" (K8).
-- Desde 3.0.1 el aviso de K9 no sale para las estrellas de mi familia ni para
+- Desde 3.1.0 el aviso de K9 no sale para las estrellas de mi familia ni para
   las direcciones de mi agenda (apodos); sí para cualquier otra.
 - Firmo en mi wallet; al confirmarse, confirmación animada y el saldo se
   actualiza.
@@ -132,6 +132,6 @@ palabras sencillas.
   retiros, administración, apoyos y academia); contrato `family` desplegado.
 - **2026-10-17 (v3.0.0, en desarrollo)** — Fases 3 y 4: dominio, casos de uso y tablas de Supabase (wallet ligada, agenda, invitaciones y Academia).
 - **2026-10-17 (v3.0.0, en desarrollo)** — Fase 5: pantallas de familia (constelación, estrellas, roles), invitaciones con enlace y bóveda (depositar, pedir, aprobar y cancelar retiros).
-- **2026-10-18 (v3.0.1, en desarrollo)** — K9 completo: el envío ya no
+- **2026-10-18 (v3.1.0, en desarrollo)** — K9 completo: el envío ya no
   advierte las estrellas de la familia ni las de la agenda. Apoyos, Academia,
   letra grande y el enlace estrella ↔ miembro quedan marcados como pendientes.

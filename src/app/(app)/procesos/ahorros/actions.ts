@@ -45,7 +45,7 @@ export async function deleteGoalAction(formData: FormData): Promise<FormResult> 
   return toFormResult(result);
 }
 
-/** A4 (3.0.1): apartar parte del saldo de la cuenta para una meta. */
+/** A4 (3.1.0): apartar parte del saldo de la cuenta para una meta. */
 export async function allocateGoalAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
   await requireUser();
   const goal_id = String(formData.get("goal_id") ?? "");

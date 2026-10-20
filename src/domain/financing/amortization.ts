@@ -100,7 +100,7 @@ export function remainingTerm(balance: number, monthlyRate: number, payment: num
 export type PrepaymentMode = "term" | "payment";
 
 /**
- * Cambio del plan a partir de un punto (3.0.1):
+ * Cambio del plan a partir de un punto (3.1.0):
  * - `prepayment` después de la cuota `afterNo` (0 = antes de la primera).
  * - `rate` (L8, tasa variable): desde la cuota `fromNo`, nueva tasa anual; se
  *   mantiene el plazo que queda y se recalcula la cuota.
@@ -110,7 +110,7 @@ export type AmortizationEvent =
   | { kind: "rate"; fromNo: number; annualRatePercent: number };
 
 /**
- * F5 con cambios (3.0.1): la tabla francesa por tramos. Cada evento corta el
+ * F5 con cambios (3.1.0): la tabla francesa por tramos. Cada evento corta el
  * calendario y lo que sigue se recalcula con el capital que queda: un abono
  * baja el capital y, según el modo, conserva la cuota (menos cuotas) o el
  * plazo (cuota menor); un cambio de tasa conserva el plazo. Las fechas siguen

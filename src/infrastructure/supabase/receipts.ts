@@ -1,8 +1,8 @@
 /**
- * Comprobantes (3.0.1, G8): bucket PRIVADO `receipts`, carpeta por usuario
+ * Comprobantes (3.1.0, G8): bucket PRIVADO `receipts`, carpeta por usuario
  * (`<user_id>/<movimiento>-<marca>.<ext>`); la ruta queda en
  * `transactions.receipt_path` y se ven con un enlace firmado de 10 minutos.
- * SQL en `supabase/Versionamiento/3.0.1/09_receipts.sql`.
+ * SQL en `supabase/Versionamiento/3.1.0/09_receipts.sql`.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -33,7 +33,7 @@ export function supabaseReceipts(supabase: SupabaseClient) {
       if (error) {
         throw new InfrastructureError(
           /bucket not found/i.test(error.message)
-            ? "Falta correr el SQL de la versión 3.0.1 (comprobantes)"
+            ? "Falta correr el SQL de la versión 3.1.0 (comprobantes)"
             : "No se pudo subir el comprobante",
         );
       }

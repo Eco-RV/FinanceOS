@@ -15,7 +15,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { SharedNoticeCard } from "../shared-notice-card";
 import { SharedPaidBadge, SharedPaymentDialog, UnshareButton } from "../shared-actions";
 
-/** Detalle de un gasto compartido (3.0.1): partes, pagos y avisos. */
+/** Detalle de un gasto compartido (3.1.0): partes, pagos y avisos. */
 export default async function SharedExpensePage({ params }: PageProps<"/procesos/compartidos/[id]">) {
   await requireUser();
   const { id } = await params;

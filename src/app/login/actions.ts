@@ -175,7 +175,7 @@ export async function requestPasswordReset(_prev: AuthState, formData: FormData)
 }
 
 /**
- * U10 (3.0.1): entrar o registrarse con Google (OAuth de Supabase). Vuelve por
+ * U10 (3.1.0): entrar o registrarse con Google (OAuth de Supabase). Vuelve por
  * `/auth/confirm?code=…` (PKCE). Requiere activar el proveedor Google en
  * Supabase → Authentication → Providers.
  */

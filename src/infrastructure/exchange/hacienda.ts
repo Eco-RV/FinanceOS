@@ -1,6 +1,6 @@
 /**
  * Tipo de cambio de referencia del BCCR (venta) desde la API pública del
- * Ministerio de Hacienda (3.0.1, T10). Sin token. Ver
+ * Ministerio de Hacienda (3.1.0, T10). Sin token. Ver
  * https://api.hacienda.go.cr/indicadores/tc/dolar
  */
 

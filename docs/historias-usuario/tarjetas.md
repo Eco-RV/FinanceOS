@@ -74,7 +74,7 @@ contado y antes de qué fecha.
   hasta el último corte), pagos aplicados después del corte
   (`paidAfterCutoff`), lo que falta pagar antes del vencimiento (`dueAmount`)
   y el consumo nuevo que todavía no corta (`newCharges`).
-- **Pago mínimo** (T8, 3.0.1): en cada estado de cuenta con saldo hay una card
+- **Pago mínimo** (T8, 3.1.0): en cada estado de cuenta con saldo hay una card
   "Pago mínimo" con "Digitar pago mínimo". El monto se copia del estado de
   cuenta del banco (no lo calcula la app), por corte y moneda, y no puede
   pasar el saldo al corte. La card dice cuánto falta abonar para cubrirlo
@@ -91,7 +91,7 @@ contado y antes de qué fecha.
   contado: queda como consumo sin cortar. Es como corta BAC (por fecha de
   proceso). El próximo corte lo recuerda en su pista. Vale para **todo cargo**:
   compras, cuotas de financiamiento y seguros (también en la fecha límite de
-  cada cuota, 3.0.1).
+  cada cuota, 3.1.0).
 - Si la tarjeta está `atrasada`, se muestra una alerta indicando los días de
   atraso, la fecha en que venció y el monto pendiente (y que ya genera
   intereses).
@@ -109,7 +109,7 @@ contado y antes de qué fecha.
 - El historial **Movimientos** trae todos los movimientos de la tarjeta (sin el
   tope de 1000 filas). El estado de cuenta se calcula siempre con todos; los
   filtros solo cambian lo que se ve.
-- **Filtros y filas por página** (3.0.1): arriba del historial, siempre a la
+- **Filtros y filas por página** (3.1.0): arriba del historial, siempre a la
   vista, **Buscar** (nota, categoría, destinatario o monto, sin importar
   tildes), **Tipo** (Cargos, Cuotas, Pagos, Saldo inicial) e **Incluir futuras**. Por defecto se ve solo
   hasta hoy; al marcarlo aparecen también las cuotas programadas de los financiamientos y todo lo que tiene fecha
@@ -135,7 +135,7 @@ calcularlo a mano.
   convertido y el tipo de cambio quedan guardados en el movimiento. Sin tipo
   de cambio no deja guardar. Al editar, se convierte con el último tipo de
   cambio.
-- M4 (3.0.1): si el abono supera la deuda de esa moneda, el formulario avisa
+- M4 (3.1.0): si el abono supera la deuda de esa moneda, el formulario avisa
   el saldo a favor que quedará y deja registrarlo igual.
 
 ### 6. Financiamientos
@@ -163,7 +163,7 @@ sección "Financiamientos" y cada cuota aparece en el historial como "Cuota".
 
 ## Pendiente / fuera de alcance
 
-- (Resuelto en 3.0.1) Los saldos en USD ya suman en la cobertura convertidos
+- (Resuelto en 3.1.0) Los saldos en USD ya suman en la cobertura convertidos
   (G7), y el tipo de cambio se trae del BCCR (T10).
 
 ## Historial
@@ -204,9 +204,9 @@ sección "Financiamientos" y cada cuota aparece en el historial como "Cuota".
   dibujada (mismo degradado que en el gasto) con animación de entrada. El
   Resumen suma el disponible de todas las
   tarjetas con semáforo (ver [`resumen.md`](./resumen.md)).
-- **2026-10-18 (v3.0.1, en desarrollo)** — Historial de la tarjeta con
+- **2026-10-18 (v3.1.0, en desarrollo)** — Historial de la tarjeta con
   filtros (buscar, tipo, fechas, moneda), "Incluir futuras" para ver las
   cuotas programadas y filas por página (5/10/20/50/todas). Aviso M4 al abonar
   más que la deuda.
-- **2026-10-18 (v3.0.1, en desarrollo)** — Pago mínimo digitado por corte y
-  moneda (T8; SQL `3.0.1/03_card_minimum_payments.sql`).
+- **2026-10-18 (v3.1.0, en desarrollo)** — Pago mínimo digitado por corte y
+  moneda (T8; SQL `3.1.0/03_card_minimum_payments.sql`).

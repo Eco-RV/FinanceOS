@@ -1,5 +1,5 @@
 /**
- * G8 (3.0.1): comprobante adjunto a un movimiento (factura, recibo, foto del
+ * G8 (3.1.0): comprobante adjunto a un movimiento (factura, recibo, foto del
  * voucher). JPG, PNG, WebP o PDF de hasta 5 MB. No cambia el movimiento.
  */
 

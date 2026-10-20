@@ -15,7 +15,7 @@ const WHEEL_STEP = 40;
  * rueda del ratón (cursor encima) o deslizando con el dedo. La elegida queda
  * al centro; las demás se ven atenuadas y más pequeñas.
  *
- * 3.0.1 · ley de cierre: la tarjeta mide como mucho el 60 % del ancho, así
+ * 3.1.0 · ley de cierre: la tarjeta mide como mucho el 60 % del ancho, así
  * siempre asoma ~30 % de la siguiente y se entiende que hay más para deslizar.
  */
 export function WalletCarousel({

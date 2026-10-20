@@ -10,7 +10,7 @@ export function formatCurrency(amount: number, currency = "CRC") {
 }
 
 /**
- * U9 (3.0.1): formato de fecha elegido en Preferencias. Lo fija el layout de
+ * U9 (3.1.0): formato de fecha elegido en Preferencias. Lo fija el layout de
  * la app en cada render (servidor) y `DateFormatSync` en el navegador.
  */
 export type DateFormatChoice = "corto" | "numerico" | "largo";

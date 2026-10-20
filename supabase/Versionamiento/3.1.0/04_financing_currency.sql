@@ -1,4 +1,4 @@
--- v3.0.1 · 04 — Financiamiento en otra moneda de la tarjeta (F10).
+-- v3.1.0 · 04 — Financiamiento en otra moneda de la tarjeta (F10).
 --
 -- Antes la moneda del plan era la del límite de la tarjeta. Ahora se elige
 -- (CRC o USD): una tarjeta con límite en colones puede tener un financiamiento
@@ -30,7 +30,7 @@ declare
   v_principal_sum numeric(14, 2);
   v_bad integer;
 begin
-  -- F10 (3.0.1): la moneda la elige el usuario (CRC o USD; tarjeta bimoneda, T1).
+  -- F10 (3.1.0): la moneda la elige el usuario (CRC o USD; tarjeta bimoneda, T1).
   if not exists (select 1 from public.credit_cards where id = p_card_id and not archived) then
     raise exception 'Tarjeta no encontrada';
   end if;

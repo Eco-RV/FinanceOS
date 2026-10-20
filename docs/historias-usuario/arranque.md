@@ -41,7 +41,7 @@ mi configuración.
     ("Saldo inicial (arranque de 0)").
 - Después lleva al Resumen; la página muestra la fecha del último arranque.
 
-### 2. Consultar lo archivado (3.0.1)
+### 2. Consultar lo archivado (3.1.0)
 Como usuario quiero ver los movimientos que archivó un Arranque de 0.
 
 **Criterios de aceptación**
@@ -76,4 +76,4 @@ Como usuario quiero ver los movimientos que archivó un Arranque de 0.
 - **2026-10-14 (v2.7.0)** — Los planes (salario, suscripciones,
   seguros) y las metas de ahorro se conservan; los planes siguen registrando
   desde el día del arranque.
-- **2026-10-19 (v3.0.1, en desarrollo)** — Consulta de lo archivado (M9).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Consulta de lo archivado (M9).

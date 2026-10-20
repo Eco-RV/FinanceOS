@@ -52,7 +52,7 @@ type Filters = { q: string; kind: string; from: string; to: string; currency: st
 const EMPTY: Filters = { q: "", kind: "", from: "", to: "", currency: "", future: false };
 
 /**
- * Historial con filtros y paginación (3.0.1) para el detalle de una tarjeta o
+ * Historial con filtros y paginación (3.1.0) para el detalle de una tarjeta o
  * de una cuenta. Por defecto muestra solo hasta hoy; "Incluir futuras" suma
  * las cuotas programadas de financiamientos y todo lo que tiene fecha > hoy
  * (M7). Filtra en el cliente: la página ya trajo todos los movimientos.
@@ -82,7 +82,7 @@ export function MovementExplorer({
   cancelledFinancingIds?: string[];
   todayISO: string;
   emptyLabel: string;
-  /** 3.0.1: movimiento → gasto compartido. */
+  /** 3.1.0: movimiento → gasto compartido. */
   sharedLinks?: Record<string, string>;
 }) {
   const [filters, setFilters] = useState<Filters>(EMPTY);

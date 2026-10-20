@@ -19,7 +19,7 @@ const TYPES = [
   ["opening_balance", "Saldos iniciales"],
 ] as const;
 
-/** Consulta de lo archivado (3.0.1): solo ver, con búsqueda, tipo, año y filas por página. */
+/** Consulta de lo archivado (3.1.0): solo ver, con búsqueda, tipo, año y filas por página. */
 export function ArchivedExplorer({
   transactions,
   accounts,

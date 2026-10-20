@@ -84,7 +84,7 @@ const minimumSchema = z.object({
   statement_balance: z.coerce.number().finite(),
 });
 
-/** T8 (3.0.1): pago mínimo del corte vigente (0 o vacío lo borra). */
+/** T8 (3.1.0): pago mínimo del corte vigente (0 o vacío lo borra). */
 export async function saveMinimumPayment(_prev: FormResult, formData: FormData): Promise<FormResult> {
   await requireUser();
   const parsed = minimumSchema.safeParse({ ...Object.fromEntries(formData), amount: formData.get("amount") || 0 });

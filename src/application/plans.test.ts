@@ -296,7 +296,7 @@ test("P2 (2.8.0): gasto fijo con tarjeta de débito, cobrado a su cuenta", async
   const wrong = await savePlan(d, { id: null, fields: { ...netflix, account_id: "bn" }, today: "2026-10-01" });
   assert.equal(!wrong.ok && wrong.rule, "C3");
 
-  // T9 (3.0.1): un seguro sobre la tarjeta de débito (el banco la asegura).
+  // T9 (3.1.0): un seguro sobre la tarjeta de débito (el banco la asegura).
   const seguro = await savePlan(d, {
     id: null,
     fields: { ...netflix, kind: "insurance", name: "Seguro de la tarjeta", amount: 1_200, category: null },

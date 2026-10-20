@@ -1,4 +1,4 @@
-/** T8 (3.0.1): pago mínimo de la tarjeta, digitado del estado de cuenta. */
+/** T8 (3.1.0): pago mínimo de la tarjeta, digitado del estado de cuenta. */
 
 import { assertActive, validateMinimumPayment } from "../domain/index.ts";
 import type { CardRepository, MinimumPayment, MinimumPaymentRepository } from "./ports.ts";

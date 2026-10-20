@@ -5,8 +5,8 @@ import type { AmortizationEvent } from "@/domain";
 import { toLoanAdjustment } from "@/infrastructure/supabase/loan-adjustments";
 
 /**
- * L7/L8 (3.0.1): abonos y cambios de tasa de cada préstamo, en orden, para
- * derivar su calendario (`termsOf(loan, ajustes)`). Sin el SQL 3.0.1, vacío.
+ * L7/L8 (3.1.0): abonos y cambios de tasa de cada préstamo, en orden, para
+ * derivar su calendario (`termsOf(loan, ajustes)`). Sin el SQL 3.1.0, vacío.
  */
 export async function loadLoanAdjustments(supabase: SupabaseClient): Promise<Map<string, AmortizationEvent[]>> {
   const { data, error } = await supabase

@@ -6,7 +6,7 @@
 
 La pantalla de inicio (`/dashboard`): de un vistazo, cuánta liquidez hay,
 qué toca pagar, cuánto crédito queda y en qué se va el dinero. Cada card
-abre un modal con su detalle. Todo suma en colones: desde 3.0.1 (G7) lo que
+abre un modal con su detalle. Todo suma en colones: desde 3.1.0 (G7) lo que
 está en dólares (cuentas corrientes, tarjetas, cuotas de préstamo) se
 convierte con el último tipo de cambio, que la app trae del BCCR una vez al
 día al abrir el Resumen (T10).
@@ -117,8 +117,8 @@ estoy gastando más o menos que antes.
   Resumen con modales de detalle, Liquidez, gráfico de gastos por categoría,
   Disponible en crédito con semáforo y Faltante (reemplaza el aviso de
   cobertura).
-- **2026-10-18 (v3.0.1, en desarrollo)** — Multimoneda en la cobertura y el
+- **2026-10-18 (v3.1.0, en desarrollo)** — Multimoneda en la cobertura y el
   patrimonio (G7) con el tipo de cambio del BCCR traído una vez al día (T10).
-- **2026-10-19 (v3.0.1, en desarrollo)** — Card "Recordatorios" (P8).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Card "Recordatorios" (P8).
 - **2026-10-20 (v3.1.0, en desarrollo)** — Gastos en dólares en el gráfico y
   las cards (G9) y comparación con el período anterior (G10).

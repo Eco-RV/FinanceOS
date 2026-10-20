@@ -26,7 +26,7 @@ export function TransactionRowActions({
   debitCards?: DebitCard[];
   categories?: string[];
   categoryIcons?: Record<string, CategoryIconKey>;
-  /** 3.0.1: ofrecer "Compartir" (gasto sin compartir). */
+  /** 3.1.0: ofrecer "Compartir" (gasto sin compartir). */
   canShare?: boolean;
 }) {
   // El saldo inicial se edita desde el formulario de la cuenta o tarjeta.
@@ -47,7 +47,7 @@ export function TransactionRowActions({
 
   return (
     <div className="flex justify-end gap-1">
-      {/* G8 (3.0.1): comprobante. */}
+      {/* G8 (3.1.0): comprobante. */}
       <ReceiptDialog movementId={transaction.id} hasReceipt={Boolean(transaction.receipt_path)} />
       {canShare ? (
         <Link

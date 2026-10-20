@@ -155,7 +155,7 @@ export function LoginForm({ aviso, next }: { aviso?: string; next?: string }) {
           </div>
         ) : null}
 
-        {/* U10 (3.0.1): Google, en login y en crear cuenta. */}
+        {/* U10 (3.1.0): Google, en login y en crear cuenta. */}
         {mode !== "forgot" ? (
           <form action={signInWithGoogle} className="flex flex-col gap-3">
             <input type="hidden" name="next" value={next ?? ""} />

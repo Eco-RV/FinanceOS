@@ -25,7 +25,7 @@ type Draft = { to: string; units: bigint; amount: number };
 /**
  * Enviar USDC (pago directo, sin contrato). K8: siempre una pantalla de
  * revisión con destino, monto y "no se puede deshacer". K9: aviso destacado
- * si el destino no está en la constelación (desde 3.0.1, `knownAddresses` trae
+ * si el destino no está en la constelación (desde 3.1.0, `knownAddresses` trae
  * las estrellas de la familia y de la agenda).
  */
 export function SendDialog({ knownAddresses = [] }: { knownAddresses?: string[] }) {

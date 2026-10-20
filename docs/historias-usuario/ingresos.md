@@ -76,6 +76,6 @@ fecha más reciente primero.
   igual que en gastos.
 - **2026-10-14 (v2.5.0, en desarrollo)** — La categoría se elige en una
   cuadrícula con íconos; la lista va en filas separadas.
-- **2026-10-18 (v3.0.1, en desarrollo)** — Botón flotante "Nuevo ingreso"
+- **2026-10-18 (v3.1.0, en desarrollo)** — Botón flotante "Nuevo ingreso"
   (flecha hacia abajo, verde) en todas las páginas. Criterios de la historia 3
   y pendiente de ingresos recurrentes corregido (existen salarios desde 2.7.0).

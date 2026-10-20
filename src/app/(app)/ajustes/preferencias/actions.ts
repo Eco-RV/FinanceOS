@@ -8,7 +8,7 @@ import { savePreferences } from "@/application";
 import { DATE_FORMATS } from "@/domain";
 import { repositories } from "@/infrastructure/container";
 
-/** U9 (3.0.1): moneda base y formato de fecha. */
+/** U9 (3.1.0): moneda base y formato de fecha. */
 export async function savePreferencesAction(formData: FormData): Promise<FormResult> {
   await requireUser();
   const patch: Record<string, unknown> = {};

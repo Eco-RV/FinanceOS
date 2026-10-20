@@ -24,7 +24,7 @@ const COMING: { label: string; description: string; icon: IconType }[] = [];
 /** Preferencias de la app (2.6.0). */
 export default async function PreferenciasPage() {
   await requireUser();
-  // U9 (3.0.1): moneda base y formato de fecha guardados en el perfil.
+  // U9 (3.1.0): moneda base y formato de fecha guardados en el perfil.
   const profile = await (await repositories()).profiles.get().catch(() => null);
   const prefs = readPreferences(profile?.preferences);
 

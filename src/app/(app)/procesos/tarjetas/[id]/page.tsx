@@ -69,7 +69,7 @@ export default async function CardDetailPage({
       .eq("id", id)
       .eq("archived", false)
       .maybeSingle(),
-    // 3.0.1: todas las filas (PostgREST corta en ~1000), en orden estable.
+    // 3.1.0: todas las filas (PostgREST corta en ~1000), en orden estable.
     allRows<Transaction>((from, to) =>
       supabase
         .from("transactions")
@@ -107,7 +107,7 @@ export default async function CardDetailPage({
       .order("rate_on", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    // T8 (3.0.1): pagos mínimos digitados (sin el SQL 3.0.1, vacío).
+    // T8 (3.1.0): pagos mínimos digitados (sin el SQL 3.1.0, vacío).
     supabase.from("card_minimum_payments").select("cutoff_on, currency, amount").eq("card_id", id),
   ]);
 
@@ -199,7 +199,7 @@ export default async function CardDetailPage({
         const settled = s.status === "al-dia" || s.status === "sin-saldo";
         return (
           <section key={cur} className="flex flex-col gap-3">
-            {/* 3.0.1 · ceguera a banners: el estado va pegado al título, no en una caja aparte. */}
+            {/* 3.1.0 · ceguera a banners: el estado va pegado al título, no en una caja aparte. */}
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="text-lg font-semibold tracking-tight">
                 Estado de cuenta{multi.currencies.length > 1 ? ` en ${cur === "CRC" ? "colones" : "dólares"}` : ""}

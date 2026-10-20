@@ -1,6 +1,6 @@
 /**
- * Adaptador Supabase de gastos compartidos (3.0.1, X1–X6). SQL en
- * `supabase/Versionamiento/3.0.1/`. Sin ese SQL, `linkOf` devuelve `null`, así
+ * Adaptador Supabase de gastos compartidos (3.1.0, X1–X6). SQL en
+ * `supabase/Versionamiento/3.1.0/`. Sin ese SQL, `linkOf` devuelve `null`, así
  * que el libro de movimientos sigue funcionando igual.
  */
 
@@ -14,7 +14,7 @@ import {
 import { isCurrency, type MovementType } from "@/domain";
 
 const UNIQUE_VIOLATION = "23505";
-/** La tabla no existe (SQL 3.0.1 sin correr). */
+/** La tabla no existe (SQL 3.1.0 sin correr). */
 const MISSING_TABLE = new Set(["PGRST205", "42P01"]);
 
 type PgError = { code?: string; message?: string } | null;
@@ -22,7 +22,7 @@ type PgError = { code?: string; message?: string } | null;
 function check(error: PgError, message: string): void {
   if (!error) return;
   if (error.code && MISSING_TABLE.has(error.code)) {
-    throw new InfrastructureError("Falta correr el SQL 3.0.1 (gastos compartidos) en Supabase");
+    throw new InfrastructureError("Falta correr el SQL 3.1.0 (gastos compartidos) en Supabase");
   }
   throw new InfrastructureError(message);
 }

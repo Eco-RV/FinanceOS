@@ -38,11 +38,11 @@ type Props = {
   /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
   categoryIcons?: Record<string, CategoryIconKey>;
   /**
-   * 3.0.1: movimiento → gasto compartido (el gasto o el ingreso de un cobro).
+   * 3.1.0: movimiento → gasto compartido (el gasto o el ingreso de un cobro).
    * Si viene, los gastos sin compartir ofrecen "Compartir".
    */
   sharedLinks?: Record<string, string>;
-  /** 3.0.1: solo lectura (movimientos archivados por el Arranque de 0). */
+  /** 3.1.0: solo lectura (movimientos archivados por el Arranque de 0). */
   readOnly?: boolean;
 };
 

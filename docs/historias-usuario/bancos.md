@@ -98,7 +98,7 @@ distinga tarjetas de bancos distintos con los mismos últimos 4 dígitos.
 - El formulario de tarjeta muestra el selector "Banco" solo si hay bancos
   registrados; es opcional.
 
-### 7. Corregir las reglas de comercio (3.0.1)
+### 7. Corregir las reglas de comercio (3.1.0)
 Como usuario quiero cambiar la categoría que la app sugiere para un comercio, o
 borrar la regla, para que las próximas compras lleguen bien clasificadas.
 
@@ -126,7 +126,7 @@ borrar la regla, para que las próximas compras lleguen bien clasificadas.
 - Solo Gmail; IMAP queda como alternativa futura tras la misma interfaz.
 - Solo gastos con tarjeta de crédito: no importa débitos, transferencias ni
   reversos.
-- (Hecho en 3.0.1) Pantalla de reglas de comercio (I6).
+- (Hecho en 3.1.0) Pantalla de reglas de comercio (I6).
 - Solo BAC tiene parser; otros bancos requieren un correo de ejemplo real.
 
 ## Historial
@@ -142,7 +142,7 @@ borrar la regla, para que las próximas compras lleguen bien clasificadas.
   ([`financiamientos.md`](./financiamientos.md)); una conexión anterior muestra
   "Reconectar para enviar avisos". Se guardan los permisos concedidos
   (`mail_connections.scopes`).
-- **2026-10-18 (v3.0.1, en desarrollo)** — Se corrige el documento: la
+- **2026-10-18 (v3.1.0, en desarrollo)** — Se corrige el documento: la
   lectura es siempre manual (I2); la lectura programada de v1.3.1 se descartó.
-- **2026-10-19 (v3.0.1, en desarrollo)** — Pantalla de reglas de comercio (I6).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Pantalla de reglas de comercio (I6).
   Los parsers de otros bancos y de débitos esperan correos de ejemplo.

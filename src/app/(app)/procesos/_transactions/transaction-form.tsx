@@ -51,7 +51,7 @@ type Props = {
   transaction?: Transaction;
   triggerLabel?: string;
   /**
-   * Botón del acceso rápido global (3.0.1: lo posiciona el layout; ingreso =
+   * Botón del acceso rápido global (3.1.0: lo posiciona el layout; ingreso =
    * flecha abajo en verde). Solo para gasto e ingreso.
    */
   fab?: boolean;
@@ -59,7 +59,7 @@ type Props = {
   sinpe?: boolean;
   /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
   categoryIcons?: Record<string, CategoryIconKey>;
-  /** U9 (3.0.1): moneda con la que abre un gasto nuevo (moneda base). */
+  /** U9 (3.1.0): moneda con la que abre un gasto nuevo (moneda base). */
   defaultCurrency?: "CRC" | "USD";
 };
 
@@ -195,7 +195,7 @@ function MovementForm({
 
   const canPayTotal = type === "card_payment" && typeof totalToPay === "number" && totalToPay > 0;
 
-  // 3.0.1 · ley de Parkinson: un ingreso nuevo propone la cuenta y la
+  // 3.1.0 · ley de Parkinson: un ingreso nuevo propone la cuenta y la
   // categoría de la última vez.
   function onOpenChange(next: boolean) {
     if (next && !editing && type === "income") {

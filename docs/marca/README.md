@@ -63,8 +63,8 @@ La marca es **monocroma**: el color está reservado para comunicar estado
 | `--success` | `oklch(0.6 0.15 155)` | `oklch(0.74 0.15 155)` | Cubierto, disponible alto, éxito |
 | `--warning` | `oklch(0.7 0.16 70)` | `oklch(0.8 0.15 75)` | Atención, disponible medio |
 | `--destructive` | `oklch(0.577 0.245 27)` | `oklch(0.704 0.191 22)` | Atraso, faltante, gastos |
-| `--expense` | `oklch(0.58 0.16 20)` (coral) | `oklch(0.6 0.15 20)` | Botón flotante "Nuevo gasto" (flecha ↑), 3.0.1 |
-| `--income` | `oklch(0.56 0.12 158)` (verde) | `oklch(0.58 0.12 158)` | Botón flotante "Nuevo ingreso" (flecha ↓), 3.0.1 |
+| `--expense` | `oklch(0.58 0.16 20)` (coral) | `oklch(0.6 0.15 20)` | Botón flotante "Nuevo gasto" (flecha ↑), 3.1.0 |
+| `--income` | `oklch(0.56 0.12 158)` (verde) | `oklch(0.58 0.12 158)` | Botón flotante "Nuevo ingreso" (flecha ↓), 3.1.0 |
 | `--chart-1..5` | verde, azul, violeta, ámbar, rosa | (más claros) | Gráficos e íconos de categoría |
 | Beta | `violet-500` | `violet-500` | Solo la leyenda "beta" |
 
@@ -109,5 +109,5 @@ Hex del ícono exportado: tile `#0a0a0a`, bloques `#fafafa`.
 
 - **2026-10-14 (v2.5.0)** — Se elige **Bloques** entre cinco propuestas
   (`docs/logos/`) y se publica esta guía.
-- **2026-10-18 (v3.0.1)** — Tokens `--expense`/`--income` para los botones
+- **2026-10-18 (v3.1.0)** — Tokens `--expense`/`--income` para los botones
   flotantes y enlace a las leyes de UX.

@@ -33,7 +33,7 @@ export default async function GastosPage({
   const filters = initialFilters(await searchParams);
 
   const supabase = await createClient();
-  // 3.0.1: qué gastos están compartidos (en paralelo con el resto).
+  // 3.1.0: qué gastos están compartidos (en paralelo con el resto).
   const linksPromise = loadSharedLinks(supabase);
   const [
     { data: txData },

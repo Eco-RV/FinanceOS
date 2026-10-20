@@ -9,7 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { confirmOccurrenceAction } from "./actions";
 
 /**
- * P7 (3.0.1): una ocurrencia de un plan variable entró con el monto estimado;
+ * P7 (3.1.0): una ocurrencia de un plan variable entró con el monto estimado;
  * aquí se pone el real. Viene lleno con el estimado (ley de Parkinson).
  */
 export function ConfirmOccurrenceRow({

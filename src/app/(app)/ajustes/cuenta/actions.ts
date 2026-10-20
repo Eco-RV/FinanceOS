@@ -98,7 +98,7 @@ export async function changePasswordAction(_prev: FormResult, formData: FormData
   return { ok: true };
 }
 
-/** U8 (3.0.1): borra la cuenta y todos sus datos; luego vuelve al login. */
+/** U8 (3.1.0): borra la cuenta y todos sus datos; luego vuelve al login. */
 export async function deleteAccountAction(formData: FormData): Promise<FormResult> {
   await requireUser();
   const { identity } = await repositories();

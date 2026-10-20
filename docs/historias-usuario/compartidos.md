@@ -130,7 +130,7 @@ Como usuario quiero corregir el reparto o dejar de compartir un gasto.
   historia: se desactiva en vez de eliminarse (G5).
 - El Arranque de 0 borra los gastos compartidos (reparto, pagos y avisos). Los
   movimientos se archivan como todos los demás y los miembros se conservan.
-- Sin el SQL 3.0.1 la pantalla queda vacía y el resto de la app funciona igual.
+- Sin el SQL 3.1.0 la pantalla queda vacía y el resto de la app funciona igual.
 
 ## Pendiente / fuera de alcance
 
@@ -142,7 +142,7 @@ Como usuario quiero corregir el reparto o dejar de compartir un gasto.
 
 ## Historial
 
-- **2026-10-18 (v3.0.1, en desarrollo)** — Archivo nuevo: gastos compartidos
+- **2026-10-18 (v3.1.0, en desarrollo)** — Archivo nuevo: gastos compartidos
   con reparto sugerido en partes iguales, fecha límite por tarjeta o elegida,
   pagos con ingreso opcional, avisos por WhatsApp/correo y Cobros con las dos
   fuentes.

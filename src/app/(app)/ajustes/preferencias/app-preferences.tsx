@@ -13,7 +13,7 @@ const FORMATS = [
   ["largo", new Intl.DateTimeFormat("es-CR", { day: "numeric", month: "long", year: "numeric" }).format(EXAMPLE)],
 ] as const;
 
-/** U9 (3.0.1): moneda base y formato de fecha; se guardan al elegir. */
+/** U9 (3.1.0): moneda base y formato de fecha; se guardan al elegir. */
 export function AppPreferencesForm({ value, disabled }: { value: AppPreferences; disabled?: boolean }) {
   const [pending, start] = useTransition();
   const save = (key: string, v: string) => {

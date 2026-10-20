@@ -37,7 +37,7 @@ internet, suscripciones), para que se cargue solo y cuente en mi línea base.
   Suscripciones) y se puede cambiar. Si el monto varía (luz, agua), se edita
   el movimiento cuando llega.
 - **Seguro de tarjeta** (T9): mensual, a una **tarjeta de crédito** o a una
-  **tarjeta de débito** (3.0.1: p. ej. el seguro que el banco cobra por la
+  **tarjeta de débito** (3.1.0: p. ej. el seguro que el banco cobra por la
   tarjeta de débito; el cargo sale del saldo de su cuenta). Puede haber varios
   por tarjeta; categoría por defecto "Seguros". No se cobra desde la cuenta
   sola.
@@ -72,7 +72,7 @@ controlar mi liquidez.
 - **Próximos 30 días** en Planes; en el Resumen, la card **Línea base** muestra
   el % y lo próximo de 15 días.
 
-### 6. Monto variable (3.0.1)
+### 6. Monto variable (3.1.0)
 Como usuario quiero registrar un salario (o la luz, el agua) que cambia cada
 vez, para no tener que editar el movimiento a mano.
 
@@ -84,7 +84,7 @@ vez, para no tener que editar el movimiento a mano.
   y **Confirmar**: el saldo se ajusta (P7).
 - El Resumen lo recuerda en "Recordatorios" mientras quede algo por confirmar.
 
-### 7. Recordatorios (3.0.1)
+### 7. Recordatorios (3.1.0)
 Como usuario quiero ver en el Resumen lo que viene pronto, para no olvidar
 nada.
 
@@ -116,7 +116,7 @@ cuenten en la línea base.
 
 ## Pendiente / fuera de alcance
 
-- (Hecho en 3.0.1) Recordatorios dentro de la app (P8); no hay notificaciones push.
+- (Hecho en 3.1.0) Recordatorios dentro de la app (P8); no hay notificaciones push.
 - (Hecho en 3.1.0) Lo de dólares entra a la línea base convertido (P4).
 
 ## Historial
@@ -126,9 +126,9 @@ cuenten en la línea base.
 - **2026-10-14 (v2.7.0)** — Archivo nuevo: salario,
   gastos fijos (renta, servicios, suscripciones), seguros de tarjeta, línea
   base y programados.
-- **2026-10-18 (v3.0.1, en desarrollo)** — Un seguro también se cobra a una
-  tarjeta de débito (T9; SQL `3.0.1/02_insurance_debit_card.sql`).
-- **2026-10-19 (v3.0.1, en desarrollo)** — Monto variable con confirmación
-  (P7; SQL `3.0.1/07_variable_plans.sql`) y recordatorios en el Resumen (P8).
+- **2026-10-18 (v3.1.0, en desarrollo)** — Un seguro también se cobra a una
+  tarjeta de débito (T9; SQL `3.1.0/02_insurance_debit_card.sql`).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Monto variable con confirmación
+  (P7; SQL `3.1.0/07_variable_plans.sql`) y recordatorios en el Resumen (P8).
 - **2026-10-20 (v3.1.0, en desarrollo)** — Línea base con lo de dólares
   convertido (P4).

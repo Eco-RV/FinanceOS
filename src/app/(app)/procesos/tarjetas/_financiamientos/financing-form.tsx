@@ -86,7 +86,7 @@ export function FinancingForm({ cardId, currency: limitCurrency, categories = []
   const [totalAmount, setTotalAmount] = useState("");
   const [rate, setRate] = useState("0");
   const [months, setMonths] = useState("");
-  // F10 (3.0.1): por defecto la moneda del límite; se puede financiar en la otra (T1).
+  // F10 (3.1.0): por defecto la moneda del límite; se puede financiar en la otra (T1).
   const [currency, setCurrency] = useState(limitCurrency);
   const preview = previewOf(totalAmount, rate, months, currency);
   const withInterest = Number(rate) > 0;

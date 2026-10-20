@@ -7,7 +7,7 @@ import { BackLink } from "@/components/back-link";
 import { ArchivedExplorer } from "./archived-explorer";
 
 /**
- * Lo que archivó el Arranque de 0 (3.0.1, M9): solo se consulta. Restaurarlo
+ * Lo que archivó el Arranque de 0 (3.1.0, M9): solo se consulta. Restaurarlo
  * duplicaría los saldos frente a los saldos iniciales nuevos.
  */
 export default async function ArchivedPage() {

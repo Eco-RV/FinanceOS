@@ -68,7 +68,7 @@ export function PlanFormDialog({
   const [name, setName] = useState(plan?.name ?? "");
 
   const usesAccount = kind === "salary" || (kind === "subscription" && payWith === "account");
-  // T9 (3.0.1): un seguro va a una tarjeta de crédito o de débito.
+  // T9 (3.1.0): un seguro va a una tarjeta de crédito o de débito.
   const usesDebit = (kind === "subscription" || kind === "insurance") && payWith === "debit";
   const accountOptions = accounts.filter((a) => a.currency === currency);
   // Tarjetas de débito cuya cuenta es de la moneda del plan.

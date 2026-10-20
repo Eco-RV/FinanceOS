@@ -29,7 +29,7 @@ function subscribe(onChange: () => void) {
 }
 
 /**
- * Paginación en el cliente (3.0.1): filas por página (5, 10, 20, 50 o todas)
+ * Paginación en el cliente (3.1.0): filas por página (5, 10, 20, 50 o todas)
  * recordadas por lista en este navegador, y la página actual. Llamar `reset()`
  * cuando cambian los filtros.
  */

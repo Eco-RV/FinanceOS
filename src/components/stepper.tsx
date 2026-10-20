@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Pasos de un flujo conectados por una línea (3.0.1, ley de conexión: los
+ * Pasos de un flujo conectados por una línea (3.1.0, ley de conexión: los
  * pasos de un mismo flujo se ven unidos). El paso actual se resalta y los
  * anteriores llevan check; si `onStep` está, se puede volver a uno anterior.
  */

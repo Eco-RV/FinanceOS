@@ -51,7 +51,7 @@ export type ExistingShared = {
 const STEPS = ["Gasto", "Personas", "Revisar"];
 
 /**
- * Asistente de gasto compartido (3.0.1) en 3 pasos conectados: el gasto (nuevo
+ * Asistente de gasto compartido (3.1.0) en 3 pasos conectados: el gasto (nuevo
  * o uno ya registrado), las personas con su parte (sugerida en partes
  * iguales, X2) y la revisión con la fecha límite de cobro (X3).
  */

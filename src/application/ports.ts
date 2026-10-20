@@ -59,7 +59,7 @@ export type NewMovement = {
   account_amount?: number | null;
   /** Abono en otra moneda (M5, 2.8.0): colones por dólar usados. */
   exchange_rate?: number | null;
-  /** P7 (3.0.1): ocurrencia de un plan variable con el monto estimado. */
+  /** P7 (3.1.0): ocurrencia de un plan variable con el monto estimado. */
   estimated?: boolean;
 };
 
@@ -191,7 +191,7 @@ export type NewFinancing = {
   annual_rate: number;
   months: number;
   first_charge_on: ISODate;
-  /** F10 (3.0.1): moneda del plan; por defecto la del límite de la tarjeta. */
+  /** F10 (3.1.0): moneda del plan; por defecto la del límite de la tarjeta. */
   currency?: Currency;
 };
 
@@ -204,7 +204,7 @@ export type StoredFinancing = {
   months: number;
   currency: Currency;
   cancelled_on: ISODate | null;
-  /** 3.0.1 (F11): tasa y categoría, para recalcular tras un abono. */
+  /** 3.1.0 (F11): tasa y categoría, para recalcular tras un abono. */
   annual_rate?: number;
   category?: string | null;
 };
@@ -229,7 +229,7 @@ export interface FinancingRepository {
   /** F6: parte fija por cuota de cada miembro. */
   shares(financingId: string): Promise<MemberShare[]>;
   replaceShares(financingId: string, shares: MemberShare[]): Promise<void>;
-  /** F11 (3.0.1): cuotas programadas (fecha > hoy) con su interés. */
+  /** F11 (3.1.0): cuotas programadas (fecha > hoy) con su interés. */
   pendingInstallments(financingId: string, todayISO: ISODate): Promise<PendingInstallment[]>;
   /**
    * F11, atómico: reemplaza las cuotas programadas desde `fromNo` por estas y
@@ -305,7 +305,7 @@ export interface Mailer {
   send(mail: OutgoingMail): Promise<void>;
 }
 
-/** Gasto compartido (3.0.1): el movimiento que se comparte y, si es de tarjeta, su ciclo. */
+/** Gasto compartido (3.1.0): el movimiento que se comparte y, si es de tarjeta, su ciclo. */
 export type SharedSource = {
   movement_id: string;
   type: MovementType;
@@ -396,7 +396,7 @@ export interface PendingRepository {
 export interface MerchantRuleRepository {
   /** Guarda (o actualiza) la categoría aprendida para un comercio. */
   learn(merchantKey: string, category: string): Promise<void>;
-  /** 3.0.1 (I6): cambiar la categoría de una regla o borrarla. */
+  /** 3.1.0 (I6): cambiar la categoría de una regla o borrarla. */
   update(ruleId: string, category: string): Promise<void>;
   delete(ruleId: string): Promise<void>;
 }
@@ -423,7 +423,7 @@ export interface LoanRepository extends LifecycleRepository<Loan> {
   paidInstallments(loanId: string): Promise<number[]>;
   /** Movimiento del pago de una cuota, o `null`. */
   paymentOf(loanId: string, installmentNo: number): Promise<string | null>;
-  /** 3.0.1: abonos extraordinarios (L7) y cambios de tasa (L8), en el orden en que se hicieron. */
+  /** 3.1.0: abonos extraordinarios (L7) y cambios de tasa (L8), en el orden en que se hicieron. */
   adjustments(loanId: string): Promise<StoredLoanAdjustment[]>;
   addAdjustment(
     loanId: string,
@@ -467,7 +467,7 @@ export interface ExchangeRateRepository {
   save(rate: ExchangeRate): Promise<void>;
 }
 
-/** T8 (3.0.1): pago mínimo digitado del estado de cuenta, por corte y moneda. */
+/** T8 (3.1.0): pago mínimo digitado del estado de cuenta, por corte y moneda. */
 export type MinimumPayment = {
   card_id: string;
   /** Fecha del corte al que pertenece. */
@@ -483,7 +483,7 @@ export interface MinimumPaymentRepository {
 }
 
 /**
- * Fuente oficial del tipo de cambio (3.0.1, T10): hoy la API pública de
+ * Fuente oficial del tipo de cambio (3.1.0, T10): hoy la API pública de
  * Hacienda, que publica el de referencia del BCCR (venta). Lanza
  * `InfrastructureError` si no responde.
  */
@@ -527,11 +527,11 @@ export interface IdentityService {
   isRecoverySession(): Promise<boolean>;
   /** Pide el cambio: el proveedor manda la confirmación al correo nuevo (y al actual). */
   changeEmail(next: string, redirectTo: string): Promise<void>;
-  /** U8 (3.0.1): borra la cuenta y TODOS sus datos (archivos incluidos). No se deshace. */
+  /** U8 (3.1.0): borra la cuenta y TODOS sus datos (archivos incluidos). No se deshace. */
   deleteAccount(): Promise<void>;
 }
 
-/** G8 (3.0.1): comprobantes privados de los movimientos. */
+/** G8 (3.1.0): comprobantes privados de los movimientos. */
 export interface ReceiptStorage {
   /** Sube el archivo y lo liga al movimiento (reemplaza el anterior). */
   attach(movementId: string, file: { bytes: ArrayBuffer; type: string }): Promise<void>;
@@ -563,7 +563,7 @@ export type PlanFields = {
   debit_card_id?: string | null;
   category: string | null;
   note: string | null;
-  /** P7 (3.0.1): el monto es un estimado; cada ocurrencia se confirma. */
+  /** P7 (3.1.0): el monto es un estimado; cada ocurrencia se confirma. */
   variable?: boolean;
 };
 
@@ -596,7 +596,7 @@ export interface PlanRepository {
   delete(planId: string): Promise<void>;
   /** Registra ocurrencias (idempotente por fecha) y avanza `generated_through`. */
   materialize(planId: string, through: ISODate, rows: NewMovement[]): Promise<number>;
-  /** P7 (3.0.1): ocurrencias con monto estimado que falta confirmar. */
+  /** P7 (3.1.0): ocurrencias con monto estimado que falta confirmar. */
   estimatedOccurrences(): Promise<EstimatedOccurrence[]>;
   /** P7: fija el monto real (el saldo se ajusta) y la marca como confirmada. */
   confirmOccurrence(movementId: string, amount: number): Promise<void>;
@@ -616,7 +616,7 @@ export type Goal = GoalFields & { id: string; archived: boolean; allocated?: num
 export interface GoalRepository {
   find(goalId: string): Promise<Goal | null>;
   save(goalId: string | null, fields: GoalFields): Promise<{ id: string }>;
-  /** A4 (3.0.1): metas activas ligadas a una cuenta, con su apartado. */
+  /** A4 (3.1.0): metas activas ligadas a una cuenta, con su apartado. */
   onAccount(accountId: string): Promise<{ id: string; allocated: number }[]>;
   /** Saldo de la cuenta (para validar los apartados), o `null`. */
   accountBalance(accountId: string): Promise<number | null>;

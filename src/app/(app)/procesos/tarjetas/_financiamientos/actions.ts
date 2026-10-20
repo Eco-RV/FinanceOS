@@ -190,7 +190,7 @@ export async function recordWhatsappNotice(formData: FormData): Promise<FormResu
 
 const uuidRe = /^[0-9a-fA-F-]{36}$/;
 
-/** F11 (3.0.1): abono extraordinario al capital de un financiamiento. */
+/** F11 (3.1.0): abono extraordinario al capital de un financiamiento. */
 export async function prepayFinancingAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
   await requireUser();
   const financing_id = String(formData.get("financing_id") ?? "");

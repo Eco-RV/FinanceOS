@@ -338,7 +338,7 @@ ya da una demo de envío) → 3 + 4 (dominio y Supabase) → 5 (pantallas) → 6
 (apoyos) → 7 → 8. Las fases 1 y 2 pueden avanzar en paralelo porque tocan
 archivos distintos (`contracts/` contra `src/`).
 
-## 9. Lo que quedó distinto al plan (auditoría 3.0.1)
+## 9. Lo que quedó distinto al plan (auditoría 3.1.0)
 
 - **Fase 2**: no hay un cliente TS generado en `src/infrastructure/stellar/family-client/`
   ni un script `ci-clients`. El cliente se arma en tiempo de ejecución con

@@ -1,4 +1,4 @@
--- v3.0.1 · 02 — Un seguro también se cobra a una tarjeta de débito (T9).
+-- v3.1.0 · 02 — Un seguro también se cobra a una tarjeta de débito (T9).
 --
 -- Antes (2.7.0) un seguro iba solo a una tarjeta de crédito (`account_id` en
 -- null). Ahora también puede ir a la tarjeta de débito de una cuenta: guarda

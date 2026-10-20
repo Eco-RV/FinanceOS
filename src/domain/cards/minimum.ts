@@ -1,5 +1,5 @@
 /**
- * T8 (3.0.1): pago mínimo. Lo calcula el banco con su fórmula; el usuario lo
+ * T8 (3.1.0): pago mínimo. Lo calcula el banco con su fórmula; el usuario lo
  * digita del estado de cuenta (por corte y moneda) y la app le dice cuánto le
  * falta para cubrirlo antes de la fecha límite.
  */

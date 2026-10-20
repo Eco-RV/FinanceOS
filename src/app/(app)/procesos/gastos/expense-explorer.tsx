@@ -50,7 +50,7 @@ export function ExpenseExplorer({
   todayISO: string;
   /** Filtros iniciales desde la URL (`?desde=&hasta=&categoria=`). */
   initial?: Partial<Pick<Filters, "from" | "to" | "category">>;
-  /** 3.0.1: movimiento → gasto compartido. */
+  /** 3.1.0: movimiento → gasto compartido. */
   sharedLinks?: Record<string, string>;
 }) {
   const [filters, setFilters] = useState<Filters>({ ...EMPTY, ...initial });
@@ -94,7 +94,7 @@ export function ExpenseExplorer({
     return Object.entries(by);
   }, [filtered]);
 
-  // 3.0.1: las filas por página se recuerdan (5, 10, 20, 50 o todas).
+  // 3.1.0: las filas por página se recuerdan (5, 10, 20, 50 o todas).
   const pager = usePagination(filtered, "filas:gastos");
   const set = <K extends keyof Filters>(key: K, value: Filters[K]) => {
     setFilters((f) => ({ ...f, [key]: value }));

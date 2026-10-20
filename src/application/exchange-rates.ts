@@ -1,5 +1,5 @@
 /**
- * Tipo de cambio (T2): colones por dólar. Se digita a mano o, desde 3.0.1
+ * Tipo de cambio (T2): colones por dólar. Se digita a mano o, desde 3.1.0
  * (T10), se trae del BCCR (vía la API pública de Hacienda) una vez al día.
  */
 

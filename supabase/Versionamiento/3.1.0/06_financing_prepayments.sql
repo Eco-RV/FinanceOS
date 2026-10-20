@@ -1,4 +1,4 @@
--- v3.0.1 · 06 — Abono extraordinario al capital de un financiamiento (F11).
+-- v3.1.0 · 06 — Abono extraordinario al capital de un financiamiento (F11).
 --
 -- El abono sale de una cuenta como un gasto (lo crea la app, `transaction_id`).
 -- `prepay_financing` reemplaza, de forma atómica, las cuotas PROGRAMADAS

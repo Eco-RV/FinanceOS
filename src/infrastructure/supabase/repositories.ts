@@ -398,7 +398,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       check(error, "No se pudo leer el pago de la cuota");
       return (data?.id as string | undefined) ?? null;
     },
-    // L7/L8 (3.0.1). Sin el SQL 3.0.1, sin ajustes.
+    // L7/L8 (3.1.0). Sin el SQL 3.1.0, sin ajustes.
     async adjustments(id) {
       const { data, error } = await supabase
         .from("loan_adjustments")
@@ -426,7 +426,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         })
         .select("id")
         .single();
-      check(error, "No se pudo guardar el ajuste del préstamo (¿corriste el SQL 3.0.1?)");
+      check(error, "No se pudo guardar el ajuste del préstamo (¿corriste el SQL 3.1.0?)");
       return { id: data!.id as string };
     },
     async deleteAdjustment(adjustmentId) {
@@ -505,7 +505,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
   const financings: FinancingRepository = {
     async createWithInstallments(plan, installments) {
       // Guarda exactamente el plan que calculó el dominio, de forma atómica
-      // (supabase/Versionamiento/3.0.1/04_financing_currency.sql: v4 = v3 + moneda).
+      // (supabase/Versionamiento/3.1.0/04_financing_currency.sql: v4 = v3 + moneda).
       const { data, error } = await supabase.rpc("create_financing_v4", {
         p_card_id: plan.card_id,
         p_description: plan.description,
@@ -544,7 +544,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         category: (data.category as string | null) ?? null,
       };
     },
-    // F11 (3.0.1): abono extraordinario (SQL 3.0.1/06_financing_prepayments.sql).
+    // F11 (3.1.0): abono extraordinario (SQL 3.1.0/06_financing_prepayments.sql).
     async pendingInstallments(id, todayISO) {
       const { data, error } = await supabase
         .from("transactions")
@@ -578,7 +578,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         p_occurred_on: input.occurred_on,
         p_transaction_id: input.transaction_id,
       });
-      check(error, "No se pudo registrar el abono (¿corriste el SQL 3.0.1?)");
+      check(error, "No se pudo registrar el abono (¿corriste el SQL 3.1.0?)");
       return { id: data as string };
     },
     async lastPrepayment(id) {
@@ -681,7 +681,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
       const { data } = await supabase.from("members").select(MEMBER_COLUMNS).eq("id", id).maybeSingle();
       return (data as Member | null) ?? null;
     },
-    // G5: partes en financiamientos, reembolsos y gastos compartidos (3.0.1).
+    // G5: partes en financiamientos, reembolsos y gastos compartidos (3.1.0).
     async historyCount(id) {
       const [shares, reimbursements, sharedParts] = await Promise.all([
         count(
@@ -698,7 +698,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
             .eq("member_id", id),
           HISTORY_ERROR,
         ),
-        // Sin el SQL 3.0.1 la tabla no existe: no suma historia.
+        // Sin el SQL 3.1.0 la tabla no existe: no suma historia.
         Promise.resolve(
           supabase
             .from("shared_expense_parts")
@@ -933,13 +933,13 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     },
   };
 
-  // T8 (3.0.1): pago mínimo por corte y moneda.
+  // T8 (3.1.0): pago mínimo por corte y moneda.
   const minimumPayments: MinimumPaymentRepository = {
     async save(m) {
       const { error } = await supabase
         .from("card_minimum_payments")
         .upsert(m, { onConflict: "card_id,cutoff_on,currency" });
-      check(error, "No se pudo guardar el pago mínimo (¿corriste el SQL 3.0.1?)");
+      check(error, "No se pudo guardar el pago mínimo (¿corriste el SQL 3.1.0?)");
     },
     async delete(key) {
       const { error } = await supabase

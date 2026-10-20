@@ -34,7 +34,7 @@ export type LoanTerms = {
   months: number;
   firstPaymentOn: ISODate;
   currency: Currency;
-  /** 3.0.1: abonos extraordinarios (L7) y cambios de tasa (L8), en orden. */
+  /** 3.1.0: abonos extraordinarios (L7) y cambios de tasa (L8), en orden. */
   adjustments?: AmortizationEvent[];
 };
 
@@ -53,7 +53,7 @@ export function validateLoanTerms(terms: LoanTerms): void {
 
 /**
  * F5: calendario de cuotas (sistema francés) a partir de los términos y, desde
- * 3.0.1, de sus ajustes (abonos L7 y cambios de tasa L8), que lo recalculan
+ * 3.1.0, de sus ajustes (abonos L7 y cambios de tasa L8), que lo recalculan
  * por tramos. Sigue sin guardarse: se deriva.
  */
 export function loanSchedule(terms: LoanTerms): AmortizationSchedule {
@@ -78,7 +78,7 @@ function prepaidUpTo(terms: LoanTerms, paidCount: number): number {
 }
 
 /**
- * L7 (3.0.1): un abono extraordinario va después de la última cuota pagada,
+ * L7 (3.1.0): un abono extraordinario va después de la última cuota pagada,
  * es mayor que 0 y no pasa el capital que falta. El modo dice si baja el
  * plazo (misma cuota) o la cuota (mismo plazo).
  */
@@ -96,7 +96,7 @@ export function validateLoanPrepayment(
 }
 
 /**
- * L8 (3.0.1): tasa variable. La nueva tasa (0–100 %) rige desde una cuota que
+ * L8 (3.1.0): tasa variable. La nueva tasa (0–100 %) rige desde una cuota que
  * todavía no se pagó; se mantiene el plazo que queda y se recalcula la cuota.
  */
 export function validateLoanRateChange(

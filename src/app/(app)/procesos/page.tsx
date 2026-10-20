@@ -128,7 +128,7 @@ export default async function ProcesosPage() {
     },
   ];
 
-  // 3.0.1 · ley 06 (exceso de opciones): primero lo de todos los días y lo que
+  // 3.1.0 · ley 06 (exceso de opciones): primero lo de todos los días y lo que
   // pide atención (con badge); el resto queda debajo, en "Más procesos".
   const primary = items.filter((i) => FREQUENT.has(i.href) || (i.badge ?? 0) > 0);
   const secondary = items.filter((i) => !primary.includes(i));

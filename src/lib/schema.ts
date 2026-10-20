@@ -314,7 +314,7 @@ export const financingSchema = z.object({
   first_charge_on: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
-  /** F10 (3.0.1): moneda del plan. */
+  /** F10 (3.1.0): moneda del plan. */
   currency: z.enum(CURRENCIES).optional(),
 });
 
@@ -491,7 +491,7 @@ export const planSchema = z.object({
     .optional()
     .transform((v) => (v ? v : null)),
   note: optionalNote,
-  /** P7 (3.0.1): monto variable (casilla). */
+  /** P7 (3.1.0): monto variable (casilla). */
   variable: z.enum(["on"]).optional().transform((v) => v === "on"),
 });
 
@@ -517,7 +517,7 @@ export const goalSchema = z.object({
 
 export type GoalInput = z.infer<typeof goalSchema>;
 
-// ─────────────────────────────  gastos compartidos (3.0.1)  ─────────────────────────────
+// ─────────────────────────────  gastos compartidos (3.1.0)  ─────────────────────────────
 
 /** Paso 1 del alta (gasto nuevo) o el id del gasto que se comparte. */
 export const sharedExpenseSchema = z

@@ -56,7 +56,7 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
   const payAccounts = accounts.filter((a) => a.currency === currency);
 
   const todayISO = toISODate(crToday());
-  // L7/L8 (3.0.1): abonos y cambios de tasa recalculan el calendario.
+  // L7/L8 (3.1.0): abonos y cambios de tasa recalculan el calendario.
   const adjustments = await (await repositories()).loans.adjustments(loan.id);
   const p = loanProgress(
     termsOf({ ...loan, currency }, adjustments.map((a) => a.event)),

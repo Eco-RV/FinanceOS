@@ -1,4 +1,4 @@
--- v3.0.1 · 09 — Comprobantes adjuntos a los movimientos (G8).
+-- v3.1.0 · 09 — Comprobantes adjuntos a los movimientos (G8).
 --
 -- Bucket PRIVADO `receipts` (son datos financieros): cada usuario solo lee y
 -- escribe en su carpeta `receipts/<user_id>/…`; la app los muestra con un

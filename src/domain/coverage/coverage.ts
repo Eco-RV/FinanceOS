@@ -2,7 +2,7 @@
  * Cobertura: ¿alcanza el dinero de débito para los pagos de contado de las
  * tarjetas y las cuotas de préstamos? Antes vivía dentro de `dashboard/page.tsx`.
  *
- * Todo se lleva a la moneda de referencia (CRC). Desde 3.0.1 (G7), con un
+ * Todo se lleva a la moneda de referencia (CRC). Desde 3.1.0 (G7), con un
  * tipo de cambio, lo que está en dólares (cuentas, tarjetas, préstamos) se
  * convierte y suma; sin tipo de cambio, lo de dólares se lista pero no suma.
  */
@@ -84,7 +84,7 @@ export function computeCoverage<C extends CoverageCard, L = never>(
   cards: { card: C; st: CardStatement }[],
   loans: CoverageLoan<L>[] = [],
   today: Date = crToday(),
-  /** G7 (3.0.1): colones por dólar; `null` = lo de dólares no suma. */
+  /** G7 (3.1.0): colones por dólar; `null` = lo de dólares no suma. */
   usdCrc: number | null = null,
 ): Coverage<C, L> {
   let unconverted = false;

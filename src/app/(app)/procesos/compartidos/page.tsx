@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 
 /**
- * Gastos compartidos (3.0.1): lo que pagaste completo y divides con otras
+ * Gastos compartidos (3.1.0): lo que pagaste completo y divides con otras
  * personas. Arriba, cuánto te debe cada una; abajo, cada gasto con su avance.
  */
 export default async function CompartidosPage() {

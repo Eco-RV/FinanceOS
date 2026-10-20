@@ -1,7 +1,7 @@
 # Leyes de UX de Finance OS
 
 > Reglas de diseño que se aplican en **toda pantalla nueva o rediseñada**
-> (desde 3.0.1). Antes de cerrar un cambio de UI, revisa la lista de chequeo
+> (desde 3.1.0). Antes de cerrar un cambio de UI, revisa la lista de chequeo
 > de cada ley. Se complementa con la guía de marca
 > ([`../marca/README.md`](../marca/README.md)) y con la sección "Diseño e
 > interacción" de [`../CONTEXT.md`](../CONTEXT.md).
@@ -145,5 +145,5 @@ Menos opciones visibles = más decisiones tomadas.
 
 ## Historial
 
-- **2026-10-18 (v3.0.1)** — Primera versión: leyes 01 a 06 y dónde se
+- **2026-10-18 (v3.1.0)** — Primera versión: leyes 01 a 06 y dónde se
   aplicaron.

@@ -124,7 +124,7 @@ export async function setLoanActive(formData: FormData): Promise<FormResult> {
 const uuid = z.string().regex(/^[0-9a-fA-F-]{36}$/, "Inválido");
 const isoDate = z.string().regex(/^d{4}-d{2}-d{2}$/, "Fecha inválida");
 
-/** L7 (3.0.1): abono extraordinario al capital. */
+/** L7 (3.1.0): abono extraordinario al capital. */
 export async function prepayAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
   await requireUser();
   const parsed = z
@@ -142,7 +142,7 @@ export async function prepayAction(_prev: FormResult, formData: FormData): Promi
   return toFormResult(result);
 }
 
-/** L8 (3.0.1): cambio de tasa desde una cuota. */
+/** L8 (3.1.0): cambio de tasa desde una cuota. */
 export async function changeRateAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
   await requireUser();
   const parsed = z

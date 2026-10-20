@@ -22,7 +22,7 @@ cuota), para que la app genere el cronograma y sepa cuánto me cuesta.
 - Desde el detalle de la tarjeta → "Nuevo financiamiento". Campos: descripción
   (1–80), categoría de gasto, monto, **tasa anual (%)** (0 a 100, por defecto
   0), meses (**2 a 72**) y fecha de la primera cuota (por defecto hoy). La
-  moneda es por defecto la del límite de la tarjeta; desde 3.0.1 (F10) se
+  moneda es por defecto la del límite de la tarjeta; desde 3.1.0 (F10) se
   puede elegir la otra (p. ej. un plan en dólares en una tarjeta con límite
   en colones): sus cuotas van al saldo en esa moneda (T1) y el disponible las
   convierte con el último tipo de cambio (T2).
@@ -153,7 +153,7 @@ queda, para cobrarle a tiempo.
   cae (el primer corte en o después de su fecha). Si la tarjeta tiene marcado
   "Las compras del día de corte pasan al siguiente corte" (T3), la opción vale
   también para las cuotas: una cuota que cae el mismo día del corte entra al
-  corte siguiente y vence en su fecha de pago (3.0.1; antes solo lo respetaba
+  corte siguiente y vence en su fecha de pago (3.1.0; antes solo lo respetaba
   el estado de cuenta, no la tabla ni los avisos).
 - Procesos → **Cobros a miembros** → "Avisos por enviar": las partes sin
   reembolsar cuya fecha límite está a **3 quincenas o menos** (o ya venció),
@@ -169,7 +169,7 @@ queda, para cobrarle a tiempo.
 - El envío es **manual**: el Resumen y Procesos muestran cuántos avisos hay por
   enviar; no hay envío automático.
 
-### 10. Abono extraordinario al capital (3.0.1)
+### 10. Abono extraordinario al capital (3.1.0)
 Como usuario quiero abonar extra a un financiamiento para pagar menos interés o
 terminarlo antes.
 
@@ -213,12 +213,12 @@ terminarlo antes.
 - **2026-10-14 (v2.5.0, en desarrollo)** — Pantalla
   `/procesos/financiamientos` con los activos de todas las tarjetas (botón
   en Gastos y modal en el Resumen); toda la fila abre el detalle.
-- **2026-10-18 (v3.0.1, en desarrollo)** — La opción de corte de la tarjeta
+- **2026-10-18 (v3.1.0, en desarrollo)** — La opción de corte de la tarjeta
   (T3) también se aplica a la fecha límite de las cuotas: tabla del plan,
   avisos a miembros y por cobrar.
-- **2026-10-18 (v3.0.1, en desarrollo)** — Financiamiento en la otra moneda
+- **2026-10-18 (v3.1.0, en desarrollo)** — Financiamiento en la otra moneda
   de la tarjeta (F10; SP `create_financing_v4`, SQL
-  `3.0.1/04_financing_currency.sql`).
-- **2026-10-19 (v3.0.1, en desarrollo)** — Abono extraordinario al capital
+  `3.1.0/04_financing_currency.sql`).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Abono extraordinario al capital
   (F11; SP `prepay_financing`/`undo_financing_prepayment`, SQL
-  `3.0.1/06_financing_prepayments.sql`).
+  `3.1.0/06_financing_prepayments.sql`).
