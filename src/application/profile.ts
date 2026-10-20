@@ -4,6 +4,7 @@
  */
 
 import {
+  assertDeleteConfirmation,
   assertValidAvatar,
   assertValidPassword,
   normalizeNewEmail,
@@ -92,5 +93,22 @@ export function changeEmail(
     const email = normalizeNewEmail(input.email, await identity.email());
     await identity.changeEmail(email, input.redirectTo);
     return ok({ email });
+  });
+}
+
+/**
+ * U8 (3.1.0): borra la cuenta. Pide escribir ELIMINAR y la contraseña actual;
+ * después no hay vuelta atrás (se borran movimientos, planes, metas, archivos…).
+ */
+export function deleteAccount(
+  deps: { identity: IdentityService },
+  input: { confirmation: string; password: string },
+): Promise<UseCaseResult> {
+  return run(async () => {
+    assertDeleteConfirmation(input.confirmation);
+    if (!input.password) return fail("Escribe tu contraseña", "U8");
+    if (!(await deps.identity.verifyPassword(input.password))) return fail("La contraseña no es correcta", "U8");
+    await deps.identity.deleteAccount();
+    return ok();
   });
 }

@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { DomainError } from "../shared/errors.ts";
 import {
   financingProgress,
+  financingPrepaymentPlan,
   financingSchedule,
   scheduledInterest,
   storedInstallments,
@@ -86,4 +87,29 @@ test("Solo el capital resta desde el día 1: interés programado por moneda", ()
     "2026-10-14",
   );
   assert.deepEqual(r, { CRC: 75.3, USD: 3 });
+});
+
+test("F11: abono a un financiamiento con interés (baja el plazo o la cuota)", () => {
+  const all = financingSchedule({
+    principal: 600_000,
+    annualRatePercent: 24,
+    months: 12,
+    firstChargeOn: "2026-11-05",
+    currency: "CRC",
+  });
+  const pending = all.slice(3).map((c) => ({ no: c.no, occurred_on: c.occurred_on, amount: c.amount, interest: c.interest }));
+  const term = financingPrepaymentPlan({ pending, annualRatePercent: 24, amount: 200_000, mode: "term" });
+  assert.equal(term.capitalPending, all[2].balance);
+  assert.equal(term.installments[0].no, 4);
+  assert.equal(term.installments[0].occurred_on, all[3].occurred_on);
+  assert.ok(term.installments.length < 9);
+  const capital = term.installments.reduce((s, c) => s + Math.round(c.principal * 100), 0) / 100;
+  assert.equal(Math.round((capital + 200_000) * 100) / 100, term.capitalPending);
+
+  const pay = financingPrepaymentPlan({ pending, annualRatePercent: 24, amount: 200_000, mode: "payment" });
+  assert.equal(pay.installments.length, 9);
+  assert.ok(pay.installments[0].amount < all[3].amount);
+
+  assert.equal(financingPrepaymentPlan({ pending, annualRatePercent: 24, amount: term.capitalPending, mode: "term" }).installments.length, 0);
+  assert.throws(() => financingPrepaymentPlan({ pending, annualRatePercent: 24, amount: term.capitalPending + 1, mode: "term" }));
 });

@@ -11,8 +11,9 @@
  */
 
 import { DomainError } from "../shared/errors.ts";
-import { daysUntil, fromISODate, toISODate, type ISODate } from "../shared/calendar.ts";
+import { addDays, clampDay, daysUntil, fromISODate, toISODate, type ISODate } from "../shared/calendar.ts";
 import { fromCents, toCents, type Currency } from "../shared/money.ts";
+import { groupNotices } from "../shared/notices.ts";
 import {
   nextCutoffDate,
   paymentDueForCutoff,
@@ -57,9 +58,17 @@ export function installmentParts(
   return { members: shares, own: fromCents(toCents(amount) - membersCents) };
 }
 
-/** Fecha límite de pago del estado de cuenta en el que cae un cargo. */
+/**
+ * Fecha límite de pago del estado de cuenta en el que cae un cargo (compra o
+ * cuota). T3 (3.1.0): si la tarjeta pasa las compras del día de corte al
+ * corte siguiente, un cargo de ese día (también una cuota de financiamiento)
+ * cae en el corte siguiente, igual que en `cardStatement`.
+ */
 export function chargeDueDate(cycle: CardCycle, occurredOn: ISODate): ISODate {
-  const cutoff = nextCutoffDate(cycle.cutoff_day, fromISODate(occurredOn));
+  const day = fromISODate(occurredOn);
+  const onCutoff = day.getDate() === clampDay(day.getFullYear(), day.getMonth(), cycle.cutoff_day);
+  const from = cycle.cutoff_day_rolls_over && onCutoff ? addDays(day, 1) : day;
+  const cutoff = nextCutoffDate(cycle.cutoff_day, from);
   return toISODate(paymentDueForCutoff(cutoff, cycle.cutoff_day, cycle.payment_due_day));
 }
 
@@ -162,36 +171,19 @@ export function noticeGroups(
   sent: SentNotice[],
   todayISO: ISODate,
 ): NoticeGroup[] {
-  const groups = new Map<string, NoticeGroup>();
-  for (const p of parts) {
-    if (p.reimbursement) continue;
-    const quincenas = quincenasLeft(p.due_on, todayISO);
-    if (quincenas > NOTICE_QUINCENAS) continue;
-    const key = `${p.member_id}:${p.due_on}:${p.currency}`;
-    const g: NoticeGroup = groups.get(key) ?? {
-      member_id: p.member_id,
-      due_on: p.due_on,
-      currency: p.currency,
-      quincenas,
-      parts: [],
-      total: 0,
-      needsNotice: false,
-      lastSentAt: null,
-    };
-    g.parts.push(p);
-    g.total = fromCents(toCents(g.total) + toCents(p.amount));
-    const mine = sent.filter(
-      (n) =>
-        n.financing_id === p.financing_id &&
-        n.member_id === p.member_id &&
-        n.installment_no === p.installment_no,
-    );
-    if (!mine.some((n) => n.quincenas === quincenas)) g.needsNotice = true;
-    for (const n of mine) if (!g.lastSentAt || n.sent_at > g.lastSentAt) g.lastSentAt = n.sent_at;
-    groups.set(key, g);
-  }
-  return [...groups.values()].sort((a, b) =>
-    a.due_on === b.due_on ? a.member_id.localeCompare(b.member_id) : a.due_on < b.due_on ? -1 : 1,
+  return groupNotices(
+    parts.map((p) => ({ ...p, paid: Boolean(p.reimbursement) })),
+    (p) => {
+      const q = quincenasLeft(p.due_on, todayISO);
+      return q > NOTICE_QUINCENAS ? null : q;
+    },
+    (p) =>
+      sent.filter(
+        (n) =>
+          n.financing_id === p.financing_id &&
+          n.member_id === p.member_id &&
+          n.installment_no === p.installment_no,
+      ),
   );
 }
 

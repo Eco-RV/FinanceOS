@@ -14,7 +14,7 @@
 import { DomainError } from "../shared/errors.ts";
 import type { ISODate } from "../shared/calendar.ts";
 import { fromCents, toCents, type Currency } from "../shared/money.ts";
-import { frenchAmortization } from "./amortization.ts";
+import { frenchAmortization, segmentedAmortization, type PrepaymentMode } from "./amortization.ts";
 import {
   installmentSchedule,
   MAX_FINANCING_MONTHS,
@@ -174,4 +174,54 @@ export function scheduledInterest(
     out[cur] = fromCents(toCents(out[cur] ?? 0) + interest);
   }
   return out;
+}
+
+/** Cuota pendiente (programada, fecha > hoy) de un financiamiento. */
+export type PendingInstallment = { no: number; occurred_on: ISODate; amount: number; interest: number };
+
+/**
+ * F11 (3.1.0): abono extraordinario al capital de un financiamiento. Las
+ * cuotas programadas se reemplazan por un plan nuevo con el capital que queda
+ * menos el abono: "term" conserva la cuota (menos cuotas), "payment" conserva
+ * cuántas quedan (cuota menor). Mismas fechas: desde la próxima cuota, el
+ * mismo día cada mes. Devuelve las cuotas nuevas (vacío si el abono cancela
+ * todo lo pendiente).
+ */
+export function financingPrepaymentPlan(input: {
+  pending: PendingInstallment[];
+  annualRatePercent: number;
+  amount: number;
+  mode: PrepaymentMode;
+}): { capitalPending: number; installments: FinancingInstallment[] } {
+  const pending = [...input.pending].sort((a, b) => a.no - b.no);
+  if (pending.length === 0) throw new DomainError("F11", "El financiamiento no tiene cuotas por cobrar");
+  const capitalCents = pending.reduce((s, c) => s + toCents(c.amount) - toCents(c.interest), 0);
+  if (!(toCents(input.amount) > 0)) throw new DomainError("F11", "El abono debe ser mayor que 0");
+  if (toCents(input.amount) > capitalCents) {
+    throw new DomainError("F11", "El abono no puede pasar el capital que falta");
+  }
+  const capitalPending = fromCents(capitalCents);
+  if (toCents(input.amount) === capitalCents) return { capitalPending, installments: [] };
+
+  const fromNo = pending[0].no;
+  const schedule = segmentedAmortization({
+    principal: capitalPending,
+    annualRatePercent: input.annualRatePercent,
+    months: pending.length,
+    firstChargeOn: pending[0].occurred_on,
+    events: [{ kind: "prepayment", afterNo: 0, amount: input.amount, mode: input.mode }],
+  });
+  const of = fromNo - 1 + schedule.rows.length;
+  return {
+    capitalPending,
+    installments: schedule.rows.map((r) => ({
+      no: fromNo - 1 + r.no,
+      of,
+      occurred_on: r.occurred_on,
+      amount: r.payment,
+      interest: r.interest,
+      principal: r.principal,
+      balance: r.balance,
+    })),
+  };
 }

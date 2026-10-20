@@ -7,6 +7,8 @@ import {
   deriveBalances,
   findBalanceDrift,
   normalizeSinpePhone,
+  overdraftWarning,
+  overpaymentWarning,
   signedAmount,
   validateMovement,
   type Movement,
@@ -280,4 +282,20 @@ test("C3 (2.8.0): gasto con tarjeta de débito solo desde su cuenta y sin SINPE"
     () => validateMovement({ type: "income", amount: 1, category: "Salario", accountCurrency: "CRC", debitCard: true }),
     /débito/,
   );
+});
+
+test("C2: avisa cuánto quedará la cuenta en negativo", () => {
+  assert.equal(overdraftWarning(1000, 400), null);
+  assert.equal(overdraftWarning(1000, 1000), null);
+  assert.equal(overdraftWarning(1000, 1200.5), -200.5);
+  // Al editar, lo que ya restaba el movimiento vuelve a la cuenta.
+  assert.equal(overdraftWarning(100, 600, 500), null);
+  assert.equal(overdraftWarning(1000, 0), null);
+});
+
+test("M4: avisa el saldo a favor de un abono mayor que la deuda", () => {
+  assert.equal(overpaymentWarning(500, 500), null);
+  assert.equal(overpaymentWarning(500, 600), 100);
+  assert.equal(overpaymentWarning(0.3, 0.5), 0.2);
+  assert.equal(overpaymentWarning(100, 600, 500), null);
 });

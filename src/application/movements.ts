@@ -18,11 +18,17 @@ import type {
   DebitCardRepository,
   ExchangeRateRepository,
   MovementRepository,
+  SharedExpenseRepository,
 } from "./ports.ts";
 import { fail, ok, run, type UseCaseResult } from "./result.ts";
 
 /** L2: los pagos y el desembolso de un préstamo se gestionan desde Préstamos. */
 const LOAN_MOVEMENT = "Este movimiento es de un préstamo: se gestiona desde Préstamos";
+/** X6: el gasto de un compartido y el ingreso de un cobro se gestionan desde Gastos compartidos. */
+const SHARED_INCOME = "Este ingreso es el pago de un gasto compartido: se gestiona desde Gastos compartidos";
+const SHARED_EXPENSE_DELETE = "Este gasto está compartido: deja de compartirlo antes de eliminarlo";
+const SHARED_EXPENSE_EDIT =
+  "Este gasto está compartido: el monto, la moneda y el origen no cambian (deja de compartirlo primero)";
 
 export type MovementDeps = {
   accounts: AccountRepository;
@@ -31,6 +37,7 @@ export type MovementDeps = {
   categories: CategoryRepository;
   debitCards: DebitCardRepository;
   exchangeRates: ExchangeRateRepository;
+  sharedExpenses: SharedExpenseRepository;
 };
 
 export type SaveMovementInput = {
@@ -60,7 +67,7 @@ export type SaveMovementInput = {
 };
 
 /** Tarjetas afectadas (la nueva y, al editar, la anterior), para refrescar vistas. */
-export type SaveMovementOutput = { affectedCardIds: string[] };
+export type SaveMovementOutput = { affectedCardIds: string[]; id: string };
 
 /**
  * Registra o edita un movimiento. Aplica las reglas M1/M2/M3/M5/S1 del dominio y
@@ -156,27 +163,46 @@ export function saveMovement(
 
     if (input.id && (await deps.movements.loanIdOf(input.id))) return fail(LOAN_MOVEMENT, "L2");
 
+    // X6: lo compartido no cambia monto, moneda ni origen; el ingreso de un cobro no se edita aquí.
+    const link = input.id ? await deps.sharedExpenses.linkOf(input.id) : null;
+    if (link?.role === "income") return fail(SHARED_INCOME, "X6");
+    if (link?.role === "expense") {
+      const before = await deps.sharedExpenses.source(input.id!);
+      const same =
+        before &&
+        input.type === before.type &&
+        Number(input.amount) === Number(before.amount) &&
+        currency === before.currency &&
+        (input.account_id ?? null) === before.account_id &&
+        (input.card_id ?? null) === (before.card?.id ?? null);
+      if (!same) return fail(SHARED_EXPENSE_EDIT, "X6");
+    }
+
+    let id: string;
     if (input.id) {
       const previousCard = await deps.movements.cardIdOf(input.id);
       if (previousCard) affected.add(previousCard);
       await deps.movements.update(input.id, values);
+      id = input.id;
     } else {
-      await deps.movements.create(values);
+      id = (await deps.movements.create(values)).id;
     }
 
-    return ok({ affectedCardIds: [...affected] });
+    return ok({ affectedCardIds: [...affected], id });
   });
 }
 
 /** Elimina un movimiento; el saldo se revierte en la persistencia. */
 export function deleteMovement(
-  deps: Pick<MovementDeps, "movements">,
+  deps: Pick<MovementDeps, "movements" | "sharedExpenses">,
   id: string,
 ): Promise<UseCaseResult<SaveMovementOutput>> {
   return run(async () => {
     if (await deps.movements.loanIdOf(id)) return fail(LOAN_MOVEMENT, "L2");
+    const link = await deps.sharedExpenses.linkOf(id);
+    if (link) return fail(link.role === "income" ? SHARED_INCOME : SHARED_EXPENSE_DELETE, "X6");
     const cardId = await deps.movements.cardIdOf(id);
     await deps.movements.delete(id);
-    return ok({ affectedCardIds: cardId ? [cardId] : [] });
+    return ok({ affectedCardIds: cardId ? [cardId] : [], id });
   });
 }

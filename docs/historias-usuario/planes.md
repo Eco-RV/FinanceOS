@@ -36,8 +36,11 @@ internet, suscripciones), para que se cargue solo y cuente en mi línea base.
   (Alquiler → Vivienda; Agua, Luz, Internet → Servicios; Netflix →
   Suscripciones) y se puede cambiar. Si el monto varía (luz, agua), se edita
   el movimiento cuando llega.
-- **Seguro de tarjeta** (T9): mensual, a una tarjeta de crédito (puede haber
-  varios por tarjeta); categoría por defecto "Seguros".
+- **Seguro de tarjeta** (T9): mensual, a una **tarjeta de crédito** o a una
+  **tarjeta de débito** (3.1.0: p. ej. el seguro que el banco cobra por la
+  tarjeta de débito; el cargo sale del saldo de su cuenta). Puede haber varios
+  por tarjeta; categoría por defecto "Seguros". No se cobra desde la cuenta
+  sola.
 - Se repiten el mismo día del primer cargo cada mes (recortado en meses
   cortos) y se registran como **gasto** cuando llega su fecha.
 
@@ -69,6 +72,40 @@ controlar mi liquidez.
 - **Próximos 30 días** en Planes; en el Resumen, la card **Línea base** muestra
   el % y lo próximo de 15 días.
 
+### 6. Monto variable (3.1.0)
+Como usuario quiero registrar un salario (o la luz, el agua) que cambia cada
+vez, para no tener que editar el movimiento a mano.
+
+**Criterios de aceptación**
+- En el formulario del plan (salario o gasto fijo) → **El monto varía**. El
+  monto del plan pasa a ser un estimado.
+- Cuando llega la fecha, el movimiento entra con el estimado y aparece en
+  Planes → **Por confirmar** (arriba), ya lleno con el estimado. Pones el real
+  y **Confirmar**: el saldo se ajusta (P7).
+- El Resumen lo recuerda en "Recordatorios" mientras quede algo por confirmar.
+
+### 7. Recordatorios (3.1.0)
+Como usuario quiero ver en el Resumen lo que viene pronto, para no olvidar
+nada.
+
+**Criterios de aceptación**
+- Card **Recordatorios** en el Resumen (P8): montos por confirmar, avisos de
+  cobro por enviar, pagos mínimos sin cubrir que vencen en 3 días o menos, y
+  salarios o cobros de planes de los próximos 3 días. Cada fila lleva a donde
+  se resuelve.
+- Es solo dentro de la app: no se envían correos ni notificaciones solas.
+
+### 8. Línea base con dólares (3.1.0)
+Como usuario quiero que mi salario, suscripciones, cuotas y seguros en dólares
+cuenten en la línea base.
+
+**Criterios de aceptación**
+- La línea base suma en colones lo que está en dólares (salarios, gastos fijos,
+  seguros, cuotas de préstamos y financiamientos), convertido con el último tipo
+  de cambio; esos renglones dicen "(US$)" (P4).
+- Sin tipo de cambio, lo de dólares no suma y la línea base dice cuántos montos
+  quedaron fuera.
+
 ## Reglas de negocio
 
 - P1–P6 y T9 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
@@ -79,9 +116,8 @@ controlar mi liquidez.
 
 ## Pendiente / fuera de alcance
 
-- Salario variable (cada ocurrencia se puede editar a mano).
-- Recordatorio antes de un cargo.
-- Línea base en dólares.
+- (Hecho en 3.1.0) Recordatorios dentro de la app (P8); no hay notificaciones push.
+- (Hecho en 3.1.0) Lo de dólares entra a la línea base convertido (P4).
 
 ## Historial
 
@@ -90,3 +126,9 @@ controlar mi liquidez.
 - **2026-10-14 (v2.7.0)** — Archivo nuevo: salario,
   gastos fijos (renta, servicios, suscripciones), seguros de tarjeta, línea
   base y programados.
+- **2026-10-18 (v3.1.0, en desarrollo)** — Un seguro también se cobra a una
+  tarjeta de débito (T9; SQL `3.1.0/02_insurance_debit_card.sql`).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Monto variable con confirmación
+  (P7; SQL `3.1.0/07_variable_plans.sql`) y recordatorios en el Resumen (P8).
+- **2026-10-20 (v3.1.0, en desarrollo)** — Línea base con lo de dólares
+  convertido (P4).

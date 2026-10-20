@@ -22,6 +22,8 @@ import { BackLink } from "@/components/back-link";
 import { LoanRenameDialog } from "../loan-form";
 import { LoanStatusBadge } from "../loan-status";
 import { PayInstallmentDialog, UndoLastPaymentButton } from "../pay-installment";
+import { ChangeRateDialog, PrepayLoanDialog, UndoAdjustmentButton } from "../loan-adjustments";
+import { repositories } from "@/infrastructure/container";
 
 type Payment = { installment_no: number; occurred_on: string };
 
@@ -54,8 +56,19 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
   const payAccounts = accounts.filter((a) => a.currency === currency);
 
   const todayISO = toISODate(crToday());
-  const p = loanProgress(termsOf({ ...loan, currency }), paidOn.keys(), todayISO);
+  // L7/L8 (3.1.0): abonos y cambios de tasa recalculan el calendario.
+  const adjustments = await (await repositories()).loans.adjustments(loan.id);
+  const p = loanProgress(
+    termsOf({ ...loan, currency }, adjustments.map((a) => a.event)),
+    paidOn.keys(),
+    todayISO,
+  );
   const { schedule } = p;
+  const lastAdjustment = adjustments.at(-1);
+  const currentRate = [...adjustments]
+    .reverse()
+    .map((a) => a.event)
+    .find((e) => e.kind === "rate");
 
   return (
     <div className="flex flex-col gap-6">
@@ -98,11 +111,15 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat title="Cuota fija" value={formatCurrency(schedule.payment, currency)} />
+        <Stat
+          title={adjustments.length > 0 ? "Cuota" : "Cuota fija"}
+          value={formatCurrency(p.next?.payment ?? schedule.payment, currency)}
+          hint={currentRate && currentRate.kind === "rate" ? `tasa actual ${currentRate.annualRatePercent} % anual` : undefined}
+        />
         <Stat
           title="Capital pendiente"
           value={formatCurrency(p.remainingPrincipal, currency)}
-          hint={`${p.paidCount}/${loan.months} cuotas pagadas`}
+          hint={`${p.paidCount}/${schedule.rows.length} cuotas pagadas`}
         />
         <Stat
           title="Próxima cuota"
@@ -126,6 +143,33 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
             <div className="flex flex-wrap gap-2">
               {p.paidCount > 0 ? (
                 <UndoLastPaymentButton loanId={loan.id} installmentNo={p.paidCount} />
+              ) : null}
+              {lastAdjustment ? (
+                <UndoAdjustmentButton
+                  loanId={loan.id}
+                  label={
+                    lastAdjustment.event.kind === "prepayment"
+                      ? `Abono de ${formatCurrency(lastAdjustment.event.amount, currency)} del ${formatDate(lastAdjustment.occurred_on)}`
+                      : `Tasa ${lastAdjustment.event.annualRatePercent} % desde la cuota ${lastAdjustment.event.fromNo}`
+                  }
+                />
+              ) : null}
+              {p.next ? (
+                <>
+                  <ChangeRateDialog
+                    loanId={loan.id}
+                    nextNo={p.next.no}
+                    lastNo={schedule.rows.length}
+                    currentRate={currentRate && currentRate.kind === "rate" ? currentRate.annualRatePercent : Number(loan.annual_rate)}
+                  />
+                  <PrepayLoanDialog
+                    loanId={loan.id}
+                    currency={currency}
+                    remainingPrincipal={p.remainingPrincipal}
+                    accounts={payAccounts}
+                    defaultAccountId={loan.account_id}
+                  />
+                </>
               ) : null}
               {p.next ? (
                 <PayInstallmentDialog
@@ -198,7 +242,17 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
         </div>
         <p className="text-xs text-muted-foreground">
           Estado: <LoanStatusBadge status={p.status} overdue={p.overdue.length} /> · Cada
-          pago se registra como gasto en categoría “Préstamos” y aparece en Gastos.
+          pago y cada abono extraordinario se registra como gasto en categoría “Préstamos” y
+          aparece en Gastos.
+          {adjustments.length > 0
+            ? ` Ajustes: ${adjustments
+                .map((a) =>
+                  a.event.kind === "prepayment"
+                    ? `abono de ${formatCurrency(a.event.amount, currency)} el ${formatDate(a.occurred_on)} (${a.event.mode === "term" ? "bajó el plazo" : "bajó la cuota"})`
+                    : `tasa ${a.event.annualRatePercent} % desde la cuota ${a.event.fromNo}`,
+                )
+                .join(" · ")}.`
+            : ""}
         </p>
       </section>
     </div>

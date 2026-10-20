@@ -337,3 +337,20 @@ Fase 0 → 1 (contrato y tests, sin depender de la app) → 2 (wallet y bolsillo
 ya da una demo de envío) → 3 + 4 (dominio y Supabase) → 5 (pantallas) → 6
 (apoyos) → 7 → 8. Las fases 1 y 2 pueden avanzar en paralelo porque tocan
 archivos distintos (`contracts/` contra `src/`).
+
+## 9. Lo que quedó distinto al plan (auditoría 3.1.0)
+
+- **Fase 2**: no hay un cliente TS generado en `src/infrastructure/stellar/family-client/`
+  ni un script `ci-clients`. El cliente se arma en tiempo de ejecución con
+  `contract.Client.from` (`src/infrastructure/stellar/family.ts`).
+- **Fase 3**: el dominio quedó en `usdc.ts`, `family.ts` y `directory.ts`. Los
+  puertos quedaron en `WalletLinkRepository`, `StarDirectoryRepository`,
+  `FamilyInviteRepository`, `InviteTokenService` y `AcademyRepository`.
+  Siguen pendientes `escrow.ts` y `EscrowService` (Fase 6).
+- **Fase 5**:
+  - La constelación y el envío viven en `/trading/familia` y `/trading/bolsillo`.
+  - La invitación vive en `/trading/unirse/[token]`.
+  - No existen `/ajustes/constelacion`, `/trading/apoyos` ni
+    `/trading/academia`; Apoyos y Academia son cards "Próximamente".
+- **Fases 6–8**: pendientes para 3.1.0. El detalle está en
+  `docs/dominio/pendientes.md`.

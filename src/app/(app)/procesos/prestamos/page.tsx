@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import { crToday, daysUntil, fromISODate, loanProgress, toISODate } from "@/domain";
 import { termsOf } from "@/application";
+import { loadLoanAdjustments } from "@/lib/loan-adjustments";
 import type { Account, Loan } from "@/lib/types";
 import { RowActions, RowItem, RowList } from "@/components/row-list";
 import { buttonVariants } from "@/components/ui/button";
@@ -51,10 +52,14 @@ export default async function PrestamosPage() {
   const today = crToday();
   const todayISO = toISODate(today);
 
+  const adjustments = await loadLoanAdjustments(supabase);
   const rows = all
     .filter((l) => !l.archived)
     .map((loan) => {
-      const terms = termsOf({ ...loan, currency: loan.currency === "USD" ? "USD" : "CRC" });
+      const terms = termsOf(
+        { ...loan, currency: loan.currency === "USD" ? "USD" : "CRC" },
+        adjustments.get(loan.id) ?? [],
+      );
       return { loan, p: loanProgress(terms, paid.get(loan.id) ?? [], todayISO) };
     });
   const inactive = all.filter((l) => l.archived);

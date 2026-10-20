@@ -4,6 +4,7 @@ import {
   balanceEffects,
   deriveBalances,
   type Currency,
+  type CardCycle,
   type ExchangeRate,
   type MemberShare,
 } from "../domain/index.ts";
@@ -36,6 +37,10 @@ import type {
   NewMovement,
   PendingPurchase,
   PendingRepository,
+  NewSharedNotice,
+  SharedExpenseRepository,
+  StoredLoanAdjustment,
+  StoredSharedExpense,
 } from "./ports.ts";
 import { InfrastructureError } from "./ports.ts";
 
@@ -54,6 +59,8 @@ export function fakeStore(seed: {
   members?: Record<string, string>;
   /** id → tipo de cuenta (default "checking"). */
   accountTypes?: Record<string, string>;
+  /** id de tarjeta → ciclo (default corte 15, pago 30). */
+  cardCycles?: Record<string, CardCycle>;
 } = {}) {
   const product = (currency: Currency, name: string): Product => ({
     name,
@@ -74,6 +81,16 @@ export function fakeStore(seed: {
     NewMovement & { financing_id?: string | null; interest_amount?: number | null; archived?: boolean }
   >();
   const financings = new Map<string, NewFinancing>();
+  const prepayments: {
+    id: string;
+    financing_id: string;
+    previous: [string, NewMovement & { financing_id?: string | null; interest_amount?: number | null }][];
+    months: number;
+    transaction_id: string;
+    amount: number;
+    occurred_on: string;
+    fromNo: number;
+  }[] = [];
   const shares = new Map<string, MemberShare[]>();
   const memberRows = new Map<string, Omit<Member, "id">>(
     Object.entries(seed.members ?? {}).map(([id, name]) => [
@@ -254,7 +271,7 @@ export function fakeStore(seed: {
           type: "expense",
           amount: c.amount,
           interest_amount: c.interest || null,
-          currency: "CRC",
+          currency: plan.currency ?? "CRC",
           occurred_on: c.occurred_on,
           category: plan.category,
           note: `${plan.description} (cuota ${c.no}/${c.of})`,
@@ -274,10 +291,61 @@ export function fakeStore(seed: {
             card_id: f.card_id,
             description: f.description,
             months: f.months,
-            currency: "CRC",
+            currency: f.currency ?? "CRC",
             cancelled_on: cancelled.get(id) ?? null,
+            annual_rate: f.annual_rate,
+            category: f.category,
           }
         : null;
+    },
+    pendingInstallments: async (id, todayISO) =>
+      [...movements.values()]
+        .filter((m) => m.financing_id === id && !m.archived && m.installment_no != null && m.occurred_on > todayISO)
+        .map((m) => ({ no: m.installment_no!, occurred_on: m.occurred_on, amount: m.amount, interest: Number(m.interest_amount ?? 0) }))
+        .sort((a, b) => a.no - b.no),
+    prepay: async (id, input) => {
+      const f = financings.get(id)!;
+      const previous: [string, NewMovement & { financing_id?: string | null; interest_amount?: number | null }][] = [];
+      for (const [mvId, m] of movements) {
+        if (m.financing_id === id && m.installment_no! >= input.fromNo && m.occurred_on > input.todayISO) {
+          previous.push([mvId, m]);
+          movements.delete(mvId);
+        }
+      }
+      for (const c of input.installments) {
+        movements.set(nextId("mv"), {
+          type: "expense",
+          amount: c.amount,
+          interest_amount: c.interest || null,
+          currency: f.currency ?? "CRC",
+          occurred_on: c.occurred_on,
+          category: f.category,
+          note: `${f.description} (cuota ${c.no}/${c.of})`,
+          account_id: null,
+          card_id: f.card_id,
+          financing_id: id,
+          installment_no: c.no,
+        });
+      }
+      const prepId = nextId("prep");
+      prepayments.push({ id: prepId, financing_id: id, previous, months: f.months, transaction_id: input.transaction_id, amount: input.amount, occurred_on: input.occurred_on, fromNo: input.fromNo });
+      f.months = input.fromNo - 1 + input.installments.length;
+      return { id: prepId };
+    },
+    lastPrepayment: async (id) => {
+      const p = prepayments.filter((x) => x.financing_id === id).at(-1);
+      return p ? { id: p.id, amount: p.amount, occurred_on: p.occurred_on } : null;
+    },
+    undoPrepayment: async (prepId) => {
+      const i = prepayments.findIndex((x) => x.id === prepId);
+      const p = prepayments[i];
+      for (const [mvId, m] of movements) {
+        if (m.financing_id === p.financing_id && m.installment_no! >= p.fromNo) movements.delete(mvId);
+      }
+      for (const [mvId, m] of p.previous) movements.set(mvId, m);
+      financings.get(p.financing_id)!.months = p.months;
+      movements.delete(p.transaction_id);
+      prepayments.splice(i, 1);
     },
     cardIdOf: async (id) => financings.get(id)?.card_id ?? null,
     update: async (id, fields) => {
@@ -368,6 +436,84 @@ export function fakeStore(seed: {
       notices.push(...items);
     },
   };
+  // 3.1.0: gastos compartidos (X1–X6).
+  const sharedRows = new Map<string, Omit<StoredSharedExpense, "id">>();
+  const sharedNotices: NewSharedNotice[] = [];
+  const sharedRepo: SharedExpenseRepository = {
+    source: async (id) => {
+      const m = movements.get(id);
+      if (!m || m.archived) return null;
+      return {
+        movement_id: id,
+        type: m.type,
+        amount: m.amount,
+        currency: m.currency,
+        occurred_on: m.occurred_on,
+        account_id: m.account_id,
+        card: m.card_id
+          ? { id: m.card_id, ...(seed.cardCycles?.[m.card_id] ?? { cutoff_day: 15, payment_due_day: 30 }) }
+          : null,
+        note: m.note,
+        managed_elsewhere: Boolean(m.financing_id || m.loan_id),
+      };
+    },
+    linkOf: async (movementId) => {
+      for (const [id, s] of sharedRows) {
+        if (s.transaction_id === movementId) return { shared_expense_id: id, role: "expense" };
+        if (s.parts.some((p) => p.income_transaction_id === movementId)) {
+          return { shared_expense_id: id, role: "income" };
+        }
+      }
+      return null;
+    },
+    find: async (id) => {
+      const s = sharedRows.get(id);
+      return s ? { id, ...s, parts: s.parts.map((p) => ({ ...p })) } : null;
+    },
+    create: async (input) => {
+      if ([...sharedRows.values()].some((s) => s.transaction_id === input.transaction_id)) {
+        throw new InfrastructureError("Ese gasto ya está compartido");
+      }
+      const m = movements.get(input.transaction_id)!;
+      const id = nextId("sh");
+      sharedRows.set(id, {
+        transaction_id: input.transaction_id,
+        description: input.description,
+        currency: input.currency,
+        total_amount: input.total_amount,
+        occurred_on: m.occurred_on,
+        due_on: input.due_on,
+        card_id: m.card_id,
+        parts: input.shares.map((s) => ({ ...s, paid_on: null, channel: null, note: null, income_transaction_id: null })),
+      });
+      return { id };
+    },
+    update: async (id, fields) => {
+      const s = sharedRows.get(id)!;
+      const before = new Map(s.parts.map((p) => [p.member_id, p]));
+      s.description = fields.description;
+      s.due_on = fields.due_on;
+      s.parts = fields.shares.map(
+        (sh) =>
+          before.get(sh.member_id)?.paid_on
+            ? before.get(sh.member_id)!
+            : { ...sh, paid_on: null, channel: null, note: null, income_transaction_id: null },
+      );
+    },
+    setPayment: async (id, memberId, payment) => {
+      const p = sharedRows.get(id)!.parts.find((x) => x.member_id === memberId)!;
+      p.paid_on = payment?.paid_on ?? null;
+      p.channel = payment?.channel ?? null;
+      p.note = payment?.note ?? null;
+      p.income_transaction_id = payment?.income_transaction_id ?? null;
+    },
+    delete: async (id) => {
+      sharedRows.delete(id);
+    },
+    recordNotices: async (items) => {
+      sharedNotices.push(...items);
+    },
+  };
   const mailer: Mailer = {
     send: async (mail) => {
       sentMail.push(mail);
@@ -391,9 +537,16 @@ export function fakeStore(seed: {
     learn: async (key, category) => {
       rules.set(key, category);
     },
+    update: async (key, category) => {
+      rules.set(key, category);
+    },
+    delete: async (key) => {
+      rules.delete(key);
+    },
   };
 
   const loanRows = new Map<string, Omit<Loan, "id">>();
+  const loanAdjustments: (StoredLoanAdjustment & { loan_id: string })[] = [];
   const loanPayments = (loanId: string) =>
     [...movements].filter(([, m]) => m.loan_id === loanId && m.installment_no != null);
   const loans: LoanRepository = {
@@ -413,6 +566,19 @@ export function fakeStore(seed: {
     },
     paidInstallments: async (id) => loanPayments(id).map(([, m]) => m.installment_no!),
     paymentOf: async (id, no) => loanPayments(id).find(([, m]) => m.installment_no === no)?.[0] ?? null,
+    adjustments: async (id) =>
+      loanAdjustments
+        .filter((a) => a.loan_id === id && (!a.transaction_id || movements.has(a.transaction_id)))
+        .map((a) => ({ id: a.id, event: a.event, occurred_on: a.occurred_on, transaction_id: a.transaction_id })),
+    addAdjustment: async (id, input) => {
+      const adjId = nextId("adj");
+      loanAdjustments.push({ id: adjId, loan_id: id, ...input });
+      return { id: adjId };
+    },
+    deleteAdjustment: async (adjId) => {
+      const i = loanAdjustments.findIndex((a) => a.id === adjId);
+      if (i >= 0) loanAdjustments.splice(i, 1);
+    },
     delete: async (id) => {
       loanRows.delete(id);
       // on delete cascade: arrastra el desembolso.
@@ -540,8 +706,11 @@ export function fakeStore(seed: {
       merchantRules,
       balances,
       exchangeRates,
+      sharedExpenses: sharedRepo,
     },
     state: {
+      sharedRows,
+      sharedNotices,
       movements,
       financings,
       shares,

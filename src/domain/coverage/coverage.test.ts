@@ -144,3 +144,29 @@ test("faltante: rojo si ya no alcanza para los próximos 10 días", () => {
     level: "soon",
   });
 });
+
+test("G7: con tipo de cambio, lo de dólares se convierte y suma", () => {
+  const accounts = [
+    { type: "checking", currency: "CRC", current_balance: 100_000 },
+    { type: "checking", currency: "USD", current_balance: 100 },
+  ];
+  const cards = [
+    { card: card("A", "CRC", 60_000), st: st({ status: "pendiente", dueAmount: 60_000, daysToDue: 3 }) },
+    { card: card("U", "USD", 200), st: st({ status: "pendiente", dueAmount: 200, daysToDue: 5, newCharges: 10 }) },
+  ];
+  const cov = computeCoverage(accounts, cards, [], new Date(2026, 9, 1), 500);
+  assert.equal(cov.availableDebit, 150_000);
+  assert.equal(cov.totalDue, 160_000);
+  assert.equal(cov.payments[1].refAmount, 100_000);
+  assert.equal(cov.payments[1].covered, false);
+  assert.equal(cov.newCharges, 5_000);
+  assert.equal(cov.netWorth, 150_000 - 60_000 - 100_000);
+  assert.equal(cov.unconverted, false);
+
+  // Sin tipo de cambio, lo de dólares no suma y se marca.
+  const naive = computeCoverage(accounts, cards, [], new Date(2026, 9, 1));
+  assert.equal(naive.availableDebit, 100_000);
+  assert.equal(naive.totalDue, 60_000);
+  assert.equal(naive.payments[1].refAmount, null);
+  assert.equal(naive.unconverted, true);
+});

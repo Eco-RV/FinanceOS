@@ -98,3 +98,27 @@ export function initialsOf(fullName: string | null | undefined, email: string): 
   const parts = local.split(/[.\-_+]+/).filter(Boolean);
   return (parts.length > 1 ? parts[0][0] + parts[1][0] : local.slice(0, 2)).toUpperCase();
 }
+
+/** U8 (3.1.0): palabra que confirma borrar la cuenta. */
+export const DELETE_ACCOUNT_CONFIRMATION = "ELIMINAR";
+
+/** U8: borrar la cuenta pide escribir ELIMINAR (y la contraseña, que valida el caso de uso). */
+export function assertDeleteConfirmation(text: string | null | undefined): void {
+  if ((text ?? "").trim().toUpperCase() !== DELETE_ACCOUNT_CONFIRMATION) {
+    throw new DomainError("U8", `Escribe ${DELETE_ACCOUNT_CONFIRMATION} para confirmar`);
+  }
+}
+
+/** U9 (3.1.0): formatos de fecha que se pueden elegir. */
+export const DATE_FORMATS = ["corto", "numerico", "largo"] as const;
+export type DateFormat = (typeof DATE_FORMATS)[number];
+
+/** U9: preferencias de la app guardadas en el perfil. */
+export type AppPreferences = { baseCurrency: "CRC" | "USD"; dateFormat: DateFormat };
+
+/** U9: lee las preferencias guardadas con valores por defecto (CRC, fecha corta). */
+export function readPreferences(raw: Record<string, unknown> | null | undefined): AppPreferences {
+  const base = raw?.baseCurrency === "USD" ? "USD" : "CRC";
+  const df = (DATE_FORMATS as readonly string[]).includes(String(raw?.dateFormat)) ? (raw!.dateFormat as DateFormat) : "corto";
+  return { baseCurrency: base, dateFormat: df };
+}

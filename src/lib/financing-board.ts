@@ -61,7 +61,7 @@ export async function loadFinancingBoard(
   ] = await Promise.all([
     supabase
       .from("financings")
-      .select("id, card_id, description, months, currency, credit_cards(name, cutoff_day, payment_due_day, archived)")
+      .select("id, card_id, description, months, currency, credit_cards(name, cutoff_day, payment_due_day, cutoff_day_rolls_over, archived)")
       .in("id", financingIds)
       .eq("archived", false),
     supabase
@@ -88,7 +88,13 @@ export async function loadFinancingBoard(
     description: string;
     months: number;
     currency: string;
-    credit_cards: { name: string; cutoff_day: number; payment_due_day: number; archived: boolean } | null;
+    credit_cards: {
+      name: string;
+      cutoff_day: number;
+      payment_due_day: number;
+      cutoff_day_rolls_over?: boolean | null;
+      archived: boolean;
+    } | null;
   };
   const plansById = new Map<string, NoticePlan & { card_id: string; currency: string }>();
   const shareable: ShareablePlan[] = [];
@@ -105,7 +111,12 @@ export async function loadFinancingBoard(
     shareable.push({
       id: f.id,
       currency: f.currency === "USD" ? "USD" : "CRC",
-      cycle: { cutoff_day: card.cutoff_day, payment_due_day: card.payment_due_day },
+      // T3: la opción de corte también aplica a las cuotas.
+      cycle: {
+        cutoff_day: card.cutoff_day,
+        payment_due_day: card.payment_due_day,
+        cutoff_day_rolls_over: card.cutoff_day_rolls_over ?? false,
+      },
       installments: ((cuotaData ?? []) as { financing_id: string; installment_no: number; occurred_on: string }[])
         .filter((c) => c.financing_id === f.id && c.installment_no != null)
         .map((c) => ({ no: Number(c.installment_no), occurred_on: c.occurred_on }))

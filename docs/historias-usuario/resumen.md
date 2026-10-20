@@ -6,8 +6,10 @@
 
 La pantalla de inicio (`/dashboard`): de un vistazo, cuánta liquidez hay,
 qué toca pagar, cuánto crédito queda y en qué se va el dinero. Cada card
-abre un modal con su detalle. Solo cuenta colones (las tarjetas y cuotas en
-dólares se listan aparte).
+abre un modal con su detalle. Todo suma en colones: desde 3.1.0 (G7) lo que
+está en dólares (cuentas corrientes, tarjetas, cuotas de préstamo) se
+convierte con el último tipo de cambio, que la app trae del BCCR una vez al
+día al abrir el Resumen (T10).
 
 ## Historias de usuario
 
@@ -79,18 +81,35 @@ débito alcanza para pagar de contado.
   "Próximos cortes"; en pantallas anchas van lado a lado.
 - El aviso de atraso (tarjetas o préstamos) sigue arriba de todo.
 
+### 6. Gastos en dólares y comparar períodos (3.1.0)
+Como usuario quiero ver todos mis gastos (también los de dólares) y saber si
+estoy gastando más o menos que antes.
+
+**Criterios de aceptación**
+- Las cards 7 días / Mes / Año y el gráfico por categoría suman los gastos en
+  dólares convertidos a colones con el último tipo de cambio (G9). Sin tipo de
+  cambio, quedan fuera y la card dice cuántos.
+- Cada card muestra la variación contra el período anterior equivalente (G10):
+  los 7 días previos, el mes pasado hasta el mismo día y el año pasado hasta el
+  mismo día. Más gasto en rojo (↑), menos en verde (↓); "nuevo" si antes no hubo
+  gastos.
+- El gráfico muestra debajo del total "vs. ₡X en el mes pasado a esta fecha" y,
+  en cada categoría, su variación.
+
 ## Reglas de negocio
 
 - Cobertura y faltante: `computeCoverage` y `coverageShortfall`
   (`src/domain/coverage/coverage.ts`).
 - Semáforo del disponible: `availabilityLevel`
   (`src/domain/cards/multicurrency.ts`).
-- Todo lo que suma en el Resumen es en colones.
+- Todo lo que suma en el Resumen es en colones (G7): la cobertura, el
+  faltante, los pagos de contado, el consumo sin cortar y el patrimonio neto
+  convierten lo de dólares con el último tipo de cambio. Sin tipo de cambio, lo
+  de dólares se lista pero no suma, y el patrimonio lo indica.
 
 ## Pendiente / fuera de alcance
 
-- Multimoneda real (sumar dólares convertidos en liquidez y gastos).
-- Comparar gastos contra meses anteriores o presupuestos.
+- Comparar contra un presupuesto (comparar períodos ya existe, G10).
 
 ## Historial
 
@@ -98,3 +117,8 @@ débito alcanza para pagar de contado.
   Resumen con modales de detalle, Liquidez, gráfico de gastos por categoría,
   Disponible en crédito con semáforo y Faltante (reemplaza el aviso de
   cobertura).
+- **2026-10-18 (v3.1.0, en desarrollo)** — Multimoneda en la cobertura y el
+  patrimonio (G7) con el tipo de cambio del BCCR traído una vez al día (T10).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Card "Recordatorios" (P8).
+- **2026-10-20 (v3.1.0, en desarrollo)** — Gastos en dólares en el gráfico y
+  las cards (G9) y comparación con el período anterior (G10).

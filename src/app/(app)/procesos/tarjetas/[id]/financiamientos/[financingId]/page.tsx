@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink } from "@/components/back-link";
 import { FinancingEditDialog } from "../../../_financiamientos/financing-form";
+import { PrepayFinancingDialog, UndoFinancingPrepaymentButton } from "../../../_financiamientos/prepay-dialog";
 import { rateLabel } from "../../../_financiamientos/financing-list";
 import {
   ReimburseDialog,
@@ -53,6 +54,8 @@ export default async function FinancingDetailPage({
     { data: shareData },
     { data: reimbData },
     { data: catData },
+    { data: prepayData },
+    { data: accData },
   ] = await Promise.all([
     supabase
       .from("financings")
@@ -84,6 +87,14 @@ export default async function FinancingDetailPage({
       .eq("kind", "expense")
       .eq("archived", false)
       .order("name", { ascending: true }),
+    // F11 (3.1.0): abonos extraordinarios (sin el SQL 3.1.0, vacío).
+    supabase
+      .from("financing_prepayments")
+      .select("id, amount, occurred_on")
+      .eq("financing_id", financingId)
+      .eq("archived", false)
+      .order("created_at", { ascending: true }),
+    supabase.from("accounts").select("id, name, currency").eq("archived", false).order("created_at"),
   ]);
 
   if (!finData || !cardData) notFound();
@@ -97,10 +108,21 @@ export default async function FinancingDetailPage({
     ...c,
     installment_no: Number(c.installment_no),
   }));
+  const prepayments = ((prepayData ?? []) as { id: string; amount: number; occurred_on: string }[]).map((x) => ({
+    ...x,
+    amount: Number(x.amount),
+  }));
+  const prepaidTotal = prepayments.reduce((s, x) => s + x.amount, 0);
+  // F11: lo abonado extra ya no está en las cuotas: el saldo de capital lo descuenta.
   const p = financingProgress(
-    storedInstallments(cuotas, financing.months, Number(financing.total_amount)),
+    storedInstallments(cuotas, financing.months, Number(financing.total_amount) - prepaidTotal),
     todayISO,
   );
+  const payAccounts = ((accData ?? []) as { id: string; name: string; currency: string }[]).filter(
+    (a) => a.currency === currency,
+  );
+  const capitalPending = p.scheduled.reduce((s, c) => s + c.principal, 0);
+  const lastPrepayment = prepayments.at(-1);
   const withInterest = p.totalInterest > 0;
 
   const allMembers = (memberData ?? []) as Member[];
@@ -140,7 +162,27 @@ export default async function FinancingDetailPage({
               .join(" · ")}
           </p>
         </div>
-        {cancelled ? null : <FinancingEditDialog financing={financing} categories={categories} />}
+        {cancelled ? null : (
+          <div className="flex flex-wrap justify-end gap-2">
+            {lastPrepayment ? (
+              <UndoFinancingPrepaymentButton
+                financingId={financing.id}
+                amount={lastPrepayment.amount}
+                occurredOn={lastPrepayment.occurred_on}
+                currency={currency}
+              />
+            ) : null}
+            {p.scheduled.length > 0 ? (
+              <PrepayFinancingDialog
+                financingId={financing.id}
+                currency={currency}
+                capitalPending={Math.round(capitalPending * 100) / 100}
+                accounts={payAccounts}
+              />
+            ) : null}
+            <FinancingEditDialog financing={financing} categories={categories} />
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

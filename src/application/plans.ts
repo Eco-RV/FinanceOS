@@ -16,6 +16,7 @@ import {
   toISODate,
   validateBaselineCap,
   validateGoal,
+  validateAllocation,
   validatePlan,
   type ISODate,
 } from "../domain/index.ts";
@@ -96,7 +97,7 @@ export function savePlan(
   return run(async () => {
     const fields: PlanFields = {
       ...input.fields,
-      debit_card_id: input.fields.kind === "subscription" ? (input.fields.debit_card_id ?? null) : null,
+      debit_card_id: input.fields.kind !== "salary" ? (input.fields.debit_card_id ?? null) : null,
       name: input.fields.name.trim(),
       // Gasto fijo sin categoría: la sugerida por el nombre (Alquiler → Vivienda…).
       category:
@@ -142,6 +143,8 @@ export function occurrenceMovement(plan: Plan, date: ISODate): NewMovement {
     card_id: plan.card_id,
     debit_card_id: plan.debit_card_id ?? null,
     plan_id: plan.id,
+    // P7: un plan variable entra con el estimado y queda por confirmar.
+    estimated: Boolean(plan.variable),
   };
 }
 
@@ -218,7 +221,7 @@ export function setBaselineCap(
 
 const GOAL_NOT_FOUND = "Meta no encontrada";
 
-/** S1–S2: crea o edita una meta; la cuenta ligada debe estar activa y en su moneda. */
+/** A1–A2: crea o edita una meta; la cuenta ligada debe estar activa y en su moneda. */
 export function saveGoal(
   deps: { goals: GoalRepository; accounts: AccountRepository },
   input: { id: string | null; fields: GoalFields; today: ISODate },
@@ -234,7 +237,7 @@ export function saveGoal(
     if (fields.account_id) {
       const currency = await deps.accounts.currencyOf(fields.account_id);
       if (!currency) throw new DomainError("G4", "Cuenta no encontrada o desactivada");
-      assertSameCurrency(currency, fields.currency, "S1");
+      assertSameCurrency(currency, fields.currency, "A1");
     }
     return ok(await deps.goals.save(input.id, fields));
   });
@@ -256,6 +259,46 @@ export function deleteGoal(goals: GoalRepository, id: string): Promise<UseCaseRe
   return run(async () => {
     if (!(await goals.find(id))) return fail(GOAL_NOT_FOUND);
     await goals.delete(id);
+    return ok();
+  });
+}
+
+/**
+ * P7 (3.1.0): confirma el monto real de una ocurrencia de un plan variable
+ * (salario, luz…). El saldo lo ajusta la persistencia (trigger).
+ */
+export function confirmPlanOccurrence(
+  plans: PlanRepository,
+  input: { movement_id: string; amount: number },
+): Promise<UseCaseResult> {
+  return run(async () => {
+    if (!(Number.isFinite(input.amount) && input.amount > 0)) {
+      throw new DomainError("P5", "El monto debe ser mayor que cero");
+    }
+    const pending = await plans.estimatedOccurrences();
+    if (!pending.some((o) => o.movement_id === input.movement_id)) {
+      return fail("Ese movimiento ya no está por confirmar");
+    }
+    await plans.confirmOccurrence(input.movement_id, input.amount);
+    return ok();
+  });
+}
+
+/** A4 (3.1.0): aparta parte del saldo de la cuenta para una meta. */
+export function allocateToGoal(
+  goals: GoalRepository,
+  input: { goal_id: string; allocated: number },
+): Promise<UseCaseResult> {
+  return run(async () => {
+    const goal = await goals.find(input.goal_id);
+    if (!goal || goal.archived) return fail(GOAL_NOT_FOUND);
+    if (!goal.account_id) return fail("La meta no tiene cuenta ligada", "A4");
+    const balance = (await goals.accountBalance(goal.account_id)) ?? 0;
+    const others = (await goals.onAccount(goal.account_id))
+      .filter((g) => g.id !== goal.id)
+      .reduce((s, g) => s + g.allocated, 0);
+    validateAllocation(balance, others, input.allocated);
+    await goals.setAllocated(goal.id, input.allocated);
     return ok();
   });
 }

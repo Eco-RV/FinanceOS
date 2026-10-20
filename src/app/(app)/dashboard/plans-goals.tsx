@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Gauge, PiggyBank } from "lucide-react";
-import { goalProgress, type ISODate } from "@/domain";
+import { goalProgress, goalsSaved, type ISODate } from "@/domain";
 import type { Goal } from "@/application";
 import type { PlansBoard } from "@/lib/plans-board";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -102,7 +102,15 @@ export function PlansAndGoals({
             {active.slice(0, 3).map((g) => {
               const p = goalProgress({
                 targetAmount: Number(g.target_amount),
-                saved: g.account_id ? (balances[g.account_id] ?? 0) : 0,
+                // A4: con varias metas en la cuenta, lo apartado.
+                saved: g.account_id
+                  ? (goalsSaved(
+                      balances[g.account_id] ?? 0,
+                      active
+                        .filter((x) => x.account_id === g.account_id)
+                        .map((x) => ({ id: x.id, allocated: Number(x.allocated ?? 0) })),
+                    ).saved.get(g.id) ?? 0)
+                  : 0,
                 targetDate: g.target_date,
                 today: todayISO,
               });

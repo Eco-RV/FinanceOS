@@ -13,6 +13,7 @@ pragmático) a partir del documento del usuario *BusinessLogic Finance OS*.
 | [`contextos.md`](./contextos.md) | Mapa de contextos delimitados y cómo se relacionan. |
 | [`reglas.md`](./reglas.md) | Invariantes: qué rechaza el sistema y qué solo advierte. |
 | [`arquitectura.md`](./arquitectura.md) | Cómo se separa el dominio del resto (puertos y adaptadores) y decisiones de infraestructura. |
+| [`pendientes.md`](./pendientes.md) | Lo que falta de la lógica de negocio: reglas sin implementar, historias pendientes y fases abiertas (auditoría 3.1.0). |
 
 ## Relación con el resto de la documentación
 
@@ -36,3 +37,6 @@ Cada regla o término lleva una marca:
 
 - **2026-10-11 (v2.0.0, en desarrollo)** — Primera versión: glosario, mapa de
   contextos, reglas y arquitectura objetivo.
+- **2026-10-18 (v3.1.0, en desarrollo)** — Auditoría de pendientes
+  (`pendientes.md`), estados al día en reglas y glosario, ahorros renumerados
+  A1–A3 y reglas nuevas X1–X6 (gastos compartidos).

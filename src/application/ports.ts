@@ -26,6 +26,13 @@ import type {
   DebitCardFields,
   AcademyLesson,
   StarLabelFields,
+  CardCycle,
+  AmortizationEvent,
+  PendingInstallment,
+  PrepaymentMode,
+  SharedPartState,
+  SharedPaymentChannel,
+  SharedShare,
 } from "../domain/index.ts";
 
 export type NewMovement = {
@@ -52,6 +59,8 @@ export type NewMovement = {
   account_amount?: number | null;
   /** Abono en otra moneda (M5, 2.8.0): colones por dólar usados. */
   exchange_rate?: number | null;
+  /** P7 (3.1.0): ocurrencia de un plan variable con el monto estimado. */
+  estimated?: boolean;
 };
 
 export type AccountFields = {
@@ -182,6 +191,8 @@ export type NewFinancing = {
   annual_rate: number;
   months: number;
   first_charge_on: ISODate;
+  /** F10 (3.1.0): moneda del plan; por defecto la del límite de la tarjeta. */
+  currency?: Currency;
 };
 
 export type FinancingFields = { description: string; category: string | null };
@@ -193,6 +204,9 @@ export type StoredFinancing = {
   months: number;
   currency: Currency;
   cancelled_on: ISODate | null;
+  /** 3.1.0 (F11): tasa y categoría, para recalcular tras un abono. */
+  annual_rate?: number;
+  category?: string | null;
 };
 
 export interface FinancingRepository {
@@ -215,6 +229,28 @@ export interface FinancingRepository {
   /** F6: parte fija por cuota de cada miembro. */
   shares(financingId: string): Promise<MemberShare[]>;
   replaceShares(financingId: string, shares: MemberShare[]): Promise<void>;
+  /** F11 (3.1.0): cuotas programadas (fecha > hoy) con su interés. */
+  pendingInstallments(financingId: string, todayISO: ISODate): Promise<PendingInstallment[]>;
+  /**
+   * F11, atómico: reemplaza las cuotas programadas desde `fromNo` por estas y
+   * guarda las anteriores para poder deshacerlo.
+   */
+  prepay(
+    financingId: string,
+    input: {
+      todayISO: ISODate;
+      fromNo: number;
+      installments: FinancingInstallment[];
+      amount: number;
+      mode: PrepaymentMode;
+      occurred_on: ISODate;
+      transaction_id: string;
+    },
+  ): Promise<{ id: string }>;
+  /** Último abono del plan (el único que se puede deshacer), o `null`. */
+  lastPrepayment(financingId: string): Promise<{ id: string; amount: number; occurred_on: ISODate } | null>;
+  /** Vuelve al plan anterior y borra el gasto del abono. */
+  undoPrepayment(prepaymentId: string, todayISO: ISODate): Promise<void>;
 }
 
 export type MemberFields = { name: string; email: string | null; phone: string | null };
@@ -269,6 +305,79 @@ export interface Mailer {
   send(mail: OutgoingMail): Promise<void>;
 }
 
+/** Gasto compartido (3.1.0): el movimiento que se comparte y, si es de tarjeta, su ciclo. */
+export type SharedSource = {
+  movement_id: string;
+  type: MovementType;
+  amount: number;
+  currency: Currency;
+  occurred_on: ISODate;
+  account_id: string | null;
+  card: (CardCycle & { id: string }) | null;
+  note: string | null;
+  /** Cuotas de financiamiento y movimientos de préstamo se gestionan en su módulo. */
+  managed_elsewhere: boolean;
+};
+
+export type SharedPartRecord = SharedPartState & {
+  channel: SharedPaymentChannel | null;
+  note: string | null;
+  income_transaction_id: string | null;
+};
+
+export type StoredSharedExpense = {
+  id: string;
+  transaction_id: string;
+  description: string;
+  currency: Currency;
+  total_amount: number;
+  occurred_on: ISODate;
+  due_on: ISODate;
+  /** X3: la fecha límite sale de la tarjeta (no se edita a mano). */
+  card_id: string | null;
+  parts: SharedPartRecord[];
+};
+
+export type SharedPayment = {
+  paid_on: ISODate;
+  channel: SharedPaymentChannel;
+  note: string | null;
+  income_transaction_id: string | null;
+};
+
+export type NewSharedNotice = {
+  shared_expense_id: string;
+  member_id: string;
+  quincenas: number;
+  channel: NoticeChannel;
+};
+
+/** Para qué está ligado un movimiento a un gasto compartido (X6). */
+export type SharedLink = { shared_expense_id: string; role: "expense" | "income" };
+
+export interface SharedExpenseRepository {
+  /** El movimiento a compartir (activo), o `null`. */
+  source(movementId: string): Promise<SharedSource | null>;
+  /** Si el movimiento es el gasto de un compartido o el ingreso de un pago. */
+  linkOf(movementId: string): Promise<SharedLink | null>;
+  find(id: string): Promise<StoredSharedExpense | null>;
+  /** Un movimiento ya compartido lanza `InfrastructureError`. */
+  create(input: {
+    transaction_id: string;
+    description: string;
+    currency: Currency;
+    total_amount: number;
+    due_on: ISODate;
+    shares: SharedShare[];
+  }): Promise<{ id: string }>;
+  /** Cambia descripción y fecha, y reemplaza las partes (las pagadas se conservan iguales). */
+  update(id: string, fields: { description: string; due_on: ISODate; shares: SharedShare[] }): Promise<void>;
+  /** Marca (o desmarca con `null`) el pago de la parte de una persona. */
+  setPayment(id: string, memberId: string, payment: SharedPayment | null): Promise<void>;
+  delete(id: string): Promise<void>;
+  recordNotices(items: NewSharedNotice[]): Promise<void>;
+}
+
 export type PendingPurchase = {
   id: string;
   merchant: string;
@@ -287,6 +396,9 @@ export interface PendingRepository {
 export interface MerchantRuleRepository {
   /** Guarda (o actualiza) la categoría aprendida para un comercio. */
   learn(merchantKey: string, category: string): Promise<void>;
+  /** 3.1.0 (I6): cambiar la categoría de una regla o borrarla. */
+  update(ruleId: string, category: string): Promise<void>;
+  delete(ruleId: string): Promise<void>;
 }
 
 export type LoanFields = {
@@ -311,7 +423,22 @@ export interface LoanRepository extends LifecycleRepository<Loan> {
   paidInstallments(loanId: string): Promise<number[]>;
   /** Movimiento del pago de una cuota, o `null`. */
   paymentOf(loanId: string, installmentNo: number): Promise<string | null>;
+  /** 3.1.0: abonos extraordinarios (L7) y cambios de tasa (L8), en el orden en que se hicieron. */
+  adjustments(loanId: string): Promise<StoredLoanAdjustment[]>;
+  addAdjustment(
+    loanId: string,
+    input: { event: AmortizationEvent; occurred_on: ISODate; transaction_id: string | null },
+  ): Promise<{ id: string }>;
+  deleteAdjustment(adjustmentId: string): Promise<void>;
 }
+
+export type StoredLoanAdjustment = {
+  id: string;
+  event: AmortizationEvent;
+  occurred_on: ISODate;
+  /** El gasto del abono (L7); `null` en un cambio de tasa. */
+  transaction_id: string | null;
+};
 
 export interface FreshStartRepository {
   /** Cuentas y tarjetas activas, con las monedas que necesitan saldo inicial. */
@@ -334,10 +461,34 @@ export interface BalanceRepository {
 }
 
 export interface ExchangeRateRepository {
-  /** Último tipo de cambio digitado (T2), o `null` si no hay ninguno. */
+  /** Último tipo de cambio guardado (T2), o `null` si no hay ninguno. */
   latest(): Promise<ExchangeRate | null>;
   /** Guarda (o reemplaza) el tipo de cambio de una fecha. */
   save(rate: ExchangeRate): Promise<void>;
+}
+
+/** T8 (3.1.0): pago mínimo digitado del estado de cuenta, por corte y moneda. */
+export type MinimumPayment = {
+  card_id: string;
+  /** Fecha del corte al que pertenece. */
+  cutoff_on: ISODate;
+  currency: Currency;
+  amount: number;
+};
+
+export interface MinimumPaymentRepository {
+  /** Guarda o reemplaza el mínimo de ese corte y moneda. */
+  save(m: MinimumPayment): Promise<void>;
+  delete(key: Omit<MinimumPayment, "amount">): Promise<void>;
+}
+
+/**
+ * Fuente oficial del tipo de cambio (3.1.0, T10): hoy la API pública de
+ * Hacienda, que publica el de referencia del BCCR (venta). Lanza
+ * `InfrastructureError` si no responde.
+ */
+export interface ExchangeRateSource {
+  today(): Promise<ExchangeRate>;
 }
 
 /** Error de un adaptador que se puede mostrar al usuario. */
@@ -376,6 +527,17 @@ export interface IdentityService {
   isRecoverySession(): Promise<boolean>;
   /** Pide el cambio: el proveedor manda la confirmación al correo nuevo (y al actual). */
   changeEmail(next: string, redirectTo: string): Promise<void>;
+  /** U8 (3.1.0): borra la cuenta y TODOS sus datos (archivos incluidos). No se deshace. */
+  deleteAccount(): Promise<void>;
+}
+
+/** G8 (3.1.0): comprobantes privados de los movimientos. */
+export interface ReceiptStorage {
+  /** Sube el archivo y lo liga al movimiento (reemplaza el anterior). */
+  attach(movementId: string, file: { bytes: ArrayBuffer; type: string }): Promise<void>;
+  /** Enlace temporal para verlo, o `null` si no tiene. */
+  urlOf(movementId: string): Promise<string | null>;
+  remove(movementId: string): Promise<void>;
 }
 
 /** Foto de perfil en un almacenamiento de archivos. */
@@ -401,6 +563,19 @@ export type PlanFields = {
   debit_card_id?: string | null;
   category: string | null;
   note: string | null;
+  /** P7 (3.1.0): el monto es un estimado; cada ocurrencia se confirma. */
+  variable?: boolean;
+};
+
+/** P7: ocurrencia registrada con el monto estimado, por confirmar. */
+export type EstimatedOccurrence = {
+  movement_id: string;
+  plan_id: string;
+  plan_name: string;
+  kind: PlanKind;
+  occurred_on: ISODate;
+  amount: number;
+  currency: Currency;
 };
 
 export type Plan = PlanFields & {
@@ -421,6 +596,10 @@ export interface PlanRepository {
   delete(planId: string): Promise<void>;
   /** Registra ocurrencias (idempotente por fecha) y avanza `generated_through`. */
   materialize(planId: string, through: ISODate, rows: NewMovement[]): Promise<number>;
+  /** P7 (3.1.0): ocurrencias con monto estimado que falta confirmar. */
+  estimatedOccurrences(): Promise<EstimatedOccurrence[]>;
+  /** P7: fija el monto real (el saldo se ajusta) y la marca como confirmada. */
+  confirmOccurrence(movementId: string, amount: number): Promise<void>;
 }
 
 export type GoalFields = {
@@ -432,12 +611,16 @@ export type GoalFields = {
   icon: string | null;
 };
 
-export type Goal = GoalFields & { id: string; archived: boolean };
+export type Goal = GoalFields & { id: string; archived: boolean; allocated?: number };
 
 export interface GoalRepository {
   find(goalId: string): Promise<Goal | null>;
-  /** Una cuenta con otra meta activa lanza `InfrastructureError` (S1). */
   save(goalId: string | null, fields: GoalFields): Promise<{ id: string }>;
+  /** A4 (3.1.0): metas activas ligadas a una cuenta, con su apartado. */
+  onAccount(accountId: string): Promise<{ id: string; allocated: number }[]>;
+  /** Saldo de la cuenta (para validar los apartados), o `null`. */
+  accountBalance(accountId: string): Promise<number | null>;
+  setAllocated(goalId: string, allocated: number): Promise<void>;
   setArchived(goalId: string, archived: boolean): Promise<void>;
   delete(goalId: string): Promise<void>;
 }

@@ -10,6 +10,7 @@ import {
   splitEvenly,
   sum,
   toCents,
+  toColones,
 } from "./money.ts";
 
 test("trabaja en céntimos enteros (sin error de punto flotante)", () => {
@@ -41,4 +42,10 @@ test("splitEvenly rechaza partes inválidas", () => {
 test("convert usa un tipo de cambio explícito", () => {
   assert.deepEqual(convert(money(10, "USD"), "CRC", 505.5), { cents: 505500, currency: "CRC" });
   assert.throws(() => convert(money(10, "USD"), "CRC", 0), DomainError);
+});
+
+test("toColones: dólares con tipo de cambio; sin él, no suma", () => {
+  assert.equal(toColones(1_000, "CRC", null), 1_000);
+  assert.equal(toColones(10.5, "USD", 500), 5_250);
+  assert.equal(toColones(10, "USD", null), null);
 });

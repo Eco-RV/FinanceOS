@@ -14,7 +14,7 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 **Criterios de aceptación**
 - Nombre, ícono (del kit de la app), objetivo y moneda, fecha opcional
   (futura) y cuenta ligada (se sugieren primero las de ahorro, de la misma
-  moneda; una cuenta solo puede tener una meta activa, S1).
+  moneda; desde 3.1.0 una cuenta puede tener varias metas, A4).
 
 ### 2. Ver mi avance
 **Criterios de aceptación**
@@ -36,17 +36,41 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 - **Archivar** saca la meta de la lista (se puede recuperar). **Eliminar** la
   borra. Ninguno toca la cuenta ni sus movimientos.
 
+### 5. Varias metas en una misma cuenta (3.1.0)
+Como usuario quiero tener varias metas en mi cuenta de ahorro (viaje, carro,
+emergencias) y decidir cuánto va a cada una.
+
+**Criterios de aceptación**
+- Al crear o editar una meta se puede elegir una cuenta que ya tiene otra meta.
+- Con una sola meta, lo ahorrado sigue siendo el saldo de la cuenta. Con
+  varias, cada meta muestra lo que se le **apartó** y la cuenta indica cuánto
+  queda **libre** (A4).
+- **Apartar**: el monto para esa meta, sin pasar lo libre + lo que ya tenía.
+- El Resumen usa la misma regla para el avance de las metas.
+
+### 6. Metas en dólares en el total (3.1.0)
+Como usuario quiero que el total de mis metas incluya las que están en dólares.
+
+**Criterios de aceptación**
+- "Ahorrado en tus metas" está en colones: lo ahorrado y el objetivo de las
+  metas en dólares se convierten con el último tipo de cambio (A5), que se
+  muestra junto al título.
+- Sin tipo de cambio, esas metas no suman y se indica cuántas.
+
 ## Reglas de negocio
 
-- S1–S3 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
+- A1–A3 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
 - El Arranque de 0 conserva las metas.
 
 ## Pendiente / fuera de alcance
 
-- Varias metas en una misma cuenta (apartados).
+- (Hecho en 3.1.0) Varias metas en una misma cuenta con apartados (A4).
 - Aportes automáticos (un plan de "ahorro" mensual).
-- Metas en dólares en el total del Resumen.
+- (Hecho en 3.1.0) Metas en dólares en el total, convertidas (A5).
 
 ## Historial
 
 - **2026-10-14 (v2.7.0)** — Archivo nuevo.
+- **2026-10-19 (v3.1.0, en desarrollo)** — Varias metas por cuenta con
+  apartados (A4; SQL `3.1.0/08_goal_allocations.sql`).
+- **2026-10-20 (v3.1.0, en desarrollo)** — Metas en dólares en el total (A5).

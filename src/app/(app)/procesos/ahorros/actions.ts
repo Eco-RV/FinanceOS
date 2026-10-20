@@ -6,7 +6,7 @@ import { goalSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 import { lifecycleForm, toFormResult } from "@/lib/catalog-actions";
 import { crToday, toISODate } from "@/domain";
-import { deleteGoal, saveGoal, setGoalArchived } from "@/application";
+import { allocateToGoal, deleteGoal, saveGoal, setGoalArchived } from "@/application";
 import { repositories } from "@/infrastructure/container";
 
 function revalidate() {
@@ -41,6 +41,16 @@ export async function deleteGoalAction(formData: FormData): Promise<FormResult> 
   const id = formData.get("id") as string;
   if (!id) return { ok: false, message: "Falta la meta" };
   const result = await deleteGoal((await repositories()).goals, id);
+  if (result.ok) revalidate();
+  return toFormResult(result);
+}
+
+/** A4 (3.1.0): apartar parte del saldo de la cuenta para una meta. */
+export async function allocateGoalAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const goal_id = String(formData.get("goal_id") ?? "");
+  const allocated = Number(formData.get("allocated") || 0);
+  const result = await allocateToGoal((await repositories()).goals, { goal_id, allocated });
   if (result.ok) revalidate();
   return toFormResult(result);
 }

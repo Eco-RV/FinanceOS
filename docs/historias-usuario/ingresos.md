@@ -37,6 +37,15 @@ en Ajustes, para clasificar de dónde viene el dinero.
 Como usuario quiero corregir o borrar un ingreso mal registrado, para que el
 saldo de la cuenta quede correcto sin tener que ajustarlo a mano.
 
+**Criterios de aceptación**
+- En la lista, el lápiz abre el mismo formulario con los datos del ingreso;
+  al guardar, el trigger ajusta el saldo de la cuenta (la anterior y la nueva
+  si cambió).
+- Eliminar pide confirmación y revierte el saldo.
+- Un ingreso sobre una cuenta desactivada no se edita ni se elimina (G4).
+- El desembolso de un préstamo y el ingreso de un cobro compartido se
+  gestionan desde su módulo (Préstamos y Gastos compartidos).
+
 ### 4. Ver mis ingresos
 Como usuario quiero ver el listado de todos mis ingresos, ordenado por
 fecha más reciente primero.
@@ -53,7 +62,8 @@ fecha más reciente primero.
 
 ## Pendiente / fuera de alcance
 
-- No hay ingresos recurrentes/programados.
+- Los ingresos recurrentes son salarios de Planes (ver
+  [`planes.md`](./planes.md)).
 - No hay proyección de ingresos futuros en el dashboard (a diferencia de las
   cuotas de financiamiento, que sí se proyectan).
 
@@ -66,3 +76,6 @@ fecha más reciente primero.
   igual que en gastos.
 - **2026-10-14 (v2.5.0, en desarrollo)** — La categoría se elige en una
   cuadrícula con íconos; la lista va en filas separadas.
+- **2026-10-18 (v3.1.0, en desarrollo)** — Botón flotante "Nuevo ingreso"
+  (flecha hacia abajo, verde) en todas las páginas. Criterios de la historia 3
+  y pendiente de ingresos recurrentes corregido (existen salarios desde 2.7.0).

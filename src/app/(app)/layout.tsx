@@ -6,9 +6,11 @@ import { AppBackdrop } from "@/components/app-backdrop";
 import { WelcomeSplash } from "@/components/welcome-splash";
 import { UrlNotice } from "@/components/url-notice";
 import { repositories } from "@/infrastructure/container";
-import { initialsOf } from "@/domain";
+import { initialsOf, readPreferences } from "@/domain";
+import { setDateFormat } from "@/lib/format";
+import { DateFormatSync } from "@/components/date-format-sync";
 import { ensurePlansUpToDate } from "@/lib/sync-plans";
-import { EXPENSE_CATEGORIES } from "@/lib/schema";
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { loadDebitCards } from "@/lib/debit-cards";
 import type { Account, Category, CreditCard } from "@/lib/types";
@@ -24,7 +26,7 @@ export default async function AppLayout({
   await ensurePlansUpToDate();
 
   const supabase = await createClient();
-  const [{ data: accData }, { data: cardData }, { data: catData }, debitCards] =
+  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards] =
     await Promise.all([
       supabase.from("accounts").select("*").eq("archived", false),
       supabase.from("credit_cards").select("*").eq("archived", false),
@@ -34,11 +36,20 @@ export default async function AppLayout({
         .eq("kind", "expense")
         .eq("archived", false)
         .order("name", { ascending: true }),
+      supabase
+        .from("categories")
+        .select("*")
+        .eq("kind", "income")
+        .eq("archived", false)
+        .order("name", { ascending: true }),
       loadDebitCards(supabase),
     ]);
 
   // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
   const profile = await (await repositories()).profiles.get().catch(() => null);
+  // U9 (3.1.0): formato de fecha (servidor) y moneda base del gasto rápido.
+  const prefs = readPreferences(profile?.preferences);
+  setDateFormat(prefs.dateFormat);
   const email = user.email ?? "";
   const account = {
     email,
@@ -51,10 +62,12 @@ export default async function AppLayout({
   const cards = (cardData ?? []) as CreditCard[];
   const options = categoryOptions((catData ?? []) as Category[], EXPENSE_CATEGORIES);
   const categories = options.map((o) => o.name);
+  const incomeOptions = categoryOptions((incData ?? []) as Category[], INCOME_CATEGORIES);
   const canRegister = accounts.length > 0 || cards.length > 0;
 
   return (
     <div className="flex min-h-full flex-col">
+      <DateFormatSync value={prefs.dateFormat} />
       <AppBackdrop />
       <WelcomeSplash name={account.name?.split(" ")[0] ?? null} />
       <Suspense fallback={null}>
@@ -62,20 +75,34 @@ export default async function AppLayout({
       </Suspense>
       <AppTopBar account={account} />
       {/* 2.5.0: el contenido crece con el monitor; en móvil sigue a lo ancho. */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-24 sm:px-6 sm:pb-12 lg:px-8 2xl:max-w-[1600px]">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-56 sm:px-6 sm:pb-40 lg:px-8 2xl:max-w-[1600px]">
         {children}
       </main>
+      {/* 3.1.0: acceso rápido — gasto (sale ↑, rojo) arriba e ingreso (entra ↓, verde) abajo. */}
       {canRegister ? (
-        <TransactionForm
-          type="expense"
-          accounts={accounts}
-          cards={cards}
-          debitCards={debitCards}
-          categories={categories}
-          categoryIcons={iconsByName(options)}
-          triggerLabel="Nuevo gasto"
-          fab
-        />
+        <div className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex flex-col gap-3 sm:right-6 sm:bottom-6">
+          <TransactionForm
+            type="expense"
+            accounts={accounts}
+            cards={cards}
+            debitCards={debitCards}
+            categories={categories}
+            categoryIcons={iconsByName(options)}
+            triggerLabel="Nuevo gasto"
+            defaultCurrency={prefs.baseCurrency}
+            fab
+          />
+          {accounts.length > 0 ? (
+            <TransactionForm
+              type="income"
+              accounts={accounts}
+              categories={incomeOptions.map((o) => o.name)}
+              categoryIcons={iconsByName(incomeOptions)}
+              triggerLabel="Nuevo ingreso"
+              fab
+            />
+          ) : null}
+        </div>
       ) : null}
       <AppBottomNav />
     </div>

@@ -8,7 +8,9 @@ import {
   removeFromCatalog,
   saveCard as saveCardUseCase,
   setCatalogActive,
+  setMinimumPayment,
 } from "@/application";
+import { z } from "zod";
 import { lifecycleForm, toFormResult } from "@/lib/catalog-actions";
 import { repositories } from "@/infrastructure/container";
 
@@ -71,5 +73,24 @@ export async function setCardActive(formData: FormData): Promise<FormResult> {
   const { cards } = await repositories();
   const result = await setCatalogActive(cards, "card", id, active);
   if (result.ok) revalidate(id);
+  return toFormResult(result);
+}
+
+const minimumSchema = z.object({
+  card_id: z.string().regex(/^[0-9a-fA-F-]{36}$/, "Tarjeta inválida"),
+  cutoff_on: z.string().regex(/^d{4}-d{2}-d{2}$/, "Fecha inválida"),
+  currency: z.enum(["CRC", "USD"]),
+  amount: z.coerce.number().finite("Monto inválido").min(0, "No puede ser negativo"),
+  statement_balance: z.coerce.number().finite(),
+});
+
+/** T8 (3.1.0): pago mínimo del corte vigente (0 o vacío lo borra). */
+export async function saveMinimumPayment(_prev: FormResult, formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const parsed = minimumSchema.safeParse({ ...Object.fromEntries(formData), amount: formData.get("amount") || 0 });
+  if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
+  const { statement_balance, ...m } = parsed.data;
+  const result = await setMinimumPayment(await repositories(), { ...m, statementBalance: statement_balance });
+  if (result.ok) revalidate(m.card_id);
   return toFormResult(result);
 }

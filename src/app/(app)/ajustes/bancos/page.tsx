@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { Bank, MailConnection } from "@/lib/types";
@@ -62,7 +63,12 @@ export default async function BancosPage({
             De qué remitentes leer notificaciones de compras con tarjeta.
           </p>
         </div>
-        <BankFormDialog />
+        <div className="flex flex-wrap justify-end gap-2">
+          <Link href="/ajustes/bancos/reglas" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            Reglas de comercio
+          </Link>
+          <BankFormDialog />
+        </div>
       </div>
 
       {gmail && GMAIL_MESSAGES[gmail] ? (

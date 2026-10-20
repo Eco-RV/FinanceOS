@@ -27,11 +27,13 @@ function DialogOverlay({
   className,
   ...props
 }: DialogPrimitive.Backdrop.Props) {
+  // 3.1.0 · figura-fondo: lo de atrás baja a ~3:1 de contraste para que el
+  // diálogo sea lo único en foco (ver docs/diseno/leyes-ux.md).
   return (
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/25 duration-200 ease-fluid supports-backdrop-filter:backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-black/65 duration-200 dark:bg-black/70 ease-fluid supports-backdrop-filter:backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}

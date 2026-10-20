@@ -2,15 +2,42 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { CalendarDays, CalendarRange, ChevronRight, Receipt } from "lucide-react";
+import { CalendarDays, CalendarRange, ChevronRight, Receipt, TrendingDown, TrendingUp } from "lucide-react";
 import { CategoryBadge } from "@/components/category-icon";
 import { formatCurrency } from "@/lib/format";
 import { defaultIconFor, type CategoryIconKey } from "@/lib/category-icon-keys";
 import { cn } from "@/lib/utils";
 import { FOCUS_OUTLINE } from "@/lib/interactive";
+import { compareSpending, spendingRanges, type RefPoint, type SpendingComparison } from "@/domain";
 
-/** Un gasto en colones ya ocurrido: fecha ISO, monto y categoría. */
-export type ExpensePoint = { d: string; a: number; c: string | null };
+/** Un gasto ya en colones (G9: los de dólares vienen convertidos): fecha ISO, monto y categoría. */
+export type ExpensePoint = RefPoint;
+
+const PREVIOUS_LABEL: Record<Period, string> = {
+  week: "los 7 días anteriores",
+  month: "el mes pasado a esta fecha",
+  year: "el año pasado a esta fecha",
+};
+
+/**
+ * G10 (3.1.0): variación contra el período anterior. Gastar más se marca en
+ * rojo y gastar menos en verde.
+ */
+function Change({ c, compact }: { c: SpendingComparison; compact?: boolean }) {
+  if (c.previous === 0 && c.current === 0) return null;
+  if (c.ratio === null) {
+    return <span className="text-xs text-muted-foreground">{compact ? "nuevo" : "sin gastos antes"}</span>;
+  }
+  const up = c.delta > 0;
+  const Icon = up ? TrendingUp : TrendingDown;
+  return (
+    <span className={cn("inline-flex items-center gap-1 text-xs font-medium tabular-nums", up ? "text-destructive" : "text-success")}>
+      <Icon className="size-3.5" />
+      {up ? "+" : ""}
+      {Math.round(c.ratio * 100)} %
+    </span>
+  );
+}
 
 type Period = "week" | "month" | "year";
 
@@ -38,52 +65,53 @@ function gastosHref(from: string, to: string, category?: string): string {
   return `/procesos/gastos?${q}`;
 }
 
-function minus(iso: string, days: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(y, m - 1, d - days);
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-}
-
 /**
  * Gastos del Resumen (2.5.0). Fila de tres cards (7 días, mes, año) que
  * eligen la vista, y debajo una card grande con el total y las barras por
  * categoría, de la más usada a la menos (las de más allá de la sexta van en
- * "Otras"). Solo colones, igual que el resto del Resumen.
+ * "Otras"). Todo en colones: desde 3.1.0 los gastos en dólares suman
+ * convertidos (G9) y cada período se compara con el anterior (G10).
  */
 export function ExpenseOverview({
   points,
   todayISO,
   icons,
-  hasUsd,
+  unconverted,
 }: {
   points: ExpensePoint[];
   todayISO: string;
   icons: Record<string, CategoryIconKey>;
-  hasUsd: boolean;
+  /** G9: gastos en dólares que no suman (no hay tipo de cambio). */
+  unconverted: number;
 }) {
   const [period, setPeriod] = useState<Period>("month");
 
-  const starts: Record<Period, string> = useMemo(
-    () => ({
-      week: minus(todayISO, 6),
-      month: `${todayISO.slice(0, 7)}-01`,
-      year: `${todayISO.slice(0, 4)}-01-01`,
-    }),
-    [todayISO],
-  );
+  // G10 (3.1.0): período actual y anterior equivalente, desde el dominio.
+  const ranges = useMemo(() => spendingRanges(todayISO), [todayISO]);
+  const starts: Record<Period, string> = {
+    week: ranges.week.current.from,
+    month: ranges.month.current.from,
+    year: ranges.year.current.from,
+  };
 
-  const totals = useMemo(() => {
-    const out = { week: 0, month: 0, year: 0 } as Record<Period, number>;
-    for (const p of points) {
-      for (const k of Object.keys(out) as Period[]) if (p.d >= starts[k]) out[k] += p.a;
-    }
-    return out;
-  }, [points, starts]);
+  const comparisons = useMemo(
+    () => ({
+      week: compareSpending(points, ranges.week),
+      month: compareSpending(points, ranges.month),
+      year: compareSpending(points, ranges.year),
+    }),
+    [points, ranges],
+  );
+  const totals: Record<Period, number> = {
+    week: comparisons.week.current,
+    month: comparisons.month.current,
+    year: comparisons.year.current,
+  };
 
   const bars = useMemo(() => {
     const by = new Map<string, number>();
     for (const p of points) {
-      if (p.d < starts[period]) continue;
+      if (p.d < ranges[period].current.from || p.d > todayISO) continue;
       const name = p.c?.trim() || "Sin categoría";
       by.set(name, (by.get(name) ?? 0) + p.a);
     }
@@ -106,8 +134,11 @@ export function ExpenseOverview({
         other: true,
         category: null,
       });
-    return rows;
-  }, [points, starts, period]);
+    return rows.map((row) => ({
+      ...row,
+      change: row.other ? null : compareSpending(points, ranges[period], row.category),
+    }));
+  }, [points, period, ranges, todayISO]);
 
   const total = totals[period];
   const max = Math.max(...bars.map((b) => b.amount), 1);
@@ -141,6 +172,7 @@ export function ExpenseOverview({
             <span className="truncate text-base font-semibold tracking-tight tabular-nums sm:text-2xl">
               {formatCurrency(totals[p.key])}
             </span>
+            <Change c={comparisons[p.key]} compact />
           </button>
         );
       })}
@@ -163,9 +195,19 @@ export function ExpenseOverview({
             <p className="text-3xl font-semibold tracking-tight tabular-nums">
               {formatCurrency(total)}
             </p>
+            <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+              <Change c={comparisons[period]} />
+              <span>
+                vs. {formatCurrency(comparisons[period].previous)} en {PREVIOUS_LABEL[period]}
+              </span>
+            </p>
           </div>
           <span className="flex items-center gap-1 text-sm text-muted-foreground transition-colors group-hover/chart:text-foreground">
-            {hasUsd ? <span className="mr-2 text-xs">Solo gastos en colones.</span> : null}
+            {unconverted > 0 ? (
+              <span className="mr-2 text-xs">
+                {unconverted} gasto{unconverted === 1 ? "" : "s"} en dólares sin tipo de cambio no suma{unconverted === 1 ? "" : "n"}.
+              </span>
+            ) : null}
             Ver en Gastos
             <ChevronRight className="size-4 transition-[translate] duration-200 ease-fluid motion-safe:group-hover/chart:translate-x-0.5" />
           </span>
@@ -188,9 +230,10 @@ export function ExpenseOverview({
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <div className="flex items-baseline justify-between gap-3 text-sm">
                       <span className="truncate font-medium">{b.name}</span>
-                      <span className="shrink-0 tabular-nums">
+                      <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
                         {formatCurrency(b.amount)}
-                        <span className="ml-1.5 text-xs text-muted-foreground">{pct}%</span>
+                        <span className="text-xs text-muted-foreground">{pct}%</span>
+                        {b.change ? <Change c={b.change} compact /> : null}
                       </span>
                     </div>
                     <div className="h-2.5 overflow-hidden rounded-full bg-muted">

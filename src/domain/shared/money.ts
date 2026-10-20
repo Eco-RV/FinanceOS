@@ -94,3 +94,13 @@ export function convert(m: Money, to: Currency, rate: number): Money {
   }
   return moneyFromCents(Math.round(m.cents * rate), to);
 }
+
+/**
+ * 3.1.0 (G7/P4/A5): un monto en colones. Lo de dólares se convierte con el
+ * tipo de cambio dado; sin tipo de cambio devuelve `null` (no suma).
+ */
+export function toColones(amount: number, currency: Currency, usdCrc: number | null): number | null {
+  if (currency === "CRC") return amount;
+  if (!(usdCrc && usdCrc > 0)) return null;
+  return fromCents(Math.round(toCents(amount) * usdCrc));
+}

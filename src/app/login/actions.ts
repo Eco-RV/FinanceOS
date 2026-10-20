@@ -173,3 +173,19 @@ export async function requestPasswordReset(_prev: AuthState, formData: FormData)
   // Por seguridad no se dice si el correo existe.
   return { notice: "reset-sent", email: parsed.data };
 }
+
+/**
+ * U10 (3.1.0): entrar o registrarse con Google (OAuth de Supabase). Vuelve por
+ * `/auth/confirm?code=…` (PKCE). Requiere activar el proveedor Google en
+ * Supabase → Authentication → Providers.
+ */
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  const supabase = await createClient();
+  const next = safeNext((formData.get("next") as string) || null);
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: await confirmUrl(next) },
+  });
+  if (error || !data.url) redirect("/login?aviso=google-no-disponible");
+  redirect(data.url);
+}

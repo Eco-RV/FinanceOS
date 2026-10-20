@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/format";
@@ -83,7 +84,12 @@ export default async function ArranquePage() {
         <h1 className="text-2xl font-semibold tracking-tight">Arranque de 0</h1>
         <p className="text-sm text-muted-foreground">
           Empezar de nuevo: la historia se archiva y cada cuenta y tarjeta arranca con un
-          saldo inicial nuevo.
+          saldo inicial nuevo.{" "}
+          {last ? (
+            <Link href="/ajustes/arranque/archivados" className="underline underline-offset-2">
+              Ver lo archivado
+            </Link>
+          ) : null}
         </p>
       </div>
 
