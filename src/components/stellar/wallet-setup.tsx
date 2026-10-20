@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Fuel, LoaderCircle, PiggyBank, Wallet } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Stepper } from "@/components/stepper";
 import {
   addUsdcTrustline,
   explainStellarError,
@@ -45,11 +45,12 @@ export function WalletSetup() {
   if (!address) return null;
 
   const steps = [
-    { done: balances.exists, label: "Combustible (XLM de prueba)", icon: Fuel },
-    { done: balances.usdc !== null, label: "Bolsillo de dólares abierto (USDC)", icon: Wallet },
-    { done: Number(balances.usdc ?? 0) > 0, label: "Tienes USDC de prueba", icon: PiggyBank },
+    { done: balances.exists, label: "Combustible", detail: "XLM de prueba para pagar comisiones" },
+    { done: balances.usdc !== null, label: "Bolsillo USDC", detail: "Abrir tu bolsillo de dólares digitales" },
+    { done: Number(balances.usdc ?? 0) > 0, label: "USDC de prueba", detail: "Conseguir dólares de prueba" },
   ];
-  if (steps.every((s) => s.done)) return null;
+  const current = steps.findIndex((s) => !s.done);
+  if (current < 0) return null;
 
   async function run(kind: "trust" | "swap") {
     if (!address) return;
@@ -74,23 +75,11 @@ export function WalletSetup() {
           Tres pasos, una sola vez. {connector === "cavos" ? "Puede aparecer una ventana para confirmar." : "Tu wallet te pedirá firmar."}
         </p>
       </div>
-      <ol className="flex flex-col gap-2">
-        {steps.map(({ done, label, icon: Icon }, i) => (
-          <li key={label} className="flex items-center gap-3 text-sm">
-            <span
-              className={cn(
-                "grid size-8 shrink-0 place-items-center rounded-full",
-                done ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
-              )}
-            >
-              {done ? <Check className="size-4" /> : <Icon className="size-4" />}
-            </span>
-            <span className={cn(done && "text-muted-foreground line-through")}>
-              {i + 1}. {label}
-            </span>
-          </li>
-        ))}
-      </ol>
+      {/* 3.1.0 · ley de conexión: los tres pasos se ven unidos. */}
+      <Stepper steps={steps.map((s) => s.label)} current={current} />
+      <p className="text-sm text-muted-foreground">
+        Paso {current + 1}: {steps[current].detail}.
+      </p>
       <div className="flex flex-wrap gap-2">
         {!balances.exists ? (
           <Button disabled>

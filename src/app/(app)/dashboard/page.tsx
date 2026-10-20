@@ -15,6 +15,11 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCurrency, formatDate, relativeDayLabel } from "@/lib/format";
 import {
   availabilityLevel,
+  buildReminders,
+  spendingFrom,
+  spendingInColones,
+  readPreferences,
+  minimumPaymentStatus,
   cardAvailability,
   cardStatementsByCurrency,
   computeCoverage,
@@ -37,9 +42,11 @@ import {
   type ShortfallLevel,
 } from "@/domain";
 import { termsOf } from "@/application";
+import { loadLoanAdjustments } from "@/lib/loan-adjustments";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
-import { ensurePlansUpToDate } from "@/lib/sync-plans";
+import { loadSharedBoard } from "@/lib/shared-board";
+import { ensureExchangeRateToday, ensurePlansUpToDate } from "@/lib/sync-plans";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import type {
@@ -58,6 +65,7 @@ import { cn } from "@/lib/utils";
 import { StatBody, StatDialog, type StatTone } from "./stat-dialog";
 import { ExpenseOverview, type ExpensePoint } from "./expense-overview";
 import { PlansAndGoals } from "./plans-goals";
+import { Reminders } from "./reminders";
 import { loadPlansBoard } from "@/lib/plans-board";
 import { repositories } from "@/infrastructure/container";
 import type { Goal } from "@/application";
@@ -122,7 +130,7 @@ const rise = (i: number) => ({ "--rise-i": i }) as CSSProperties;
 
 export default async function DashboardPage() {
   await requireUser();
-  await ensurePlansUpToDate();
+  await Promise.all([ensurePlansUpToDate(), ensureExchangeRateToday()]);
 
   const today = crToday();
   const todayISO = toISODate(today);
@@ -156,13 +164,18 @@ export default async function DashboardPage() {
         .order("id")
         .range(from, to),
     ).then((data) => ({ data })),
-    supabase
-      .from("transactions")
-      .select("amount, occurred_on, category, currency")
-      .eq("type", "expense")
-      .eq("archived", false)
-      .gte("occurred_on", expensesFrom)
-      .lte("occurred_on", todayISO),
+    // G10 (3.1.0): desde el inicio del año pasado, para comparar períodos (todas las filas).
+    allRows<Pick<Transaction, "amount" | "occurred_on" | "category" | "currency">>((from, to) =>
+      supabase
+        .from("transactions")
+        .select("id, amount, occurred_on, category, currency")
+        .eq("type", "expense")
+        .eq("archived", false)
+        .gte("occurred_on", spendingFrom(todayISO) < expensesFrom ? spendingFrom(todayISO) : expensesFrom)
+        .lte("occurred_on", todayISO)
+        .order("id")
+        .range(from, to),
+    ).then((data) => ({ data })),
     supabase.from("financings").select("*").eq("archived", false).is("cancelled_on", null),
     supabase
       .from("transactions")
@@ -189,17 +202,25 @@ export default async function DashboardPage() {
 
   // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
   // 2.7.0: planes (línea base y programados) y metas de ahorro.
-  const [board, plansBoard, { data: goalData }] = await Promise.all([
+  // 3.1.0: también los gastos compartidos (X5).
+  const [board, sharedBoard, plansBoard, { data: goalData }, estimated, { data: minimumData }] = await Promise.all([
     loadFinancingBoard(supabase, todayISO),
+    loadSharedBoard(supabase, todayISO),
     repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
     supabase
       .from("savings_goals")
-      .select("id, name, target_amount, currency, target_date, account_id, icon, archived")
+      .select("*")
       .eq("archived", false),
+    // P8 (3.1.0): montos por confirmar (P7) y pagos mínimos digitados (T8).
+    repositories().then((repos) => repos.plans.estimatedOccurrences()),
+    supabase.from("card_minimum_payments").select("card_id, cutoff_on, currency, amount"),
   ]);
   const goals = (goalData ?? []) as Goal[];
-  const noticesToSend = board.groups.filter((g) => g.needsNotice).length;
-  const receivableCrc = board.receivables
+  // U9 (3.1.0): moneda base para mostrar el patrimonio también en dólares.
+  const basePrefs = readPreferences((await (await repositories()).profiles.get().catch(() => null))?.preferences);
+  const noticesToSend =
+    board.groups.filter((g) => g.needsNotice).length + sharedBoard.groups.filter((g) => g.needsNotice).length;
+  const receivableCrc = [...board.receivables, ...sharedBoard.receivables]
     .filter((r) => r.currency === "CRC")
     .reduce((s, r) => s + r.total, 0);
 
@@ -237,10 +258,11 @@ export default async function DashboardPage() {
   for (const p of (loanPayData ?? []) as { loan_id: string; installment_no: number }[]) {
     paidByLoan.set(p.loan_id, [...(paidByLoan.get(p.loan_id) ?? []), Number(p.installment_no)]);
   }
+  const loanAdjustments = await loadLoanAdjustments(supabase);
   const loanEntries: CoverageLoan<Loan>[] = loans.map((loan) => {
     const currency = loan.currency === "USD" ? "USD" : "CRC";
     const progress = loanProgress(
-      termsOf({ ...loan, currency }),
+      termsOf({ ...loan, currency }, loanAdjustments.get(loan.id) ?? []),
       paidByLoan.get(loan.id) ?? [],
       todayISO,
     );
@@ -255,14 +277,21 @@ export default async function DashboardPage() {
     .filter((l) => l.currency === "CRC")
     .reduce((s, l) => s + l.remainingPrincipal, 0);
 
-  // Gastos en colones ya ocurridos (para las cards de período y el gráfico).
+  // G9 (3.1.0): gastos ya ocurridos, los de dólares convertidos a colones.
   const expenseRows = (expenseData ?? []) as Pick<
     Transaction,
     "amount" | "occurred_on" | "category" | "currency"
   >[];
-  const expensePoints: ExpensePoint[] = expenseRows
-    .filter((t) => t.currency !== "USD")
-    .map((t) => ({ d: t.occurred_on, a: Number(t.amount), c: t.category }));
+  const spending = spendingInColones(
+    expenseRows.map((t) => ({
+      d: t.occurred_on,
+      a: Number(t.amount),
+      c: t.category,
+      currency: t.currency === "USD" ? "USD" : "CRC",
+    })),
+    rate?.usd_crc ?? null,
+  );
+  const expensePoints: ExpensePoint[] = spending.points;
   const categoryIcons = iconsByName(
     categoryOptions((categoryData ?? []) as Category[], EXPENSE_CATEGORIES),
   );
@@ -309,10 +338,12 @@ export default async function DashboardPage() {
   });
 
   // Cobertura del débito contra los pagos de contado: regla de dominio.
-  const coverage = computeCoverage(accounts, cardEntries, loanEntries, today);
+  // G7 (3.1.0): lo de dólares se convierte con el último tipo de cambio.
+  const coverage = computeCoverage(accounts, cardEntries, loanEntries, today, rate?.usd_crc ?? null);
   const {
     availableDebit,
     netWorth,
+    unconverted,
     payments,
     overdue,
     overdueTotal,
@@ -527,7 +558,7 @@ export default async function DashboardPage() {
           points={expensePoints}
           todayISO={todayISO}
           icons={categoryIcons}
-          hasUsd={expenseRows.some((t) => t.currency === "USD")}
+          unconverted={spending.unconverted}
         />
 
         {/* Fila 5 · Disponible en crédito · Cobros a miembros · Financiamientos */}
@@ -607,10 +638,10 @@ export default async function DashboardPage() {
             value={formatCurrency(receivableCrc)}
             hint={
               noticesToSend > 0
-                ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} de cuota por enviar`
+                ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} por enviar`
                 : receivableCrc > 0
-                  ? "De cuotas ya cobradas en la tarjeta"
-                  : "Nadie te debe cuotas cobradas"
+                  ? "De cuotas cobradas y gastos compartidos"
+                  : "Nadie te debe nada"
             }
             trailing={<LinkChevron />}
           />
@@ -655,6 +686,36 @@ export default async function DashboardPage() {
           )}
         </StatDialog>
 
+        {/* P8 (3.1.0): recordatorios, como una card más (no un banner). */}
+        <Reminders
+          style={rise(14)}
+          items={buildReminders({
+            todayISO,
+            upcoming: plansBoard.upcoming.map((u) => ({
+              name: u.plan.name,
+              kind: u.plan.kind,
+              date: u.date,
+              amount: Number(u.plan.amount),
+              currency: u.plan.currency,
+            })),
+            toConfirm: estimated.length,
+            noticesToSend,
+            minimums: cards.flatMap((card) => {
+              const multi = multiByCard.get(card.id);
+              if (!multi) return [];
+              return multi.currencies.flatMap((cur) => {
+                const st = multi.byCurrency[cur]!;
+                const m = ((minimumData ?? []) as { card_id: string; cutoff_on: string; currency: string; amount: number }[]).find(
+                  (x) => x.card_id === card.id && x.currency === cur && x.cutoff_on === toISODate(st.lastCutoff),
+                );
+                if (!m) return [];
+                const status = minimumPaymentStatus(Number(m.amount), st.paidAfterCutoff);
+                return [{ card: card.name, remaining: status.remaining, currency: cur, dueOn: toISODate(st.dueDate) }];
+              });
+            }),
+          })}
+        />
+
         {/* Fila 6 · Línea base y metas (2.7.0) */}
         <PlansAndGoals
           board={plansBoard}
@@ -666,6 +727,9 @@ export default async function DashboardPage() {
 
       <p className="-mt-4 text-xs text-muted-foreground">
         Patrimonio neto (cuentas − tarjetas − préstamos): {formatCurrency(netWorth)}
+        {basePrefs.baseCurrency === "USD" && rate ? ` ≈ ${formatCurrency(netWorth / rate.usd_crc, "USD")}` : ""}
+        {rate ? ` · $1 = ${formatCurrency(rate.usd_crc)} (${formatDate(rate.rate_on)})` : ""}
+        {unconverted ? " · sin tipo de cambio, lo de dólares no suma" : ""}
         {loans.length > 0
           ? ` · Capital pendiente en préstamos: ${formatCurrency(loanPrincipalCrc)}`
           : ""}

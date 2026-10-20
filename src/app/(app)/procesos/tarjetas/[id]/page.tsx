@@ -15,6 +15,7 @@ import {
   daysUntil,
   isCurrency,
   nextCutoffDate,
+  minimumPaymentStatus,
   nextPaymentDate,
   toISODate,
   type Currency,
@@ -38,7 +39,10 @@ import { cardOpeningsById } from "@/lib/transactions";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
-import { TransactionList } from "../../_transactions/transaction-list";
+import { MovementExplorer } from "../../_transactions/movement-explorer";
+import { allRows } from "@/lib/supabase/all-rows";
+import { MinimumPaymentDialog } from "./minimum-payment-form";
+import { loadSharedLinks } from "@/lib/shared-board";
 import { FinancingForm } from "../_financiamientos/financing-form";
 import { FinancingList } from "../_financiamientos/financing-list";
 
@@ -57,6 +61,7 @@ export default async function CardDetailPage({
     { data: financingData },
     { data: bankData },
     { data: rateData },
+    { data: minimumData },
   ] = await Promise.all([
     supabase
       .from("credit_cards")
@@ -64,12 +69,17 @@ export default async function CardDetailPage({
       .eq("id", id)
       .eq("archived", false)
       .maybeSingle(),
-    supabase
-      .from("transactions")
-      .select("*")
-      .eq("card_id", id)
-      .eq("archived", false)
-      .order("occurred_on", { ascending: false }),
+    // 3.1.0: todas las filas (PostgREST corta en ~1000), en orden estable.
+    allRows<Transaction>((from, to) =>
+      supabase
+        .from("transactions")
+        .select("*")
+        .eq("card_id", id)
+        .eq("archived", false)
+        .order("occurred_on", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ).then((data) => ({ data })),
     supabase
       .from("accounts")
       .select("*")
@@ -97,12 +107,20 @@ export default async function CardDetailPage({
       .order("rate_on", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    // T8 (3.1.0): pagos mínimos digitados (sin el SQL 3.1.0, vacío).
+    supabase.from("card_minimum_payments").select("cutoff_on, currency, amount").eq("card_id", id),
   ]);
 
   if (!cardData) notFound();
 
   const transactions = (txData ?? []) as Transaction[];
   const today = crToday();
+  // T8: el mínimo digitado para el corte vigente de cada moneda.
+  const minimums = (minimumData ?? []) as { cutoff_on: string; currency: string; amount: number }[];
+  const minimumFor = (cur: string, s: { lastCutoff: Date }): number | null => {
+    const m = minimums.find((x) => x.currency === cur && x.cutoff_on === toISODate(s.lastCutoff));
+    return m ? Number(m.amount) : null;
+  };
   // F5: el saldo guardado trae el plan completo; solo el capital cuenta desde el día 1.
   const futureInterest = interestByCard(transactions, toISODate(today)).get(cardData.id) ?? {};
   const card = withoutScheduledInterest(
@@ -181,32 +199,26 @@ export default async function CardDetailPage({
         const settled = s.status === "al-dia" || s.status === "sin-saldo";
         return (
           <section key={cur} className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold tracking-tight">
-              Estado de cuenta{multi.currencies.length > 1 ? ` en ${cur === "CRC" ? "colones" : "dólares"}` : ""}
-            </h2>
-
-            {overdue ? (
-              <Alert tone="danger">
-                <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
-                <p className="text-sm font-medium">
-                  Atrasada {Math.abs(s.daysToDue)} día
-                  {Math.abs(s.daysToDue) === 1 ? "" : "s"} — el pago venció el{" "}
-                  {formatDate(s.dueDate)} y genera intereses. Falta pagar{" "}
-                  {formatCurrency(s.dueAmount, cur)}.
+            {/* 3.1.0 · ceguera a banners: el estado va pegado al título, no en una caja aparte. */}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">
+                Estado de cuenta{multi.currencies.length > 1 ? ` en ${cur === "CRC" ? "colones" : "dólares"}` : ""}
+              </h2>
+              {overdue ? (
+                <p className="flex items-center gap-1.5 text-sm font-medium text-destructive" role="status">
+                  <TriangleAlert className="size-4 shrink-0" />
+                  Atrasada {Math.abs(s.daysToDue)} día{Math.abs(s.daysToDue) === 1 ? "" : "s"}: venció el{" "}
+                  {formatDate(s.dueDate)} y genera intereses
                 </p>
-              </Alert>
-            ) : settled ? (
-              <Alert tone="ok">
-                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-foreground/70" />
-                <p className="text-sm font-medium">
-                  {s.status === "sin-saldo"
-                    ? "No hubo saldo en el último corte."
-                    : "Estás al día con el corte."}
+              ) : settled ? (
+                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <CheckCircle2 className="size-4 shrink-0 text-success" />
+                  {s.status === "sin-saldo" ? "No hubo saldo en el último corte" : "Estás al día con el corte"}
                 </p>
-              </Alert>
-            ) : null}
+              ) : null}
+            </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
               <Stat
                 title="Saldo al corte"
                 value={formatCurrency(s.statementBalance, cur)}
@@ -218,6 +230,40 @@ export default async function CardDetailPage({
                 value={formatCurrency(s.dueAmount, cur)}
                 hint={`antes del ${formatDate(s.dueDate)}`}
                 emphasis={overdue ? "danger" : s.dueAmount > 0 ? "warn" : undefined}
+              />
+              <Stat
+                title="Pago mínimo"
+                value={minimumFor(cur, s) != null ? formatCurrency(minimumFor(cur, s)!, cur) : "—"}
+                hint={
+                  minimumFor(cur, s) != null
+                    ? (() => {
+                        const m = minimumPaymentStatus(minimumFor(cur, s)!, s.paidAfterCutoff);
+                        return m.covered
+                          ? "cubierto con lo que abonaste"
+                          : `falta ${formatCurrency(m.remaining, cur)} antes del ${formatDate(s.dueDate)}`;
+                      })()
+                    : s.statementBalance > 0
+                      ? "cópialo de tu estado de cuenta"
+                      : undefined
+                }
+                emphasis={
+                  minimumFor(cur, s) != null && !minimumPaymentStatus(minimumFor(cur, s)!, s.paidAfterCutoff).covered
+                    ? overdue
+                      ? "danger"
+                      : "warn"
+                    : undefined
+                }
+                action={
+                  s.statementBalance > 0 ? (
+                    <MinimumPaymentDialog
+                      cardId={card.id}
+                      cutoffOn={toISODate(s.lastCutoff)}
+                      currency={cur}
+                      statementBalance={s.statementBalance}
+                      current={minimumFor(cur, s)}
+                    />
+                  ) : null
+                }
               />
               <Stat
                 title="Consumo sin cortar"
@@ -317,6 +363,7 @@ export default async function CardDetailPage({
                 CRC: (multi.byCurrency.CRC?.dueAmount ?? 0) > 0 ? multi.byCurrency.CRC!.dueAmount : balances.CRC,
                 USD: (multi.byCurrency.USD?.dueAmount ?? 0) > 0 ? multi.byCurrency.USD!.dueAmount : balances.USD,
               }}
+              cardDebts={balances}
               exchangeRate={rate}
               triggerLabel="Registrar pago / abono"
             />
@@ -327,37 +374,18 @@ export default async function CardDetailPage({
             Agregá una cuenta de débito para registrar pagos.
           </p>
         ) : null}
-        <TransactionList
+        <MovementExplorer
+          context="card"
           transactions={transactions}
           accounts={allAccounts}
           cards={[card]}
           categories={categories}
-          context="card"
-          emptyLabel="Sin movimientos registrados en esta tarjeta."
+          todayISO={toISODate(today)}
+          emptyLabel="Sin movimientos registrados en esta tarjeta hasta hoy."
           cancelledFinancingIds={financings.filter((f) => f.cancelled_on).map((f) => f.id)}
+          sharedLinks={await loadSharedLinks(supabase)}
         />
       </div>
-    </div>
-  );
-}
-
-function Alert({
-  tone,
-  children,
-}: {
-  tone: "danger" | "ok";
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-start gap-3 rounded-xl p-4",
-        tone === "danger"
-          ? "border border-destructive/30 bg-destructive/5 dark:bg-destructive/10"
-          : "surface",
-      )}
-    >
-      {children}
     </div>
   );
 }
@@ -367,11 +395,14 @@ function Stat({
   value,
   hint,
   emphasis,
+  action,
 }: {
   title: string;
   value: ReactNode;
   hint?: string;
   emphasis?: "danger" | "warn";
+  /** Botón pequeño al pie (p. ej. digitar el pago mínimo, T8). */
+  action?: ReactNode;
 }) {
   return (
     <Card>
@@ -391,6 +422,7 @@ function Stat({
           {value}
         </p>
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+        {action ? <div className="-ml-2 pt-1">{action}</div> : null}
       </CardContent>
     </Card>
   );

@@ -14,6 +14,9 @@ const WHEEL_STEP = 40;
  * (a la izquierda); se cambia con las flechas, tocando una tarjeta, con la
  * rueda del ratón (cursor encima) o deslizando con el dedo. La elegida queda
  * al centro; las demás se ven atenuadas y más pequeñas.
+ *
+ * 3.1.0 · ley de cierre: la tarjeta mide como mucho el 60 % del ancho, así
+ * siempre asoma ~30 % de la siguiente y se entiende que hay más para deslizar.
  */
 export function WalletCarousel({
   cards,
@@ -103,13 +106,13 @@ export function WalletCarousel({
     "absolute top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-popover/90 text-foreground shadow-md ring-1 ring-foreground/10 backdrop-blur transition-[opacity,scale,background-color] duration-150 ease-fluid hover:bg-popover motion-safe:active:scale-90 disabled:pointer-events-none disabled:opacity-0";
 
   return (
-    <div className="relative">
+    <div className="relative @container">
       <div
         ref={scroller}
         onScroll={onScroll}
         role="radiogroup"
         aria-label="Tarjeta"
-        className="no-scrollbar -mx-4 flex w-[calc(100%+2rem)] snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-[calc(50%-7.5rem)] py-3 lg:mx-0 lg:w-full"
+        className="no-scrollbar -mx-4 flex w-[calc(100%+2rem)] snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-[calc(50cqw-min(7.5rem,30cqw))] py-3 lg:mx-0 lg:w-full"
       >
         {cards.map((card) => {
           const selected = card.id === value;
@@ -123,7 +126,7 @@ export function WalletCarousel({
               data-card={card.id}
               onClick={() => onChange(card.id)}
               className={cn(
-                "w-60 shrink-0 snap-center rounded-2xl transition-[opacity,scale,translate,filter] duration-300 ease-fluid outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                "w-[min(15rem,60cqw)] shrink-0 snap-center rounded-2xl transition-[opacity,scale,translate,filter] duration-300 ease-fluid outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 selected
                   ? "scale-100 opacity-100 motion-safe:-translate-y-1"
                   : "scale-[0.92] opacity-55 saturate-[0.7] hover:opacity-80",

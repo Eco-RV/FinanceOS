@@ -1,4 +1,4 @@
-import type { NoticeGroup } from "@/domain";
+import type { NoticeGroup, SharedNoticeGroup } from "@/domain";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 export type NoticePlan = { description: string; months: number; cardName: string };
@@ -48,4 +48,36 @@ export function phoneLabel(phone: string | null): string {
   if (!phone) return "—";
   const local = phone.startsWith("506") && phone.length === 11 ? phone.slice(3) : phone;
   return local.length === 8 ? `${local.slice(0, 4)} ${local.slice(4)}` : `+${local}`;
+}
+
+export type SharedNoticeExpense = { description: string; occurred_on: string };
+
+/** X5: texto del aviso de un gasto compartido para una persona. */
+export function sharedNoticeMessage(
+  memberName: string,
+  group: Pick<SharedNoticeGroup, "due_on" | "quincenas" | "parts" | "total" | "currency">,
+  expenses: Map<string, SharedNoticeExpense>,
+): { subject: string; text: string } {
+  const currency = group.currency;
+  const lines = group.parts.map((p) => {
+    const e = expenses.get(p.shared_expense_id);
+    const what = e ? `${e.description} (${formatDate(e.occurred_on)})` : "Gasto compartido";
+    return `• ${what}: ${formatCurrency(p.amount, currency)}`;
+  });
+  const total = formatCurrency(group.total, currency);
+  // Tramo 4 = más de 3 quincenas: se dice solo la fecha.
+  const when =
+    group.quincenas > 3 ? `antes del ${formatDate(group.due_on)}` : whenLabel(group);
+  const text = [
+    `Hola ${memberName}:`,
+    "",
+    `Te paso tu parte de lo que compartimos; ${when}:`,
+    ...lines,
+    "",
+    group.parts.length > 1 ? `Total: ${total}` : null,
+    "¡Gracias!",
+  ]
+    .filter((l) => l !== null)
+    .join("\n");
+  return { subject: `Tu parte: ${total} · antes del ${formatDate(group.due_on)}`, text };
 }

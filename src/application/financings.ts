@@ -1,13 +1,25 @@
 /** Casos de uso de financiamientos sobre tarjeta, con o sin interés. */
 
 import {
+  assertSameCurrency,
   crToday,
+  DomainError,
+  financingPrepaymentPlan,
   financingSchedule,
+  validateMovement,
+  type PrepaymentMode,
   toISODate,
+  type Currency,
   type FinancingInstallment,
   type ISODate,
 } from "../domain/index.ts";
-import type { CardRepository, FinancingFields, FinancingRepository } from "./ports.ts";
+import type {
+  AccountRepository,
+  CardRepository,
+  FinancingFields,
+  FinancingRepository,
+  MovementRepository,
+} from "./ports.ts";
 import { fail, ok, run, type UseCaseResult } from "./result.ts";
 
 export type FinancingDeps = {
@@ -17,6 +29,8 @@ export type FinancingDeps = {
 
 export type CreateFinancingInput = {
   card_id: string;
+  /** F10 (3.1.0): CRC o USD; sin elegir, la moneda del límite de la tarjeta. */
+  currency?: Currency;
   description: string;
   category: string | null;
   /** Capital (en tasa 0, el total de la compra). */
@@ -39,8 +53,10 @@ export function createFinancing(
   input: CreateFinancingInput,
 ): Promise<UseCaseResult<CreateFinancingOutput>> {
   return run(async () => {
-    const currency = await deps.cards.currencyOf(input.card_id);
-    if (!currency) return fail("Tarjeta no encontrada");
+    const cardCurrency = await deps.cards.currencyOf(input.card_id);
+    if (!cardCurrency) return fail("Tarjeta no encontrada");
+    // F10 (3.1.0): el plan puede ir en la otra moneda de la tarjeta (T1).
+    const currency = input.currency ?? cardCurrency;
 
     const annual_rate = input.annual_rate ?? 0;
     const installments = financingSchedule({
@@ -52,7 +68,7 @@ export function createFinancing(
     });
 
     const { id } = await deps.financings.createWithInstallments(
-      { ...input, annual_rate },
+      { ...input, annual_rate, currency },
       installments,
     );
     return ok({ id, installments });
@@ -89,5 +105,90 @@ export function deleteFinancing(
     if (!cardId) return fail("Financiamiento no encontrado");
     const outcome = await deps.financings.cancel(id, toISODate(today));
     return ok({ cardId, outcome });
+  });
+}
+
+export type PrepayFinancingInput = {
+  financing_id: string;
+  account_id: string;
+  amount: number;
+  mode: PrepaymentMode;
+  occurred_on: ISODate;
+  today: ISODate;
+};
+
+/**
+ * F11 (3.1.0): abono extraordinario al capital de un financiamiento. El dinero
+ * sale de una cuenta como un gasto (la misma plata que antes iba a salir en
+ * cuotas) y las cuotas programadas se reemplazan por un plan con menos
+ * capital: la deuda de la tarjeta baja una sola vez, por el abono.
+ */
+export function prepayFinancing(
+  deps: Pick<FinancingDeps, "financings"> & { accounts: AccountRepository; movements: MovementRepository },
+  input: PrepayFinancingInput,
+): Promise<UseCaseResult<{ cardId: string; installments: number }>> {
+  return run(async () => {
+    const plan = await deps.financings.find(input.financing_id);
+    if (!plan) return fail("Financiamiento no encontrado");
+    if (plan.cancelled_on) return fail("El financiamiento está cancelado", "F11");
+    const accountCurrency = await deps.accounts.currencyOf(input.account_id);
+    if (!accountCurrency) throw new DomainError("G4", "Cuenta no encontrada o desactivada");
+    assertSameCurrency(accountCurrency, plan.currency);
+
+    const pending = await deps.financings.pendingInstallments(plan.id, input.today);
+    const next = financingPrepaymentPlan({
+      pending,
+      annualRatePercent: plan.annual_rate ?? 0,
+      amount: input.amount,
+      mode: input.mode,
+    });
+    const category = plan.category ?? "Financiamientos";
+    const currency = validateMovement({
+      type: "expense",
+      amount: input.amount,
+      category,
+      accountCurrency,
+      cardCurrency: null,
+    });
+    const { id: movementId } = await deps.movements.create({
+      type: "expense",
+      amount: input.amount,
+      currency,
+      occurred_on: input.occurred_on,
+      category,
+      note: `${plan.description} · abono extraordinario al capital (${input.mode === "term" ? "baja el plazo" : "baja la cuota"})`.slice(0, 200),
+      account_id: input.account_id,
+      card_id: null,
+    });
+    try {
+      await deps.financings.prepay(plan.id, {
+        todayISO: input.today,
+        fromNo: pending[0].no,
+        installments: next.installments,
+        amount: input.amount,
+        mode: input.mode,
+        occurred_on: input.occurred_on,
+        transaction_id: movementId,
+      });
+    } catch (e) {
+      await deps.movements.delete(movementId);
+      throw e;
+    }
+    return ok({ cardId: plan.card_id, installments: next.installments.length });
+  });
+}
+
+/** F11: deshace el último abono (vuelve el plan anterior y borra su gasto). */
+export function undoFinancingPrepayment(
+  deps: Pick<FinancingDeps, "financings">,
+  input: { financing_id: string; today: ISODate },
+): Promise<UseCaseResult<{ cardId: string }>> {
+  return run(async () => {
+    const plan = await deps.financings.find(input.financing_id);
+    if (!plan) return fail("Financiamiento no encontrado");
+    const last = await deps.financings.lastPrepayment(plan.id);
+    if (!last) return fail("Este financiamiento no tiene abonos");
+    await deps.financings.undoPrepayment(last.id, input.today);
+    return ok({ cardId: plan.card_id });
   });
 }

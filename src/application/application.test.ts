@@ -25,7 +25,7 @@ test("saveMovement: un gasto copia la moneda del origen y ajusta el saldo", asyn
     category: "Comida",
     card_id: "visa",
   });
-  assert.deepEqual(r, { ok: true, value: { affectedCardIds: ["visa"] } });
+  assert.deepEqual(r, { ok: true, value: { affectedCardIds: ["visa"], id: "mv-1" } });
   assert.equal([...s.state.movements.values()][0].currency, "USD");
   assert.equal(s.balanceOf("card", "visa"), 25);
 });

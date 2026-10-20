@@ -11,10 +11,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RateFormDialog } from "./rate-form";
+import { OfficialRateButton } from "./official-rate-button";
 
 type RateRow = { id: string; rate_on: string; usd_crc: number };
 
-/** Tipo de cambio manual (T2): el más reciente se usa para el disponible de las tarjetas. */
+/**
+ * Tipo de cambio (T2/T10): el más reciente se usa para el disponible de las
+ * tarjetas y para pasar a colones lo de dólares en el Resumen (G7). Se trae del
+ * BCCR una vez al día al abrir el Resumen, o a mano con "Traer del BCCR".
+ */
 export default async function TipoCambioPage() {
   await requireUser();
 
@@ -34,11 +39,15 @@ export default async function TipoCambioPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Tipo de cambio</h1>
           <p className="text-sm text-muted-foreground">
-            Colones por dólar. Se usa el más reciente para el disponible de las tarjetas con
-            saldo en otra moneda.
+            Colones por dólar (venta de referencia del BCCR). Se usa el más reciente para el
+            disponible de las tarjetas y para sumar lo de dólares en el Resumen. Se actualiza
+            solo una vez al día al abrir el Resumen; también lo puedes digitar.
           </p>
         </div>
-        <RateFormDialog lastRate={rates[0] ? Number(rates[0].usd_crc) : undefined} />
+        <div className="flex flex-wrap justify-end gap-2">
+          <OfficialRateButton />
+          <RateFormDialog lastRate={rates[0] ? Number(rates[0].usd_crc) : undefined} />
+        </div>
       </div>
 
       <div className="surface overflow-hidden">

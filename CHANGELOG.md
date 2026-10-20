@@ -1,5 +1,145 @@
 # Changelog
 
+## 3.1.0 — 2026-10-20
+
+Versión oficial después de la 3.0.0 (la 3.0.1 de desarrollo quedó dentro de
+esta). Auditoría de la lógica de negocio y cierre de sus pendientes,
+historiales con filtros, leyes de UX, botones de gasto e ingreso, **Gastos
+compartidos**, tipo de cambio del BCCR y multimoneda. Apoyos (Trustless Work)
+y Academia pasan a la 3.2.0.
+
+SQL nuevo en `supabase/Versionamiento/3.1.0/`: correr de `00_` a `09_` en orden
+(ver "Base de datos" al final de esta sección).
+
+### Auditoría de la lógica de negocio
+- `docs/dominio/pendientes.md`: lo que falta, por regla, fase y proceso.
+- Avisos que faltaban:
+  - **C2**: un gasto que deja una cuenta en negativo avisa en cuánto quedará.
+  - **M4**: un abono mayor que la deuda avisa el saldo a favor que quedará.
+- **K9** completo: enviar USDC ya no advierte a las estrellas de tu familia
+  ni a las de tu agenda.
+- Las reglas de ahorro **S1–S3 pasan a A1–A3** (chocaban con S1 = SINPE).
+- Estados al día en reglas y glosario. Se corrigen las historias de cuentas,
+  gastos, ingresos, bancos, préstamos, constelación y tarjetas.
+
+### Historial de tarjeta y de cuenta con filtros
+- El detalle de tarjeta y el de cuenta traen **todos** los movimientos
+  (antes: tope de 1000 y de 500).
+- Filtros:
+  - A la vista: Buscar, Tipo (cargos, cuotas, pagos, saldo inicial…) e
+    **Incluir futuras** (las cuotas programadas de financiamientos y todo lo
+    que tiene fecha > hoy). Por defecto se ve hasta hoy.
+  - En "Más filtros": fechas y moneda.
+- **Filas por página** 5/10/20/50/todas, recordadas en el navegador (también
+  en Gastos).
+
+### Botones flotantes
+- **Nuevo gasto**: flecha hacia arriba, rojo coral.
+- **Nuevo ingreso**: flecha hacia abajo, verde. Va debajo del de gasto.
+- Tokens `--expense` e `--income` en claro y oscuro.
+
+### Leyes de UX
+- `docs/diseno/leyes-ux.md`: las seis leyes con su lista de chequeo para
+  futuros desarrollos.
+- Dónde se aplicaron:
+  - **Cierre**: en el carrusel de tarjetas asoma ~30 % de la siguiente.
+  - **Figura-fondo**: fondo más oscuro detrás de diálogos y confirmaciones.
+  - **Ceguera a banners**: el estado de la tarjeta va junto al título del
+    estado de cuenta.
+  - **Parkinson**: el gasto rápido recuerda cómo pagaste; el ingreso recuerda
+    la cuenta y la categoría.
+  - **Conexión**: `Stepper` en el alta de gasto compartido y en la wallet.
+  - **Exceso de opciones**: Procesos con los 4 frecuentes arriba y "Más
+    procesos".
+
+### Correcciones
+- **T9**: un seguro en Planes también se cobra a una **tarjeta de débito**
+  (sale del saldo de su cuenta). SQL `3.1.0/02_insurance_debit_card.sql`.
+- **T3 en cuotas**: con "las compras del día de corte pasan al siguiente
+  corte", una cuota de financiamiento que cae el día del corte ahora vence en
+  el corte siguiente también en la tabla del plan, los avisos a miembros y los
+  gastos compartidos (el estado de cuenta ya lo hacía).
+
+### Pendientes del BusinessLogic cerrados
+- **T10 / G7**: tipo de cambio del BCCR (API pública de Hacienda) una vez al
+  día y "Traer del BCCR"; el Resumen convierte lo de dólares en la cobertura,
+  el faltante y el patrimonio.
+- **T8**: pago mínimo por corte y moneda, con cuánto falta para cubrirlo
+  (`03_card_minimum_payments.sql`).
+- **F10**: financiamiento en la otra moneda de la tarjeta
+  (`create_financing_v4`, `04_`).
+- **L7 / L8**: abono extraordinario (baja plazo o cuota) y tasa variable en
+  préstamos, por tramos (`segmentedAmortization`, `05_loan_adjustments.sql`).
+- **F11**: abono extraordinario a un financiamiento, con deshacer
+  (`06_financing_prepayments.sql`).
+- **P7 / P8**: planes con monto variable (por confirmar) y recordatorios en
+  el Resumen (`07_variable_plans.sql`).
+- **A4**: varias metas por cuenta con apartados (`08_goal_allocations.sql`).
+- **G8 / M9 / I6**: comprobantes adjuntos (bucket privado, `09_receipts.sql`),
+  consulta de lo archivado por el Arranque de 0 y pantalla de reglas de
+  comercio.
+- **U8 / U9 / U10**: borrar la cuenta, moneda base y formato de fecha, y
+  entrar con Google.
+
+### Resumen, planes, metas y compartidos con dólares y porcentajes
+- **G9**: los gastos en dólares suman en las cards 7 días / Mes / Año y en el
+  gráfico por categoría del Resumen, convertidos con el último tipo de cambio
+  (`spendingInColones`, `src/domain/ledger/spending.ts`).
+- **G10**: comparar períodos: cada card y cada categoría dicen cuánto cambió
+  contra el período anterior equivalente (`spendingRanges`, `compareSpending`).
+  El Resumen lee los gastos desde el inicio del año pasado (todas las filas).
+- **P4 con dólares**: la línea base suma salarios, gastos fijos, seguros y
+  cuotas en dólares convertidos (`toColones`, `plans-board.ts`).
+- **A5**: las metas en dólares suman al total de Ahorros convertidas.
+- **X7**: reparto de un gasto compartido por porcentaje (`splitByPercent`,
+  `suggestPercents`) con selector Monto · %.
+
+### Gastos compartidos (X1–X6)
+- `/procesos/compartidos`: pagas el total y lo divides entre personas
+  (miembros).
+- Alta en un asistente de 3 pasos:
+  - Gasto nuevo o "Compartir" sobre uno ya registrado.
+  - Reparto sugerido en partes iguales y ajustable.
+  - Fecha límite: la del estado de cuenta si fue con tarjeta; si no, la
+    eliges tú.
+- Registrar quién pagó, cuándo y por qué medio, con un **ingreso opcional** a
+  una cuenta. También se puede deshacer.
+- Avisos por WhatsApp o correo desde el primer día.
+- Cobros a miembros y el Resumen suman financiamientos y compartidos.
+- Dominio `src/domain/sharing/`, casos de uso
+  `src/application/shared-expenses.ts` y adaptador
+  `src/infrastructure/supabase/shared-expenses.ts`.
+- El agrupado de avisos queda común con F8 (`src/domain/shared/notices.ts`).
+- El Arranque de 0 borra los compartidos (`01_fresh_start_shared.sql`).
+
+### Arreglos antes de publicar
+- Traer el tipo de cambio del BCCR, el abono extraordinario y el cambio de tasa
+  de un préstamo y el pago mínimo rechazaban toda fecha (una expresión regular
+  había perdido sus barras). El parseo de Hacienda queda en
+  `parseHaciendaRate`, con test.
+
+### Base de datos (correr a mano, en orden, DESPUÉS de todo 3.0.0 y ANTES de desplegar)
+1. `supabase/Versionamiento/3.1.0/00_shared_expenses.sql` — gastos compartidos.
+2. `01_fresh_start_shared.sql` — el Arranque de 0 también borra los compartidos.
+3. `02_insurance_debit_card.sql` — seguro con tarjeta de débito.
+4. `03_card_minimum_payments.sql` — pago mínimo.
+5. `04_financing_currency.sql` — financiamiento en la otra moneda (`create_financing_v4`).
+6. `05_loan_adjustments.sql` — abonos extraordinarios y tasa variable de préstamos.
+7. `06_financing_prepayments.sql` — abonos extraordinarios a financiamientos.
+8. `07_variable_plans.sql` — planes con monto variable.
+9. `08_goal_allocations.sql` — varias metas por cuenta (apartados).
+10. `09_receipts.sql` — comprobantes (bucket privado `receipts`).
+
+### Configuración
+- **Borrar la cuenta** necesita `SUPABASE_SERVICE_ROLE_KEY` en las variables
+  del servidor (Vercel → Settings → Environment Variables). Ya la usaba el cron
+  de correo; nunca con prefijo `NEXT_PUBLIC_`.
+- **Entrar con Google**: activar Google en Supabase → Authentication →
+  Providers (cliente OAuth de Google Cloud con el callback de Supabase).
+- Las Server Actions aceptan hasta 6 MB (`next.config.ts`), por los
+  comprobantes de hasta 5 MB.
+- El tipo de cambio sale de la API pública de Hacienda: no hace falta token.
+
 ## 3.0.0 — 2026-10-17
 
 Constelación familiar: familia y bóveda de ahorro en USDC con aprobaciones,

@@ -28,6 +28,7 @@ pierden. Esta carpeta es ese lugar fijo:
 | [`cuentas.md`](./cuentas.md) | Cuentas de débito, ahorro y efectivo |
 | [`tarjetas.md`](./tarjetas.md) | Tarjetas de crédito, cortes y pagos |
 | [`financiamientos.md`](./financiamientos.md) | Compras a cuotas (tasa 0 o con interés), miembros y avisos de cuota |
+| [`compartidos.md`](./compartidos.md) | Gastos compartidos entre varias personas: reparto, cobros y avisos (3.1.0) |
 | [`gastos.md`](./gastos.md) | Registro de gastos |
 | [`ingresos.md`](./ingresos.md) | Registro de ingresos |
 | [`bancos.md`](./bancos.md) | Bancos y correos: importación automática de compras |

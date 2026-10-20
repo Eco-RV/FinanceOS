@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { confirmUrl } from "@/lib/site-url";
 import type { FormResult } from "@/lib/forms";
+import { redirect } from "next/navigation";
 import {
+  deleteAccount,
   changeEmail,
   changePassword,
   removeAvatar,
@@ -94,4 +96,16 @@ export async function changePasswordAction(_prev: FormResult, formData: FormData
       : { ok: false, errors: { password: result.message } };
   }
   return { ok: true };
+}
+
+/** U8 (3.1.0): borra la cuenta y todos sus datos; luego vuelve al login. */
+export async function deleteAccountAction(formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const { identity } = await repositories();
+  const result = await deleteAccount(
+    { identity },
+    { confirmation: text(formData, "confirmation") ?? "", password: text(formData, "password") ?? "" },
+  );
+  if (!result.ok) return { ok: false, message: result.message };
+  redirect("/login?aviso=cuenta-eliminada");
 }

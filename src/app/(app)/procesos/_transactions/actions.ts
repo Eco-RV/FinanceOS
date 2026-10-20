@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { transactionSchema, transferSchema } from "@/lib/schema";
 import { fieldErrors, type FormResult } from "@/lib/forms";
 import { parseOrigin } from "@/lib/transactions";
-import { deleteMovement, saveMovement } from "@/application";
+import { attachReceipt, deleteMovement, receiptUrl, removeReceipt, saveMovement } from "@/application";
 import { repositories } from "@/infrastructure/container";
 
 function revalidateTx(cardIds: string[] = []) {
@@ -108,4 +108,30 @@ export async function saveTransfer(
 
   revalidateTx();
   return { ok: true };
+}
+
+/** G8 (3.1.0): adjuntar el comprobante de un movimiento. */
+export async function attachReceiptAction(_prev: FormResult, formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, errors: { file: "Elige un archivo" } };
+  const result = await attachReceipt((await repositories()).receipts, {
+    movement_id: String(formData.get("movement_id") ?? ""),
+    file: { bytes: await file.arrayBuffer(), type: file.type, size: file.size },
+  });
+  if (result.ok) revalidateTx();
+  return result.ok ? { ok: true } : { ok: false, message: result.message };
+}
+
+export async function openReceiptAction(formData: FormData): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
+  await requireUser();
+  const result = await receiptUrl((await repositories()).receipts, String(formData.get("movement_id") ?? ""));
+  return result.ok ? { ok: true, url: result.value.url } : { ok: false, message: result.message };
+}
+
+export async function removeReceiptAction(formData: FormData): Promise<FormResult> {
+  await requireUser();
+  const result = await removeReceipt((await repositories()).receipts, String(formData.get("movement_id") ?? ""));
+  if (result.ok) revalidateTx();
+  return result.ok ? { ok: true } : { ok: false, message: result.message };
 }

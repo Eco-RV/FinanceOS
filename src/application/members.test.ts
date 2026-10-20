@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fakeStore } from "./fakes.test-helpers.ts";
-import { createFinancing, updateFinancing } from "./financings.ts";
+import { createFinancing, prepayFinancing, undoFinancingPrepayment, updateFinancing } from "./financings.ts";
 import {
   recordNotices,
   recordReimbursement,
@@ -144,4 +144,65 @@ test("F8: aviso por correo se envía y se registra; sin correo se rechaza", asyn
   assert.equal(!noMail.ok && noMail.rule, "F8");
   assert.ok((await recordNotices(s.deps.notices, [{ ...items[0], channel: "whatsapp" }])).ok);
   assert.equal(s.state.notices.length, 2);
+});
+
+test("F10: un financiamiento en dólares sobre una tarjeta con límite en colones", async () => {
+  const s = fakeStore({ cards: { visa: "CRC" } });
+  const r = await createFinancing(s.deps, {
+    card_id: "visa",
+    currency: "USD",
+    description: "Laptop",
+    category: "Tecnología",
+    total_amount: 1_200,
+    annual_rate: 0,
+    months: 12,
+    first_charge_on: "2026-11-05",
+  });
+  assert.ok(r.ok);
+  const rows = [...s.state.movements.values()];
+  assert.ok(rows.every((m) => m.currency === "USD"));
+  assert.equal(s.balanceOf("card", "visa", "USD"), 1_200);
+  assert.equal(s.balanceOf("card", "visa", "CRC"), 0);
+});
+
+test("F11: abono extraordinario a un financiamiento con interés y deshacerlo", async () => {
+  const s = fakeStore({ cards: { visa: "CRC" }, accounts: { bac: "CRC" } });
+  const r = await createFinancing(s.deps, {
+    card_id: "visa",
+    description: "Refri",
+    category: "Hogar",
+    total_amount: 600_000,
+    annual_rate: 24,
+    months: 12,
+    first_charge_on: "2026-11-05",
+  });
+  assert.ok(r.ok);
+  const before = s.balanceOf("card", "visa");
+  const paid = await prepayFinancing(s.deps, {
+    financing_id: r.value.id,
+    account_id: "bac",
+    amount: 200_000,
+    mode: "term",
+    occurred_on: "2026-10-20",
+    today: "2026-10-20",
+  });
+  assert.ok(paid.ok);
+  assert.ok(paid.value.installments < 12);
+  // La cuenta paga el abono; la deuda de la tarjeta baja por el capital abonado (más el interés que ya no se cobra).
+  assert.equal(s.balanceOf("account", "bac"), -200_000);
+  assert.ok(before - s.balanceOf("card", "visa") >= 200_000);
+
+  const tooMuch = await prepayFinancing(s.deps, {
+    financing_id: r.value.id,
+    account_id: "bac",
+    amount: 9_999_999,
+    mode: "payment",
+    occurred_on: "2026-10-20",
+    today: "2026-10-20",
+  });
+  assert.equal(!tooMuch.ok && tooMuch.rule, "F11");
+
+  assert.ok((await undoFinancingPrepayment(s.deps, { financing_id: r.value.id, today: "2026-10-20" })).ok);
+  assert.ok(Math.abs(s.balanceOf("card", "visa") - before) < 0.01);
+  assert.equal(s.balanceOf("account", "bac"), 0);
 });

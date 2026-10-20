@@ -189,6 +189,28 @@ export function signedAmount(m: Pick<Movement, "type" | "amount">): number {
   return -Number(m.amount);
 }
 
+/**
+ * C2 (advierte): saldo en que quedará la cuenta si el gasto la deja en
+ * negativo, o null si no. `applied` es lo que ya restaba de esa cuenta el
+ * movimiento que se edita (para no contarlo dos veces).
+ */
+export function overdraftWarning(balance: number, amount: number, applied = 0): number | null {
+  if (!(amount > 0)) return null;
+  const after = toCents(balance) + toCents(applied) - toCents(amount);
+  return after < 0 ? fromCents(after) : null;
+}
+
+/**
+ * M4 (advierte): saldo a favor que quedará en la tarjeta si el abono supera la
+ * deuda de esa moneda, o null si no. `applied` = lo que ya abonaba el
+ * movimiento que se edita.
+ */
+export function overpaymentWarning(debt: number, amount: number, applied = 0): number | null {
+  if (!(amount > 0)) return null;
+  const excess = toCents(amount) - toCents(debt) - toCents(applied);
+  return excess > 0 ? fromCents(excess) : null;
+}
+
 export type MovementDraft = {
   type: MovementType;
   amount: number;

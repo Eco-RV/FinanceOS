@@ -6,7 +6,8 @@
 
 Cuentas de débito, ahorro o efectivo. Cada cuenta tiene un saldo que se
 mantiene al día automáticamente a partir de los movimientos (gastos, ingresos
-y pagos de tarjeta) que se le registran — de momento se edita a mano el saldo para ajustar.
+y pagos de tarjeta) que se le registran. El saldo no se edita a mano: se
+corrige con el saldo inicial (C1) o desde Ajustes → Verificar saldos.
 
 ## Historias de usuario
 
@@ -75,10 +76,17 @@ todos sus movimientos, para saber qué entró y qué salió de esa cuenta.
 - Toda la fila de la lista abre el detalle (`/procesos/cuentas/<id>`); la
   lista muestra la tarjeta de débito bajo el nombre.
 - El detalle muestra el saldo, la tarjeta de débito y los movimientos de la
-  cuenta (como origen o destino), los más nuevos primero (hasta 500): gastos,
+  cuenta (como origen o destino), los más nuevos primero (todos, desde 3.1.0): gastos,
   ingresos, SINPE, transferencias (− si sale, + si entra), abonos a tarjeta
   (con el monto que salió de la cuenta, también si se convirtió) y el saldo
   inicial. Se editan y eliminan como en las demás listas.
+- **Filtros y filas por página** (3.1.0): arriba del historial, siempre a la
+  vista, **Buscar** (nota, categoría, destinatario o monto, sin importar
+  tildes), **Tipo** (Gastos, Ingresos, Transferencias, Pagos de tarjeta,
+  Saldo inicial) e **Incluir futuras**. Por defecto se ve solo
+  hasta hoy; al marcarlo aparecen también los ingresos programados y todo lo que tiene fecha
+  futura (M7). En "Más filtros" están Desde/Hasta. Se muestran 10 filas por página (5, 10, 20, 50 o todas;
+  la elección se recuerda en este navegador) con los totales de lo filtrado.
 
 ### 6. Tarjeta de débito (2.8.0)
 Como usuario quiero agregar la tarjeta de débito de mi cuenta bancaria, para
@@ -109,8 +117,8 @@ registrar los gastos que pago con ella.
 ## Pendiente / fuera de alcance
 
 - No hay conversión de moneda entre cuentas de distinta divisa.
-- Ahorros con metas (roadmap paso 4) todavía no existen como concepto propio;
-  hoy una cuenta `savings` es solo una cuenta más sin objetivo asociado.
+- Una cuenta tiene a lo sumo una meta de ahorro activa (A1, ver
+  [`ahorros.md`](./ahorros.md)).
 
 ## Historial
 
@@ -130,3 +138,9 @@ registrar los gastos que pago con ella.
   formulario rápido; un gasto ya no se registra sobre una cuenta de débito
   (para eso están SINPE y Transferencias). En el Resumen, el disponible en
   débito se llama **Liquidez**.
+- **2026-10-18 (v3.1.0, en desarrollo)** — Un gasto que deja la cuenta en
+  negativo se permite con aviso (C2). Se corrige el resumen (el saldo ya no se
+  edita a mano desde 2.0.0) y el pendiente de metas (existen desde 2.7.0).
+- **2026-10-18 (v3.1.0, en desarrollo)** — El detalle de la cuenta trae todos
+  los movimientos (antes, 500) con los mismos filtros y paginación que la
+  tarjeta.

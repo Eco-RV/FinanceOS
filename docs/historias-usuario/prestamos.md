@@ -85,6 +85,9 @@ débito alcanza para pagarlas junto con las tarjetas.
   resta ese capital.
 
 ### 6. Editar, eliminar o desactivar un préstamo
+Como usuario quiero corregir los datos de un préstamo o quitarlo de mis
+listados cuando ya lo liquidé, sin perder su historia.
+
 **Criterios de aceptación**
 - Editar cambia nombre, banco y cuenta sugerida. Monto, tasa, plazo y
   fechas **no** se editan: definen el calendario.
@@ -92,6 +95,25 @@ débito alcanza para pagarlas junto con las tarjetas.
   lo tenía). Con cuotas pagadas se **desactiva** (p. ej. al liquidarlo) y
   queda en "Desactivados", desde donde se activa de nuevo.
 - G4: un préstamo desactivado no se paga ni se edita.
+
+### 7. Abono extraordinario y tasa variable (3.1.0)
+Como usuario quiero abonar extra al capital de un préstamo y registrar cuando
+el banco cambia la tasa, para que el calendario refleje lo que de verdad debo.
+
+**Criterios de aceptación**
+- En el detalle del préstamo → **Abono extraordinario**: monto, fecha y cuenta
+  (de la moneda del préstamo). Eliges **Baja el plazo** (misma cuota, terminas
+  antes) o **Baja la cuota** (mismo plazo). El abono no puede pasar el capital
+  que falta (L7). Se registra como un gasto "Préstamos" y el calendario se
+  recalcula desde la próxima cuota.
+- **Cambiar tasa**: la nueva tasa anual rige desde una cuota que todavía no
+  pagaste (por defecto la próxima). Se mantiene el plazo y la cuota se
+  recalcula (L8).
+- **Deshacer último ajuste** quita el último abono (con su gasto) o el último
+  cambio de tasa, siempre que no haya cuotas pagadas después. Una cuota con un
+  abono posterior no se deshace hasta deshacer el abono.
+- El calendario, el capital pendiente, los intereses y la cuota del Resumen y
+  de la línea base usan siempre los ajustes.
 
 ## Reglas de negocio
 
@@ -106,11 +128,10 @@ débito alcanza para pagarlas junto con las tarjetas.
 
 ## Pendiente / fuera de alcance
 
-- Abonos extraordinarios al capital (recalcular plazo o cuota).
-- Tasa variable, seguros o comisiones dentro de la cuota; cada banco puede
-  tener particularidades: conviene comparar el calendario con el del banco.
-- Las cuotas en dólares se listan en el Resumen pero no suman en la
-  cobertura (igual que las tarjetas en USD).
+- Seguros o comisiones dentro de la cuota; cada banco puede tener
+  particularidades: conviene comparar el calendario con el del banco.
+- (Hecho en 3.1.0) Abonos extraordinarios (L7), tasa variable (L8) y las
+  cuotas en dólares suman en la cobertura convertidas (G7).
 - (Hecho en 2.3.0) El financiamiento con interés sobre una tarjeta usa la
   misma tabla de amortización: ver [`financiamientos.md`](./financiamientos.md).
 
@@ -121,3 +142,7 @@ débito alcanza para pagarlas junto con las tarjetas.
   (`supabase/Versionamiento/2.1.0/01_loans.sql`).
 - **2026-10-12 (v2.1.0)** — Las cuotas a cobro entran al Resumen y a la
   cobertura del débito (L6); el patrimonio neto resta el capital pendiente.
+- **2026-10-18 (v3.1.0, en desarrollo)** — La historia 6 suma su enunciado
+  "Como usuario…" (no cambia el comportamiento).
+- **2026-10-19 (v3.1.0, en desarrollo)** — Abono extraordinario (L7) y tasa
+  variable (L8); SQL `3.1.0/05_loan_adjustments.sql`.

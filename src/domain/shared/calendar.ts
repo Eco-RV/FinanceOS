@@ -62,3 +62,8 @@ export function daysUntil(date: Date, from: Date = crToday()): number {
   const b = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
   return Math.round((a - b) / 86_400_000);
 }
+
+/** Misma hora `n` días después (o antes, con `n` negativo). */
+export function addDays(date: Date, n: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+}

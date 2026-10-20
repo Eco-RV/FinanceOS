@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Plus } from "lucide-react";
+import { ArrowDown, Pencil, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import { crToday, toISODate } from "@/domain";
+import { readLastUsed, rememberLastUsed } from "@/lib/last-used";
+import { crToday, overdraftWarning, overpaymentWarning, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
 import { CURRENCIES } from "@/lib/schema";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -41,18 +42,25 @@ type Props = {
   /** Saldo a pagar de la tarjeta por moneda (botón "Usar saldo total"). */
   fixedCardBalance?: number;
   fixedCardBalances?: Partial<Record<"CRC" | "USD", number>>;
+  /** Deuda total de la tarjeta por moneda (M4: avisar si el abono la supera). */
+  cardDebts?: Partial<Record<"CRC" | "USD", number>>;
   /** Último tipo de cambio (M5: abono en otra moneda, 2.8.0). */
   exchangeRate?: { usd_crc: number; rate_on: string } | null;
   /** Tarjetas de débito activas para el gasto rápido (2.8.0). */
   debitCards?: DebitCard[];
   transaction?: Transaction;
   triggerLabel?: string;
-  /** Botón circular fijo (para el acceso rápido global) en vez del botón inline. */
+  /**
+   * Botón del acceso rápido global (3.1.0: lo posiciona el layout; ingreso =
+   * flecha abajo en verde). Solo para gasto e ingreso.
+   */
   fab?: boolean;
   /** Gasto por SINPE Móvil: abre el gasto rápido en la pestaña SINPE. */
   sinpe?: boolean;
   /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
   categoryIcons?: Record<string, CategoryIconKey>;
+  /** U9 (3.1.0): moneda con la que abre un gasto nuevo (moneda base). */
+  defaultCurrency?: "CRC" | "USD";
 };
 
 const NEW_LABEL: Record<FormTransactionType, string> = {
@@ -91,6 +99,7 @@ export function TransactionForm(props: Props) {
         transaction={props.transaction}
         triggerLabel={props.triggerLabel}
         fab={props.fab}
+        defaultCurrency={props.defaultCurrency}
       />
     );
   }
@@ -105,6 +114,7 @@ function MovementForm({
   fixedCardId,
   fixedCardBalance,
   fixedCardBalances,
+  cardDebts,
   exchangeRate,
   transaction,
   triggerLabel,
@@ -166,10 +176,48 @@ function MovementForm({
       ? (fixedCardBalances?.[payIn] ?? (payIn === accountCurrency ? fixedCardBalance : undefined))
       : undefined;
 
+  // M4 (advierte): un abono mayor que la deuda deja saldo a favor.
+  const appliedHere =
+    transaction?.type === "card_payment" && transaction.currency === payIn ? Number(transaction.amount) : 0;
+  const overpaid =
+    type === "card_payment" && typeof cardDebts?.[payIn] === "number"
+      ? overpaymentWarning(Math.max(0, cardDebts[payIn]!), amountNumber, appliedHere)
+      : null;
+  // C2 (advierte): un gasto desde una cuenta puede dejarla en negativo.
+  const overdraft =
+    type === "expense" && originAccount
+      ? overdraftWarning(
+          Number(originAccount.current_balance),
+          amountNumber,
+          transaction?.account_id === originAccount.id ? Number(transaction.amount) : 0,
+        )
+      : null;
+
   const canPayTotal = type === "card_payment" && typeof totalToPay === "number" && totalToPay > 0;
 
+  // 3.1.0 · ley de Parkinson: un ingreso nuevo propone la cuenta y la
+  // categoría de la última vez.
+  function onOpenChange(next: boolean) {
+    if (next && !editing && type === "income") {
+      const lastAccount = readLastUsed("ingreso:cuenta");
+      if (lastAccount && accounts.some((a) => a.id === lastAccount)) setOrigin(`account:${lastAccount}`);
+      else if (!origin && accounts.length === 1) setOrigin(`account:${accounts[0].id}`);
+      const lastCategory = readLastUsed("ingreso:categoria");
+      if (!category && lastCategory && categories.includes(lastCategory)) setCategory(lastCategory);
+    }
+    setOpen(next);
+  }
+
+  function handleSubmit(formData: FormData) {
+    if (!editing && type === "income") {
+      rememberLastUsed("ingreso:cuenta", origin.startsWith("account:") ? origin.slice(8) : null);
+      rememberLastUsed("ingreso:categoria", category);
+    }
+    submit(formData);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger
         render={
           editing ? (
@@ -178,7 +226,8 @@ function MovementForm({
             <Button
               size="icon-lg"
               aria-label={triggerLabel ?? NEW_LABEL[type]}
-              className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 size-12 rounded-full shadow-lg transition-[background-color,box-shadow,scale] hover:shadow-xl motion-safe:active:not-aria-[haspopup=menu]:scale-90 sm:right-6 sm:bottom-6"
+              title={triggerLabel ?? NEW_LABEL[type]}
+              className="size-14 rounded-2xl shadow-lg transition-[background-color,box-shadow,scale,filter] hover:shadow-xl hover:brightness-105 motion-safe:active:not-aria-[haspopup=menu]:scale-90 bg-income text-income-foreground hover:bg-income"
             />
           ) : (
             <Button size="sm" />
@@ -188,7 +237,7 @@ function MovementForm({
         {editing ? (
           <Pencil className="size-4" />
         ) : fab ? (
-          <Plus className="size-5" />
+          <ArrowDown className="size-6" strokeWidth={2.5} />
         ) : (
           <>
             <Plus className="size-4" /> {triggerLabel ?? NEW_LABEL[type]}
@@ -210,7 +259,7 @@ function MovementForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form action={handleSubmit} className="flex flex-col gap-4">
           <input type="hidden" name="type" value={type} />
           {transaction ? (
             <input type="hidden" name="id" value={transaction.id} />
@@ -260,6 +309,23 @@ function MovementForm({
             >
               Usar saldo total de la tarjeta ({formatCurrency(totalToPay!, payIn)})
             </Button>
+          ) : null}
+
+          {overpaid != null ? (
+            <p role="status" className="rounded-xl bg-warning/15 px-3 py-2 text-xs text-foreground">
+              Abonas más que la deuda: quedará un saldo a favor de{" "}
+              <span className="font-medium tabular-nums">{formatCurrency(overpaid, payIn)}</span>.
+              Puedes registrarlo igual.
+            </p>
+          ) : null}
+          {overdraft != null && originAccount ? (
+            <p role="status" className="rounded-xl bg-warning/15 px-3 py-2 text-xs text-foreground">
+              {originAccount.name} quedará en{" "}
+              <span className="font-medium tabular-nums">
+                {formatCurrency(overdraft, originAccount.currency)}
+              </span>
+              . Puedes registrarlo igual.
+            </p>
           ) : null}
 
           {type === "card_payment" ? (
@@ -317,7 +383,7 @@ function MovementForm({
 
           {showOrigin ? (
             <FormField
-              label={type === "expense" ? "Origen (cuenta o tarjeta)" : "Cuenta origen"}
+              label={type === "expense" ? "Origen (cuenta o tarjeta)" : type === "income" ? "Cuenta que recibe" : "Cuenta origen"}
               htmlFor="origin"
               error={errors?.origin}
             >

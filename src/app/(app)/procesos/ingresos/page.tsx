@@ -6,12 +6,14 @@ import { categoryOptions, iconsByName } from "@/lib/categories";
 import type { Account, Category, Transaction } from "@/lib/types";
 import { BackLink } from "@/components/back-link";
 import { TransactionForm } from "../_transactions/transaction-form";
+import { loadSharedLinks } from "@/lib/shared-board";
 import { TransactionList } from "../_transactions/transaction-list";
 
 export default async function IngresosPage() {
   await requireUser();
 
   const supabase = await createClient();
+  const linksPromise = loadSharedLinks(supabase);
   const [{ data: txData }, { data: accData }, { data: catData }] =
     await Promise.all([
       supabase
@@ -68,6 +70,7 @@ export default async function IngresosPage() {
           cards={[]}
           categories={categories}
           categoryIcons={categoryIcons}
+          sharedLinks={await linksPromise}
           emptyLabel="Aún no registrás ingresos."
         />
       ) : (

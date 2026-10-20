@@ -4,10 +4,10 @@
 
 ## Resumen
 
-Importa automáticamente las compras con tarjeta desde los avisos que envía el
+Importa las compras con tarjeta desde los avisos que envía el
 banco por correo. El usuario registra sus bancos (remitentes + formato del
-correo), conecta su Gmail en modo solo lectura y un proceso programado lee los
-avisos nuevos **sin IA ni tokens** (un parser determinístico por
+correo), conecta su Gmail en modo solo lectura y, al tocar "Sincronizar", la
+app lee los avisos nuevos **sin IA ni tokens** (un parser determinístico por
 banco). Cada compra detectada llega a una bandeja "Por confirmar"; solo al
 aprobarla se crea el gasto y se ajusta el saldo de la tarjeta.
 
@@ -50,9 +50,11 @@ Como usuario quiero que las compras con tarjeta se detecten solas, para no
 registrarlas a mano.
 
 **Criterios de aceptación**
-- En v1.3.0 la lectura es **manual**: el botón "Sincronizar" de `/procesos/pendientes`.
-  La ruta `/api/sync-mail` (protegida con un secreto Bearer, `CRON_SECRET`) ya
-  existe; el workflow de GitHub Actions que la llama cada 2 horas llega en v1.3.1.
+- La lectura es **siempre manual** (I2): el botón "Sincronizar" de
+  `/procesos/pendientes`. La ruta `/api/sync-mail` (protegida con un secreto
+  Bearer, `CRON_SECRET`) existe para un cron externo, pero el workflow cada 2 h
+  que se planeó para v1.3.1 se descartó (decisión de negocio, ver
+  `docs/dominio/arquitectura.md`).
 - Leer dos veces el mismo correo no duplica nada (`unique (user_id,
   source_message_id)`).
 - La tarjeta se identifica por los **últimos 4 dígitos** del aviso contra
@@ -96,6 +98,16 @@ distinga tarjetas de bancos distintos con los mismos últimos 4 dígitos.
 - El formulario de tarjeta muestra el selector "Banco" solo si hay bancos
   registrados; es opcional.
 
+### 7. Corregir las reglas de comercio (3.1.0)
+Como usuario quiero cambiar la categoría que la app sugiere para un comercio, o
+borrar la regla, para que las próximas compras lleguen bien clasificadas.
+
+**Criterios de aceptación**
+- Ajustes → Bancos → **Reglas de comercio**: cada comercio con su categoría en
+  un combo; cambiarla guarda al momento (solo categorías de gasto activas, G4).
+- **Borrar** quita la regla: la próxima compra de ese comercio llega sin
+  sugerencia y se vuelve a aprender al aprobarla (I6).
+
 ## Reglas de negocio
 
 - Nada del correo afecta saldos hasta que el usuario lo aprueba.
@@ -110,11 +122,11 @@ distinga tarjetas de bancos distintos con los mismos últimos 4 dígitos.
 
 ## Pendiente / fuera de alcance
 
-- Lectura automática programada (GitHub Actions cada 2 h): pendiente para v1.3.1.
+- Lectura automática programada: descartada (I2); se sincroniza a mano.
 - Solo Gmail; IMAP queda como alternativa futura tras la misma interfaz.
 - Solo gastos con tarjeta de crédito: no importa débitos, transferencias ni
   reversos.
-- No hay pantalla para editar o borrar reglas de comercio.
+- (Hecho en 3.1.0) Pantalla de reglas de comercio (I6).
 - Solo BAC tiene parser; otros bancos requieren un correo de ejemplo real.
 
 ## Historial
@@ -130,3 +142,7 @@ distinga tarjetas de bancos distintos con los mismos últimos 4 dígitos.
   ([`financiamientos.md`](./financiamientos.md)); una conexión anterior muestra
   "Reconectar para enviar avisos". Se guardan los permisos concedidos
   (`mail_connections.scopes`).
+- **2026-10-18 (v3.1.0, en desarrollo)** — Se corrige el documento: la
+  lectura es siempre manual (I2); la lectura programada de v1.3.1 se descartó.
+- **2026-10-19 (v3.1.0, en desarrollo)** — Pantalla de reglas de comercio (I6).
+  Los parsers de otros bancos y de débitos esperan correos de ejemplo.

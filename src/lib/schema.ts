@@ -314,6 +314,8 @@ export const financingSchema = z.object({
   first_charge_on: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
+  /** F10 (3.1.0): moneda del plan. */
+  currency: z.enum(CURRENCIES).optional(),
 });
 
 /** F9: lo único que se edita de un financiamiento. */
@@ -489,6 +491,8 @@ export const planSchema = z.object({
     .optional()
     .transform((v) => (v ? v : null)),
   note: optionalNote,
+  /** P7 (3.1.0): monto variable (casilla). */
+  variable: z.enum(["on"]).optional().transform((v) => v === "on"),
 });
 
 export type PlanInput = z.infer<typeof planSchema>;
@@ -512,3 +516,53 @@ export const goalSchema = z.object({
 });
 
 export type GoalInput = z.infer<typeof goalSchema>;
+
+// ─────────────────────────────  gastos compartidos (3.1.0)  ─────────────────────────────
+
+/** Paso 1 del alta (gasto nuevo) o el id del gasto que se comparte. */
+export const sharedExpenseSchema = z
+  .object({
+    id: uuid("Gasto compartido inválido").optional().or(z.literal("")),
+    movement_id: uuid("Movimiento inválido").optional().or(z.literal("")),
+    description: z.string().trim().max(80, "Máximo 80 caracteres").default(""),
+    due_on: optionalDate,
+    amount: z.coerce.number().optional(),
+    origin: z.string().optional().default(""),
+    currency: z.enum(CURRENCIES).optional(),
+    category: z.string().trim().max(40).optional().default(""),
+    occurred_on: optionalDate,
+  })
+  .superRefine((v, ctx) => {
+    if (v.id || v.movement_id) return;
+    if (!(Number(v.amount) > 0)) ctx.addIssue({ code: "custom", path: ["amount"], message: "Monto mayor que 0" });
+    if (!/^(card|account|debit):[0-9a-fA-F-]{36}$/.test(v.origin)) {
+      ctx.addIssue({ code: "custom", path: ["origin"], message: "Elige con qué pagaste" });
+    }
+    if (!v.category) ctx.addIssue({ code: "custom", path: ["category"], message: "Elige una categoría" });
+    if (!v.occurred_on) ctx.addIssue({ code: "custom", path: ["occurred_on"], message: "Fecha inválida" });
+  });
+
+/** X4: registrar que una persona pagó su parte (con ingreso opcional). */
+export const sharedPaymentSchema = z
+  .object({
+    id: uuid("Gasto compartido inválido"),
+    member_id: uuid("Persona inválida"),
+    paid_on: isoDate,
+    channel: z.enum(["sinpe", "efectivo", "transferencia", "otro"]),
+    note: z
+      .string()
+      .trim()
+      .max(120)
+      .optional()
+      .transform((v) => (v ? v : null)),
+    as_income: z.enum(["on"]).optional(),
+    account_id: z.string().optional().default(""),
+    category: z.string().trim().max(40).optional().default(""),
+  })
+  .superRefine((v, ctx) => {
+    if (!v.as_income) return;
+    if (!/^[0-9a-fA-F-]{36}$/.test(v.account_id)) {
+      ctx.addIssue({ code: "custom", path: ["account_id"], message: "Elige la cuenta que recibió" });
+    }
+    if (!v.category) ctx.addIssue({ code: "custom", path: ["category"], message: "Elige una categoría" });
+  });

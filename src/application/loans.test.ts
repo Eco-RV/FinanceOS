@@ -1,7 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fakeStore } from "./fakes.test-helpers.ts";
-import { createLoan, payInstallment, renameLoan, undoLastInstallment } from "./loans.ts";
+import {
+  changeLoanRate,
+  createLoan,
+  payInstallment,
+  prepayLoan,
+  renameLoan,
+  termsOf,
+  undoLastInstallment,
+  undoLastLoanAdjustment,
+} from "./loans.ts";
+import { loanProgress } from "../domain/index.ts";
 import { removeFromCatalog, setCatalogActive } from "./catalog.ts";
 import { deleteMovement, saveMovement } from "./movements.ts";
 import type { LoanFields } from "./ports.ts";
@@ -149,4 +159,73 @@ test("renameLoan cambia nombre y cuenta sugerida, no los términos", async () =>
   assert.ok((await renameLoan(s.deps, { id, name: "Carro 2", lender: null, account_id: null })).ok);
   const loan = s.state.loanRows.get(id)!;
   assert.deepEqual([loan.name, loan.lender, loan.account_id, loan.principal], ["Carro 2", null, null, 600_000]);
+});
+
+test("L7: abono extraordinario que baja el plazo; el gasto sale de la cuenta", async () => {
+  const { s, id } = await withLoan();
+  assert.ok((await pay(s, id)).ok);
+  const r = await prepayLoan(s.deps, {
+    loan_id: id,
+    account_id: "bcr",
+    amount: 200_000,
+    mode: "term",
+    occurred_on: "2026-11-10",
+    today: "2026-11-10",
+  });
+  assert.ok(r.ok);
+  assert.ok(r.value.remainingInstallments < 11);
+  const prepay = [...s.state.movements.values()].find((m) => m.installment_no == null)!;
+  assert.equal(prepay.type, "expense");
+  assert.equal(prepay.loan_id, id);
+  assert.equal(prepay.amount, 200_000);
+
+  // El capital que falta baja por el abono.
+  const adjustments = (await s.deps.loans.adjustments(id)).map((a) => a.event);
+  const p = loanProgress(termsOf({ ...fields, currency: "CRC" }, adjustments), [1], "2026-11-10");
+  assert.ok(Math.abs(p.remainingPrincipal - (555_264.24 - 200_000)) < 0.01);
+
+  // L2: no se borra desde Gastos; L5: no se deshace la cuota 1 sin deshacer el abono.
+  const movementId = [...s.state.movements.entries()].find(([, m]) => m.installment_no == null)![0];
+  assert.equal((await deleteMovement(s.deps, movementId)).ok, false);
+  const undoCuota = await undoLastInstallment(s.deps, id);
+  assert.equal(!undoCuota.ok && undoCuota.rule, "L5");
+
+  assert.ok((await undoLastLoanAdjustment(s.deps, id)).ok);
+  assert.equal([...s.state.movements.values()].filter((m) => m.installment_no == null).length, 0);
+  assert.ok((await undoLastInstallment(s.deps, id)).ok);
+});
+
+test("L7: el abono no pasa el capital que falta", async () => {
+  const { s, id } = await withLoan();
+  const r = await prepayLoan(s.deps, {
+    loan_id: id,
+    account_id: "bcr",
+    amount: 700_000,
+    mode: "payment",
+    occurred_on: "2026-10-20",
+    today: "2026-10-20",
+  });
+  assert.equal(!r.ok && r.rule, "L7");
+  const usd = await prepayLoan(s.deps, {
+    loan_id: id,
+    account_id: "usd",
+    amount: 100,
+    mode: "payment",
+    occurred_on: "2026-10-20",
+    today: "2026-10-20",
+  });
+  assert.equal(usd.ok, false);
+});
+
+test("L8: tasa variable desde una cuota sin pagar; la próxima cuota se paga con la nueva", async () => {
+  const { s, id } = await withLoan();
+  await pay(s, id);
+  const past = await changeLoanRate(s.deps, { loan_id: id, from_no: 1, annual_rate: 12, occurred_on: "2026-11-02", today: "2026-11-02" });
+  assert.equal(!past.ok && past.rule, "L8");
+  const r = await changeLoanRate(s.deps, { loan_id: id, from_no: 2, annual_rate: 12, occurred_on: "2026-11-02", today: "2026-11-02" });
+  assert.ok(r.ok);
+  assert.ok(r.value.payment < 56_735.76);
+  const second = await pay(s, id, "2026-12-01");
+  assert.ok(second.ok);
+  assert.equal(second.value.amount, r.value.payment);
 });

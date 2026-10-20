@@ -41,6 +41,15 @@ mi configuración.
     ("Saldo inicial (arranque de 0)").
 - Después lleva al Resumen; la página muestra la fecha del último arranque.
 
+### 2. Consultar lo archivado (3.1.0)
+Como usuario quiero ver los movimientos que archivó un Arranque de 0.
+
+**Criterios de aceptación**
+- En Arranque de 0 → **Ver lo archivado** (aparece después del primer
+  arranque): lista de solo lectura con búsqueda, tipo, año y filas por página,
+  y las fechas de cada arranque con cuántos movimientos archivó.
+- No se editan, no se borran ni se restauran (M9).
+
 ## Reglas de negocio
 
 - M8: rechaza sin la confirmación escrita y sin un saldo para cada cuenta y
@@ -55,7 +64,7 @@ mi configuración.
 
 ## Pendiente / fuera de alcance
 
-- No hay forma de ver ni restaurar los movimientos archivados desde la app.
+- Restaurar lo archivado (por diseño, M9: solo se consulta en "Ver lo archivado").
 
 ## Historial
 
@@ -67,3 +76,4 @@ mi configuración.
 - **2026-10-14 (v2.7.0)** — Los planes (salario, suscripciones,
   seguros) y las metas de ahorro se conservan; los planes siguen registrando
   desde el día del arranque.
+- **2026-10-19 (v3.1.0, en desarrollo)** — Consulta de lo archivado (M9).

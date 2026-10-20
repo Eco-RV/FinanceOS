@@ -37,10 +37,17 @@ type Props = {
   cancelledFinancingIds?: string[];
   /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
   categoryIcons?: Record<string, CategoryIconKey>;
+  /**
+   * 3.1.0: movimiento → gasto compartido (el gasto o el ingreso de un cobro).
+   * Si viene, los gastos sin compartir ofrecen "Compartir".
+   */
+  sharedLinks?: Record<string, string>;
+  /** 3.1.0: solo lectura (movimientos archivados por el Arranque de 0). */
+  readOnly?: boolean;
 };
 
 /** Monto con signo según el contexto (flujo de caja vs. deuda de la tarjeta). */
-function displayAmount(
+export function displayAmount(
   t: Transaction,
   context: "list" | "card" | "account",
   accountId?: string,
@@ -82,6 +89,8 @@ export function TransactionList({
   emptyLabel = "Aún no hay movimientos.",
   cancelledFinancingIds = [],
   categoryIcons = {},
+  sharedLinks,
+  readOnly = false,
 }: Props) {
   const debitById = new Map(debitCards.map((d) => [d.id, d]));
   const activeDebitCards = debitCards.filter((d) => !d.archived);
@@ -146,7 +155,9 @@ export function TransactionList({
     ) : null;
     const fromCancelledPlan =
       isInstallment && cancelledFinancingIds.includes(t.financing_id!);
-    const actions = fromCancelledPlan ? (
+    const actions = readOnly ? (
+      <span className="text-xs text-muted-foreground">Archivado</span>
+    ) : fromCancelledPlan ? (
       <div className="flex justify-end">
         <DeleteButton
           id={t.id}
@@ -165,6 +176,13 @@ export function TransactionList({
       <span className="text-xs text-muted-foreground">
         Se edita en {context === "account" ? "la cuenta" : "la tarjeta"}
       </span>
+    ) : sharedLinks?.[t.id] ? (
+      <Link
+        href={`/procesos/compartidos/${sharedLinks[t.id]}`}
+        className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+      >
+        Ver en Compartidos
+      </Link>
     ) : t.loan_id ? (
       <Link
         href={`/procesos/prestamos/${t.loan_id}`}
@@ -182,6 +200,7 @@ export function TransactionList({
         categories={categories}
         categoryIcons={categoryIcons}
         debitCards={activeDebitCards}
+        canShare={Boolean(sharedLinks) && t.type === "expense"}
       />
     );
     return { t, amount, amountCurrency, isInstallment, detail: detailWithInterest, typeBadge, actions };

@@ -60,7 +60,7 @@ export function ConfirmHost() {
       }}
     >
       <AlertDialog.Portal>
-        <AlertDialog.Backdrop className="fixed inset-0 z-[80] bg-black/30 duration-200 ease-fluid supports-backdrop-filter:backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <AlertDialog.Backdrop className="fixed inset-0 z-[80] bg-black/65 duration-200 dark:bg-black/70 ease-fluid supports-backdrop-filter:backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <AlertDialog.Popup className="fixed top-1/2 left-1/2 z-[80] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-2xl bg-popover p-5 text-popover-foreground shadow-2xl ring-1 ring-foreground/10 duration-200 ease-fluid outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
           <div className="flex items-start gap-3.5">
             <span className={cn("grid size-10 shrink-0 place-items-center rounded-full", TONE[tone])}>

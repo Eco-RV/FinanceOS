@@ -64,7 +64,7 @@ export function GoalFormDialog({
   goal?: Goal;
   /** Cuentas activas; se sugieren primero las de ahorro. */
   accounts: Account[];
-  /** Cuentas que ya tienen otra meta activa (S1). */
+  /** Cuentas que ya tienen otra meta activa (A1). */
   takenAccountIds: string[];
 }) {
   const editing = Boolean(goal);

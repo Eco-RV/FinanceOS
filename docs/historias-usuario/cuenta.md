@@ -73,6 +73,37 @@ me reconozca.
   "Próximamente".
 - El perfil guarda `preferences` (jsonb) para sumar ajustes sin migrar.
 
+### 8. Entrar con Google (3.1.0)
+Como usuario quiero entrar con mi cuenta de Google, sin otra contraseña.
+
+**Criterios de aceptación**
+- En el login (pestañas Iniciar sesión y Crear cuenta) → **Continuar con
+  Google** (U10). Vuelve a la app por `/auth/confirm` y entra.
+- Si el proveedor no está activo, vuelve al login con un aviso y se puede usar
+  el correo.
+- Para que funcione hay que activar Google en Supabase → Authentication →
+  Providers (cliente OAuth de Google Cloud con la URL de callback de
+  Supabase).
+
+### 9. Borrar mi cuenta (3.1.0)
+Como usuario quiero borrar mi cuenta y todos mis datos.
+
+**Criterios de aceptación**
+- Ajustes → Cuenta → **Borrar la cuenta** (al final, en rojo): escribir
+  ELIMINAR y la contraseña actual (U8). Se borran los datos y los archivos, se
+  cierra la sesión y el login lo confirma.
+- Necesita `SUPABASE_SERVICE_ROLE_KEY` en el servidor.
+
+### 10. Moneda base y formato de fecha (3.1.0)
+Como usuario quiero elegir mi moneda principal y cómo se ven las fechas.
+
+**Criterios de aceptación**
+- Ajustes → Preferencias → **Moneda y fechas** (U9): moneda base (colones o
+  dólares) y formato de fecha (18 oct 2026 · 18/10/2026 · 18 de octubre de
+  2026). Se guardan al elegir, en el perfil.
+- La moneda base es con la que abre el gasto rápido; con USD el Resumen
+  muestra además el patrimonio en dólares. Las fechas cambian en toda la app.
+
 ## Reglas de negocio
 
 - U1–U7 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
@@ -81,13 +112,13 @@ me reconozca.
 
 ## Pendiente / fuera de alcance
 
-- Entrar con Google (está en el glosario).
-- Eliminar la cuenta.
-- Preferencias que viajen entre dispositivos (el tema es por dispositivo).
-- Moneda base y formato de fecha.
+- (Hecho en 3.1.0) Entrar con Google (U10), borrar la cuenta (U8), moneda base y formato de fecha (U9).
+- El tema sigue siendo por dispositivo (moneda y fecha ya viajan con la cuenta).
 
 ## Historial
 
 - **2026-10-14 (v2.6.0)** — Archivo nuevo: registro con
   confirmación por correo, recuperar contraseña, perfil con foto, cambio de
   correo y contraseña, y preferencias.
+- **2026-10-19 (v3.1.0, en desarrollo)** — Entrar con Google (U10), borrar
+  la cuenta (U8) y moneda base y formato de fecha (U9).

@@ -25,6 +25,7 @@ import {
 } from "@/domain";
 import { formatCurrency } from "@/lib/format";
 import type { Financing } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { createFinancing, updateFinancing } from "./actions";
 
 type Props = {
@@ -76,7 +77,7 @@ function CategorySelect({
   );
 }
 
-export function FinancingForm({ cardId, currency, categories = [] }: Props) {
+export function FinancingForm({ cardId, currency: limitCurrency, categories = [] }: Props) {
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     createFinancing,
     "Financiamiento creado",
@@ -85,6 +86,8 @@ export function FinancingForm({ cardId, currency, categories = [] }: Props) {
   const [totalAmount, setTotalAmount] = useState("");
   const [rate, setRate] = useState("0");
   const [months, setMonths] = useState("");
+  // F10 (3.1.0): por defecto la moneda del límite; se puede financiar en la otra (T1).
+  const [currency, setCurrency] = useState(limitCurrency);
   const preview = previewOf(totalAmount, rate, months, currency);
   const withInterest = Number(rate) > 0;
 
@@ -107,6 +110,7 @@ export function FinancingForm({ cardId, currency, categories = [] }: Props) {
 
         <form action={submit} className="flex flex-col gap-4">
           <input type="hidden" name="card_id" value={cardId} />
+          <input type="hidden" name="currency" value={currency} />
 
           <FormField
             label="Descripción"
@@ -117,6 +121,32 @@ export function FinancingForm({ cardId, currency, categories = [] }: Props) {
           </FormField>
 
           <CategorySelect categories={categories} error={errors?.category} />
+
+          <div role="radiogroup" aria-label="Moneda del financiamiento" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+            {(["CRC", "USD"] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={currency === c}
+                onClick={() => setCurrency(c)}
+                className={cn(
+                  "h-8 rounded-lg text-sm transition-[background-color,color,box-shadow] duration-200",
+                  currency === c
+                    ? "bg-card font-medium text-foreground shadow-sm dark:bg-background"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {c === "CRC" ? "Colones (₡)" : "Dólares ($)"}
+              </button>
+            ))}
+          </div>
+          {currency !== limitCurrency ? (
+            <p className="-mt-2 text-xs text-muted-foreground">
+              Las cuotas van al saldo en {currency === "USD" ? "dólares" : "colones"} de la tarjeta; el
+              disponible las convierte con el último tipo de cambio.
+            </p>
+          ) : null}
 
           <div className="grid grid-cols-3 gap-3">
             <FormField

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowUp,
   Banknote,
   ChevronDown,
   CreditCard as CardIcon,
@@ -24,11 +25,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import { crToday, toISODate } from "@/domain";
+import { crToday, overdraftWarning, toISODate } from "@/domain";
 import { formatCurrency } from "@/lib/format";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import type { Account, CreditCard, DebitCard, Transaction } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { readLastUsed, rememberLastUsed } from "@/lib/last-used";
 import { saveTransaction } from "./actions";
 import { CategoryPicker } from "./category-picker";
 import { WalletCarousel } from "./wallet-carousel";
@@ -66,6 +68,7 @@ export function ExpenseForm({
   triggerLabel,
   fab = false,
   initialMode,
+  defaultCurrency = "CRC",
 }: {
   accounts: Account[];
   cards: CreditCard[];
@@ -78,12 +81,14 @@ export function ExpenseForm({
   transaction?: Transaction;
   triggerLabel?: string;
   fab?: boolean;
+  /** U9 (3.1.0): moneda base. */
+  defaultCurrency?: Currency;
 }) {
   const editing = Boolean(transaction);
   const today = toISODate(crToday());
   const [amount, setAmount] = useState(transaction ? String(transaction.amount) : "");
   const [currency, setCurrency] = useState<Currency>(
-    transaction?.currency === "USD" ? "USD" : "CRC",
+    transaction ? (transaction.currency === "USD" ? "USD" : "CRC") : defaultCurrency,
   );
   const amountValue = cleanAmount(amount);
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
@@ -147,14 +152,24 @@ export function ExpenseForm({
     Boolean(transaction && (transaction.note || transaction.occurred_on !== today)),
   );
 
-  // Al abrir un gasto nuevo: formulario limpio y la primera tarjeta elegida.
+  // Al abrir un gasto nuevo: formulario limpio y, si ya se usó, la forma de
+  // pago de la última vez (3.1.0, ley de Parkinson); si no, la primera tarjeta.
   function onOpenChange(next: boolean) {
     if (next && !editing) {
       setAmount("");
       setCategory("");
       setMore(false);
-      setCardId(cards[0]?.id ?? "");
-      setMode(defaultMode());
+      const lastMode = readLastUsed("gasto:modo") as Mode | null;
+      const lastCard = readLastUsed("gasto:tarjeta");
+      setCardId(cards.some((c) => c.id === lastCard) ? lastCard! : (cards[0]?.id ?? ""));
+      const lastBank = readLastUsed("gasto:cuenta");
+      if (lastBank && accounts.some((a) => a.id === lastBank)) {
+        setBankId(lastBank);
+        setCashId(lastBank);
+      }
+      const lastDebit = readLastUsed("gasto:debito");
+      if (lastDebit) setDebitId(lastDebit);
+      setMode(!initialMode && lastMode && ["card", "debit", "sinpe", "cash"].includes(lastMode) ? lastMode : defaultMode());
     }
     setOpen(next);
   }
@@ -197,10 +212,34 @@ export function ExpenseForm({
           : cashSelected
             ? `account:${cashSelected}`
             : "";
+  // C2 (advierte): la cuenta de débito/SINPE/efectivo puede quedar en negativo.
+  const payingAccount =
+    mode === "debit"
+      ? (debitSelected?.account ?? accounts.find((a) => a.id === keptDebit?.accountId))
+      : mode === "sinpe"
+        ? bankForCurrency.find((a) => a.id === bankSelected)
+        : mode === "cash"
+          ? cashForCurrency.find((a) => a.id === cashSelected)
+          : undefined;
+  const overdraft = payingAccount
+    ? overdraftWarning(
+        Number(payingAccount.current_balance),
+        Number(amountValue),
+        transaction?.account_id === payingAccount.id ? Number(transaction.amount) : 0,
+      )
+    : null;
+
   const debitCardValue =
     mode === "debit" ? (debitSelected?.card.id ?? keptDebit?.cardId ?? "") : "";
 
   function handleSubmit(formData: FormData) {
+    if (!editing) {
+      rememberLastUsed("gasto:modo", mode);
+      if (mode === "card") rememberLastUsed("gasto:tarjeta", cardId);
+      if (mode === "sinpe") rememberLastUsed("gasto:cuenta", bankSelected);
+      if (mode === "cash") rememberLastUsed("gasto:cuenta", cashSelected);
+      if (mode === "debit") rememberLastUsed("gasto:debito", debitSelected?.card.id);
+    }
     submit(formData);
   }
 
@@ -214,7 +253,8 @@ export function ExpenseForm({
             <Button
               size="icon-lg"
               aria-label={triggerLabel ?? "Nuevo gasto"}
-              className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 size-14 rounded-2xl shadow-lg transition-[background-color,box-shadow,scale] hover:shadow-xl motion-safe:active:not-aria-[haspopup=menu]:scale-90 sm:right-6 sm:bottom-6"
+              title={triggerLabel ?? "Nuevo gasto"}
+              className="size-14 rounded-2xl shadow-lg transition-[background-color,box-shadow,scale,filter] hover:shadow-xl hover:brightness-105 motion-safe:active:not-aria-[haspopup=menu]:scale-90 bg-expense text-expense-foreground hover:bg-expense"
             />
           ) : (
             <Button size="sm" />
@@ -224,7 +264,7 @@ export function ExpenseForm({
         {editing ? (
           <Pencil className="size-4" />
         ) : fab ? (
-          <Plus className="size-6" />
+          <ArrowUp className="size-6" strokeWidth={2.5} />
         ) : (
           <>
             <Plus className="size-4" /> {triggerLabel ?? "Nuevo gasto"}
@@ -450,6 +490,15 @@ export function ExpenseForm({
                 ))}
               </div>
             )}
+            {overdraft != null && payingAccount ? (
+              <p role="status" className="rounded-xl bg-warning/15 px-3 py-2 text-xs text-foreground">
+                {payingAccount.name} quedará en{" "}
+                <span className="font-medium tabular-nums">
+                  {formatCurrency(overdraft, payingAccount.currency)}
+                </span>
+                . Puedes registrarlo igual.
+              </p>
+            ) : null}
             {errors?.origin ? <p className="text-xs text-destructive">{errors.origin}</p> : null}
           </div>
 

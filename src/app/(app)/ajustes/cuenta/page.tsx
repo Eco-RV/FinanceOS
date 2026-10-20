@@ -8,6 +8,7 @@ import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
 import { ProfileSection } from "./profile-section";
 import { EmailSection, PasswordSection } from "./security-section";
+import { DeleteAccountSection } from "./delete-account-section";
 
 /** Mi cuenta (2.6.0): perfil, foto, correo, contraseña y sesión. */
 export default async function CuentaPage() {
@@ -42,6 +43,7 @@ export default async function CuentaPage() {
       />
       <EmailSection email={email} />
       <PasswordSection />
+      <DeleteAccountSection />
 
       <section className="surface flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex items-start gap-3">

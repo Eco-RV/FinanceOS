@@ -83,6 +83,7 @@ export function supabaseAccount(supabase: SupabaseClient) {
   };
 
   const identity: IdentityService = {
+    deleteAccount: () => deleteAccountNow(),
     async email() {
       const { data } = await supabase.auth.getUser();
       return data.user?.email ?? null;
@@ -120,6 +121,25 @@ export function supabaseAccount(supabase: SupabaseClient) {
       if (error) throw new InfrastructureError(authMessage(error.message));
     },
   };
+
+  /** U8: borra archivos (fotos y comprobantes) y el usuario; el resto cae en cascada. */
+  async function deleteAccountNow(): Promise<void> {
+    const id = await userId(supabase);
+    for (const bucket of ["avatars", "receipts"]) {
+      const { data } = await supabase.storage.from(bucket).list(id, { limit: 1000 });
+      const paths = (data ?? []).map((f) => `${id}/${f.name}`);
+      if (paths.length > 0) await supabase.storage.from(bucket).remove(paths);
+    }
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new InfrastructureError("Para borrar la cuenta el servidor necesita SUPABASE_SERVICE_ROLE_KEY");
+    }
+    const admin = createSupabaseClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { error } = await admin.auth.admin.deleteUser(id);
+    if (error) throw new InfrastructureError("No se pudo borrar la cuenta");
+    await supabase.auth.signOut();
+  }
 
   const avatars: AvatarStorage = {
     async upload(file) {
