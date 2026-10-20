@@ -563,7 +563,7 @@ export function fakeStore(seed: {
     adjustments: async (id) =>
       loanAdjustments
         .filter((a) => a.loan_id === id && (!a.transaction_id || movements.has(a.transaction_id)))
-        .map(({ loan_id: _l, ...a }) => a),
+        .map((a) => ({ id: a.id, event: a.event, occurred_on: a.occurred_on, transaction_id: a.transaction_id })),
     addAdjustment: async (id, input) => {
       const adjId = nextId("adj");
       loanAdjustments.push({ id: adjId, loan_id: id, ...input });

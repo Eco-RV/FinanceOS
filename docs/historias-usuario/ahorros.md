@@ -14,7 +14,7 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 **Criterios de aceptación**
 - Nombre, ícono (del kit de la app), objetivo y moneda, fecha opcional
   (futura) y cuenta ligada (se sugieren primero las de ahorro, de la misma
-  moneda; una cuenta solo puede tener una meta activa, A1).
+  moneda; desde 3.0.1 una cuenta puede tener varias metas, A4).
 
 ### 2. Ver mi avance
 **Criterios de aceptación**
@@ -55,7 +55,7 @@ emergencias) y decidir cuánto va a cada una.
 
 ## Pendiente / fuera de alcance
 
-- Varias metas en una misma cuenta (apartados).
+- (Hecho en 3.0.1) Varias metas en una misma cuenta con apartados (A4).
 - Aportes automáticos (un plan de "ahorro" mensual).
 - Metas en dólares en el total del Resumen.
 
