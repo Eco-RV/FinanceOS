@@ -36,6 +36,18 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 - **Archivar** saca la meta de la lista (se puede recuperar). **Eliminar** la
   borra. Ninguno toca la cuenta ni sus movimientos.
 
+### 5. Varias metas en una misma cuenta (3.0.1)
+Como usuario quiero tener varias metas en mi cuenta de ahorro (viaje, carro,
+emergencias) y decidir cuánto va a cada una.
+
+**Criterios de aceptación**
+- Al crear o editar una meta se puede elegir una cuenta que ya tiene otra meta.
+- Con una sola meta, lo ahorrado sigue siendo el saldo de la cuenta. Con
+  varias, cada meta muestra lo que se le **apartó** y la cuenta indica cuánto
+  queda **libre** (A4).
+- **Apartar**: el monto para esa meta, sin pasar lo libre + lo que ya tenía.
+- El Resumen usa la misma regla para el avance de las metas.
+
 ## Reglas de negocio
 
 - A1–A3 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
@@ -50,3 +62,5 @@ Desde 2.7.0, en **Procesos → Ahorros y metas**.
 ## Historial
 
 - **2026-10-14 (v2.7.0)** — Archivo nuevo.
+- **2026-10-19 (v3.0.1, en desarrollo)** — Varias metas por cuenta con
+  apartados (A4; SQL `3.0.1/08_goal_allocations.sql`).

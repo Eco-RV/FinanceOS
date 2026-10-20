@@ -18,6 +18,7 @@ import {
   deletePlan,
   deleteGoal,
   saveGoal,
+  allocateToGoal,
   savePlan,
   setPlanActive,
   syncPlans,
@@ -216,6 +217,17 @@ function fakeGoals() {
     async find(id) {
       return goals.get(id) ?? null;
     },
+    async onAccount(accountId) {
+      return [...goals.values()]
+        .filter((g) => g.account_id === accountId && !g.archived)
+        .map((g) => ({ id: g.id, allocated: g.allocated ?? 0 }));
+    },
+    async accountBalance() {
+      return 300_000;
+    },
+    async setAllocated(id, allocated) {
+      goals.set(id, { ...goals.get(id)!, allocated });
+    },
     async save(id, fields: GoalFields) {
       const goalId = id ?? `g${++n}`;
       goals.set(goalId, { ...fields, id: goalId, archived: goals.get(goalId)?.archived ?? false });
@@ -309,4 +321,17 @@ test("P7: un salario variable entra con el estimado y se confirma el real", asyn
   assert.ok((await confirmPlanOccurrence(p.repo, { movement_id: pending.movement_id, amount: 812_345 })).ok);
   assert.equal(p.movements[0].amount, 812_345);
   assert.equal((await p.repo.estimatedOccurrences()).length, 0);
+});
+
+test("A4: dos metas en la misma cuenta, con apartados que no pasan el saldo", async () => {
+  const g = fakeGoals();
+  const d = { goals: g.repo, accounts: accounts({ ahorro: "CRC" }) };
+  const base = { name: "Viaje", target_amount: 500_000, currency: "CRC" as const, target_date: null, account_id: "ahorro", icon: null };
+  const a = await saveGoal(d, { id: null, fields: base, today: "2026-10-19" });
+  const b = await saveGoal(d, { id: null, fields: { ...base, name: "Carro" }, today: "2026-10-19" });
+  assert.ok(a.ok && b.ok);
+  assert.ok((await allocateToGoal(g.repo, { goal_id: a.value.id, allocated: 200_000 })).ok);
+  const over = await allocateToGoal(g.repo, { goal_id: b.value.id, allocated: 150_000 });
+  assert.equal(!over.ok && over.rule, "A4");
+  assert.ok((await allocateToGoal(g.repo, { goal_id: b.value.id, allocated: 100_000 })).ok);
 });

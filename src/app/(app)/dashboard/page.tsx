@@ -201,7 +201,7 @@ export default async function DashboardPage() {
     repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
     supabase
       .from("savings_goals")
-      .select("id, name, target_amount, currency, target_date, account_id, icon, archived")
+      .select("*")
       .eq("archived", false),
     // P8 (3.0.1): montos por confirmar (P7) y pagos mínimos digitados (T8).
     repositories().then((repos) => repos.plans.estimatedOccurrences()),

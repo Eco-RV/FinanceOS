@@ -105,7 +105,7 @@ nada.
 
 ## Pendiente / fuera de alcance
 
-- Recordatorio antes de un cargo.
+- (Hecho en 3.0.1) Recordatorios dentro de la app (P8); no hay notificaciones push.
 - Línea base en dólares.
 
 ## Historial

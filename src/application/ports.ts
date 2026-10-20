@@ -597,12 +597,16 @@ export type GoalFields = {
   icon: string | null;
 };
 
-export type Goal = GoalFields & { id: string; archived: boolean };
+export type Goal = GoalFields & { id: string; archived: boolean; allocated?: number };
 
 export interface GoalRepository {
   find(goalId: string): Promise<Goal | null>;
-  /** Una cuenta con otra meta activa lanza `InfrastructureError` (S1). */
   save(goalId: string | null, fields: GoalFields): Promise<{ id: string }>;
+  /** A4 (3.0.1): metas activas ligadas a una cuenta, con su apartado. */
+  onAccount(accountId: string): Promise<{ id: string; allocated: number }[]>;
+  /** Saldo de la cuenta (para validar los apartados), o `null`. */
+  accountBalance(accountId: string): Promise<number | null>;
+  setAllocated(goalId: string, allocated: number): Promise<void>;
   setArchived(goalId: string, archived: boolean): Promise<void>;
   delete(goalId: string): Promise<void>;
 }

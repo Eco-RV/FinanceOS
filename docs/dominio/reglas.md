@@ -107,7 +107,8 @@ Hasta 3.0.0 se llamaban S1–S3 (chocaban con S1 = SINPE); desde 3.0.1 son A1–
 
 | # | Regla | Tipo | Estado |
 |---|---|---|---|
-| A1 | Una meta se liga a lo sumo a una cuenta activa de su misma moneda, y una cuenta tiene como máximo una meta activa. Lo ahorrado es el saldo de esa cuenta; los aportes son transferencias hacia ella (M2). | Rechaza | Decidido · Implementado 2.7.0 |
+| A1 | Una meta se liga a lo sumo a una cuenta activa de su misma moneda. Con una sola meta en la cuenta, lo ahorrado es el saldo de esa cuenta; los aportes son transferencias hacia ella (M2). Desde 3.0.1 una cuenta puede tener varias metas (A4). | Rechaza | Decidido · Implementado 2.7.0 · Cambiado 3.0.1 |
+| A4 | Con **varias metas en una cuenta**, cada una cuenta lo que se le **aparta** del saldo (≥ 0); la suma de los apartados no puede pasar el saldo al apartar. Lo no apartado queda libre. Si el saldo baja por debajo de lo apartado, se advierte. | Rechaza (al apartar) / Advierte | Decidido 2026-10-18 · Implementado 3.0.1 |
 | A2 | Una meta tiene nombre y objetivo mayor que 0; la fecha, opcional, es futura al crearla. | Rechaza | Decidido · Implementado 2.7.0 |
 | A3 | Avance = ahorrado / objetivo (lo ahorrado no baja de 0). Con fecha: aporte mensual sugerido = lo que falta / meses que faltan; si la fecha pasó sin llegar, la meta está atrasada. Archivar o eliminar una meta no toca la cuenta. | — | Decidido · Implementado 2.7.0 |
 

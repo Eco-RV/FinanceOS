@@ -16,6 +16,7 @@ import {
   toISODate,
   validateBaselineCap,
   validateGoal,
+  validateAllocation,
   validatePlan,
   type ISODate,
 } from "../domain/index.ts";
@@ -279,6 +280,25 @@ export function confirmPlanOccurrence(
       return fail("Ese movimiento ya no está por confirmar");
     }
     await plans.confirmOccurrence(input.movement_id, input.amount);
+    return ok();
+  });
+}
+
+/** A4 (3.0.1): aparta parte del saldo de la cuenta para una meta. */
+export function allocateToGoal(
+  goals: GoalRepository,
+  input: { goal_id: string; allocated: number },
+): Promise<UseCaseResult> {
+  return run(async () => {
+    const goal = await goals.find(input.goal_id);
+    if (!goal || goal.archived) return fail(GOAL_NOT_FOUND);
+    if (!goal.account_id) return fail("La meta no tiene cuenta ligada", "A4");
+    const balance = (await goals.accountBalance(goal.account_id)) ?? 0;
+    const others = (await goals.onAccount(goal.account_id))
+      .filter((g) => g.id !== goal.id)
+      .reduce((s, g) => s + g.allocated, 0);
+    validateAllocation(balance, others, input.allocated);
+    await goals.setAllocated(goal.id, input.allocated);
     return ok();
   });
 }

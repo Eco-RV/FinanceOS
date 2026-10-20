@@ -2,7 +2,8 @@ import type { CSSProperties } from "react";
 import { PiggyBank } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { crToday, goalProgress, toISODate, type GoalStatus } from "@/domain";
+import { crToday, goalProgress, goalsSaved, toISODate, type GoalStatus } from "@/domain";
+import { AllocateDialog } from "./allocate-dialog";
 import type { Goal } from "@/application";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { isCategoryIconKey } from "@/lib/category-icon-keys";
@@ -31,7 +32,7 @@ export default async function AhorrosPage() {
   const [{ data: goalData, error }, { data: accData }] = await Promise.all([
     supabase
       .from("savings_goals")
-      .select("id, name, target_amount, currency, target_date, account_id, icon, archived")
+      .select("*")
       .order("created_at", { ascending: true }),
     supabase.from("accounts").select("*").order("created_at", { ascending: true }),
   ]);
@@ -57,13 +58,27 @@ export default async function AhorrosPage() {
 
   const active = goals.filter((g) => !g.archived);
   const archived = goals.filter((g) => g.archived);
-  const taken = active.map((g) => g.account_id).filter((id): id is string => Boolean(id));
+  // A4 (3.0.1): una cuenta puede tener varias metas; ya no se excluye ninguna.
+  const taken: string[] = [];
+  const byAccount = new Map<string, ReturnType<typeof goalsSaved> & { count: number }>();
+  for (const id of new Set(active.map((g) => g.account_id).filter((x): x is string => Boolean(x)))) {
+    const onIt = active.filter((g) => g.account_id === id);
+    const balance = Number(allAccounts.find((a) => a.id === id)?.current_balance ?? 0);
+    byAccount.set(id, {
+      ...goalsSaved(
+        balance,
+        onIt.map((g) => ({ id: g.id, allocated: Number((g as Goal & { allocated?: number }).allocated ?? 0) })),
+      ),
+      count: onIt.length,
+    });
+  }
 
   const rows = active.map((g) => {
     const account = allAccounts.find((a) => a.id === g.account_id) ?? null;
-    const saved = account ? Number(account.current_balance) : 0;
+    const shared = g.account_id ? byAccount.get(g.account_id) : undefined;
+    const saved = shared?.saved.get(g.id) ?? 0;
     const progress = goalProgress({ targetAmount: g.target_amount, saved, targetDate: g.target_date, today: todayISO });
-    return { g, account, progress };
+    return { g, account, progress, shared };
   });
   const totalSavedCrc = rows
     .filter((r) => r.g.currency === "CRC")
@@ -78,7 +93,8 @@ export default async function AhorrosPage() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Ahorros y metas</h1>
             <p className="text-sm text-muted-foreground">
-              Cada meta vive en una cuenta: lo ahorrado es su saldo y aportar es transferirle.
+              Cada meta vive en una cuenta: lo ahorrado es su saldo (o lo que le apartes, si la
+              cuenta tiene varias metas) y aportar es transferirle.
             </p>
           </div>
           {!missingSql ? <GoalFormDialog accounts={accounts} takenAccountIds={taken} /> : null}
@@ -112,7 +128,7 @@ export default async function AhorrosPage() {
           ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {rows.map(({ g, account, progress }, i) => {
+            {rows.map(({ g, account, progress, shared }, i) => {
               const status = STATUS[progress.status];
               const recent = contributions.filter((c) => c.to_account_id === g.account_id).slice(0, 3);
               const sources = accounts.filter((a) => a.currency === g.currency && a.id !== g.account_id);
@@ -128,6 +144,7 @@ export default async function AhorrosPage() {
                       <h2 className="truncate font-semibold tracking-tight">{g.name}</h2>
                       <p className="truncate text-xs text-muted-foreground">
                         {account ? account.name : "Sin cuenta ligada"}
+                        {shared && shared.count > 1 ? ` · ${shared.count} metas · libre ${formatCurrency(shared.free, g.currency)}` : ""}
                         {g.target_date ? ` · para el ${formatDate(g.target_date)}` : ""}
                       </p>
                     </div>
@@ -197,6 +214,15 @@ export default async function AhorrosPage() {
                       <Badge variant="secondary">Liga una cuenta para aportar</Badge>
                     )}
                     <div className="flex gap-1">
+                      {shared && shared.count > 1 ? (
+                        <AllocateDialog
+                          goalId={g.id}
+                          goalName={g.name}
+                          currency={g.currency}
+                          current={progress.saved}
+                          available={Math.round((shared.free + progress.saved) * 100) / 100}
+                        />
+                      ) : null}
                       <GoalFormDialog goal={g} accounts={accounts} takenAccountIds={taken} />
                       <GoalControls id={g.id} name={g.name} archived={false} />
                     </div>

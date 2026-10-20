@@ -152,17 +152,39 @@ export function supabasePlans(supabase: SupabaseClient) {
     async find(id) {
       const { data } = await supabase
         .from("savings_goals")
-        .select("id, name, target_amount, currency, target_date, account_id, icon, archived")
+        .select("*")
         .eq("id", id)
         .maybeSingle();
-      return data ? ({ ...data, target_amount: Number(data.target_amount) } as Goal) : null;
+      return data
+        ? ({ ...data, target_amount: Number(data.target_amount), allocated: Number(data.allocated ?? 0) } as Goal)
+        : null;
+    },
+    // A4 (3.0.1): apartados de varias metas en una cuenta.
+    async onAccount(accountId) {
+      const { data } = await supabase
+        .from("savings_goals")
+        .select("*")
+        .eq("account_id", accountId)
+        .eq("archived", false);
+      return ((data ?? []) as { id: string; allocated?: number }[]).map((g) => ({
+        id: g.id,
+        allocated: Number(g.allocated ?? 0),
+      }));
+    },
+    async accountBalance(accountId) {
+      const { data } = await supabase.from("accounts").select("current_balance").eq("id", accountId).maybeSingle();
+      return data ? Number(data.current_balance) : null;
+    },
+    async setAllocated(id, allocated) {
+      const { error } = await supabase.from("savings_goals").update({ allocated }).eq("id", id);
+      if (error) throw new InfrastructureError("No se pudo apartar (¿corriste el SQL 3.0.1?)");
     },
     async save(id, fields) {
       const { data, error } = id
         ? await supabase.from("savings_goals").update(fields).eq("id", id).select("id").single()
         : await supabase.from("savings_goals").insert(fields).select("id").single();
       if (error?.code === UNIQUE_VIOLATION) {
-        throw new InfrastructureError("Esa cuenta ya tiene una meta activa");
+        throw new InfrastructureError("Esa cuenta ya tiene una meta activa (corre el SQL 3.0.1 para tener varias)");
       }
       if (error?.code && MISSING_TABLE.has(error.code)) {
         throw new InfrastructureError("Falta correr el SQL de la versión 2.7.0 (metas)");

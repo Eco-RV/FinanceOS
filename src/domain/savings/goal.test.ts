@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DomainError } from "../shared/errors.ts";
-import { goalProgress, validateGoal } from "./goal.ts";
+import { goalProgress, goalsSaved, validateAllocation, validateGoal } from "./goal.ts";
 
 const rule = (id: string) => (e: unknown) => e instanceof DomainError && e.rule === id;
 
@@ -30,4 +30,20 @@ test("A3: avance, aporte mensual y estado", () => {
   const late = goalProgress({ targetAmount: 100, saved: 40, targetDate: "2026-09-01", today: "2026-10-14" });
   assert.equal(late.status, "atrasada");
   assert.equal(late.monthlyNeeded, 60);
+});
+
+test("A4: varias metas en una cuenta, cada una con su apartado", () => {
+  assert.deepEqual([...goalsSaved(300_000, [{ id: "a", allocated: 0 }]).saved], [["a", 300_000]]);
+  const two = goalsSaved(300_000, [
+    { id: "viaje", allocated: 200_000 },
+    { id: "carro", allocated: 50_000 },
+  ]);
+  assert.equal(two.saved.get("viaje"), 200_000);
+  assert.equal(two.free, 50_000);
+  assert.equal(two.overAllocated, false);
+  assert.equal(goalsSaved(100_000, [{ id: "a", allocated: 80_000 }, { id: "b", allocated: 40_000 }]).overAllocated, true);
+
+  assert.doesNotThrow(() => validateAllocation(300_000, 100_000, 200_000));
+  assert.throws(() => validateAllocation(300_000, 100_000, 200_000.01), rule("A4"));
+  assert.throws(() => validateAllocation(300_000, 0, -1), rule("A4"));
 });
