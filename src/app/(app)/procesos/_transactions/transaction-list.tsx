@@ -42,6 +42,8 @@ type Props = {
    * Si viene, los gastos sin compartir ofrecen "Compartir".
    */
   sharedLinks?: Record<string, string>;
+  /** 3.0.1: solo lectura (movimientos archivados por el Arranque de 0). */
+  readOnly?: boolean;
 };
 
 /** Monto con signo según el contexto (flujo de caja vs. deuda de la tarjeta). */
@@ -88,6 +90,7 @@ export function TransactionList({
   cancelledFinancingIds = [],
   categoryIcons = {},
   sharedLinks,
+  readOnly = false,
 }: Props) {
   const debitById = new Map(debitCards.map((d) => [d.id, d]));
   const activeDebitCards = debitCards.filter((d) => !d.archived);
@@ -152,7 +155,9 @@ export function TransactionList({
     ) : null;
     const fromCancelledPlan =
       isInstallment && cancelledFinancingIds.includes(t.financing_id!);
-    const actions = fromCancelledPlan ? (
+    const actions = readOnly ? (
+      <span className="text-xs text-muted-foreground">Archivado</span>
+    ) : fromCancelledPlan ? (
       <div className="flex justify-end">
         <DeleteButton
           id={t.id}

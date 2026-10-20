@@ -396,6 +396,9 @@ export interface PendingRepository {
 export interface MerchantRuleRepository {
   /** Guarda (o actualiza) la categoría aprendida para un comercio. */
   learn(merchantKey: string, category: string): Promise<void>;
+  /** 3.0.1 (I6): cambiar la categoría de una regla o borrarla. */
+  update(ruleId: string, category: string): Promise<void>;
+  delete(ruleId: string): Promise<void>;
 }
 
 export type LoanFields = {
@@ -527,6 +530,15 @@ export interface IdentityService {
 }
 
 /** Foto de perfil en un almacenamiento de archivos. */
+/** G8 (3.0.1): comprobantes privados de los movimientos. */
+export interface ReceiptStorage {
+  /** Sube el archivo y lo liga al movimiento (reemplaza el anterior). */
+  attach(movementId: string, file: { bytes: ArrayBuffer; type: string }): Promise<void>;
+  /** Enlace temporal para verlo, o `null` si no tiene. */
+  urlOf(movementId: string): Promise<string | null>;
+  remove(movementId: string): Promise<void>;
+}
+
 export interface AvatarStorage {
   /** Sube la foto y devuelve su URL pública. */
   upload(file: { bytes: ArrayBuffer; type: string }): Promise<string>;

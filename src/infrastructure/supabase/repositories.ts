@@ -9,6 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAccount } from "./account";
 import { supabasePlans } from "./plans";
 import { supabaseSharedExpenses } from "./shared-expenses";
+import { supabaseReceipts } from "./receipts";
 import { haciendaExchangeRate } from "../exchange/hacienda";
 import { toLoanAdjustment } from "./loan-adjustments";
 import { supabaseConstellation } from "./constellation";
@@ -831,6 +832,14 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         : await supabase.from("merchant_rules").insert({ merchant_key: key, category });
       check(error, "No se pudo guardar la regla del comercio");
     },
+    async update(id, category) {
+      const { error } = await supabase.from("merchant_rules").update({ category }).eq("id", id);
+      check(error, "No se pudo actualizar la regla");
+    },
+    async delete(id) {
+      const { error } = await supabase.from("merchant_rules").delete().eq("id", id);
+      check(error, "No se pudo borrar la regla");
+    },
   };
 
   const balances: BalanceRepository = {
@@ -985,6 +994,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     ...supabaseAccount(supabase),
     ...supabasePlans(supabase),
     ...supabaseSharedExpenses(supabase),
+    ...supabaseReceipts(supabase),
     ...supabaseConstellation(supabase),
   };
 }

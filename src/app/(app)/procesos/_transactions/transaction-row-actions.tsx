@@ -9,6 +9,7 @@ import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import { TransactionForm } from "./transaction-form";
 import { TransferForm } from "./transfer-form";
 import { deleteTransaction } from "./actions";
+import { ReceiptDialog } from "./receipt-dialog";
 
 export function TransactionRowActions({
   transaction,
@@ -46,6 +47,8 @@ export function TransactionRowActions({
 
   return (
     <div className="flex justify-end gap-1">
+      {/* G8 (3.0.1): comprobante. */}
+      <ReceiptDialog movementId={transaction.id} hasReceipt={Boolean(transaction.receipt_path)} />
       {canShare ? (
         <Link
           href={`/procesos/compartidos/nuevo?movimiento=${transaction.id}`}

@@ -12,6 +12,7 @@
 | G3 | No se suman ni comparan montos de distinta moneda sin tipo de cambio explícito. | Rechaza | Decidido |
 | G4 | No se registra nada sobre algo desactivado (cuenta, tarjeta, categoría, banco): ni movimientos, ni edición, ni asociar una tarjeta a un banco desactivado. Al editar un movimiento se puede conservar la categoría que ya tenía aunque esté desactivada. | Rechaza | Decidido · Implementado 2.1.0 |
 | G5 | Lo que tiene historia se **desactiva** (se conserva y se puede reactivar); lo que no tiene, se puede **eliminar**. Historia: cuenta = movimientos como origen o destino; tarjeta = movimientos y financiamientos; categoría = movimientos de su tipo con ese nombre; banco = avisos importados. El saldo inicial (C1) no cuenta como historia. | Rechaza eliminar si tiene historia | Decidido 2026-10-12 · Implementado 2.1.0 |
+| G8 | Un movimiento puede tener un **comprobante** adjunto (JPG, PNG, WebP o PDF de hasta 5 MB), privado del usuario. Adjuntarlo, reemplazarlo o quitarlo no cambia el movimiento. | Rechaza (tipo o tamaño) | Decidido 2026-10-19 · Implementado 3.0.1 |
 | G6 | "Hoy" es el día calendario en Costa Rica, no el del servidor. | — | Decidido |
 | G7 | Los totales del Resumen (débito disponible, pagos de contado, faltante, consumo sin cortar, patrimonio) están en colones: lo de dólares se convierte con el **último** tipo de cambio. Sin tipo de cambio, lo de dólares se lista pero no suma (y se indica). | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 
@@ -36,6 +37,7 @@
 | M5 | Un abono baja el saldo de la tarjeta en la moneda que se elige (por defecto la de la cuenta). Si la cuenta es de otra moneda, sale de ella el equivalente con el **último tipo de cambio** digitado, que queda guardado en el movimiento; sin tipo de cambio se rechaza. | Rechaza (sin tipo de cambio) | Decidido · Cambiado 2.8.0 (antes: sin conversión) |
 | M6 | Un ingreso puede tener fecha futura. | — | Decidido |
 | M7 | Un movimiento con fecha futura es **programado**: no cuenta en saldos "de hoy" ni en el pago de contado hasta que llega su fecha. Sí cuenta en el disponible de la tarjeta si es cuota de un financiamiento. | — | Decidido · Implementado 2.0.0 (cuotas) y 2.7.0 (planes) |
+| M9 | Lo archivado por un Arranque de 0 se puede **consultar** (Ajustes → Arranque de 0 → Ver lo archivado), pero no se restaura ni se edita: restaurarlo duplicaría los saldos frente a los saldos iniciales nuevos. | — | Decidido 2026-10-18 · Implementado 3.0.1 |
 | M8 | El Arranque de 0 pide confirmación escrita (`ARRANCAR`) y un saldo inicial nuevo (puede ser 0) por cada cuenta y tarjeta activa (tarjetas: CRC y USD). De forma atómica: borra las cuotas pendientes (fecha > hoy) de los financiamientos, **archiva** todos los movimientos (no visibles), elimina financiamientos y préstamos (sus cuotas cobradas quedan archivadas) y crea los saldos iniciales nuevos, que son lo único visible. | Rechaza sin confirmación o sin saldos | Decidido 2026-10-12 · Implementado 2.2.0 |
 
 ## Tarjetas de crédito
@@ -120,6 +122,7 @@ Hasta 3.0.0 se llamaban S1–S3 (chocaban con S1 = SINPE); desde 3.0.1 son A1–
 | I2 | Sincronizar es siempre manual. | — | Decidido |
 | I3 | Un aviso se importa una sola vez (idempotente). | — | Decidido |
 | I4 | Un pendiente no toca saldos hasta aprobarse. | — | Decidido |
+| I6 | Las **reglas de comercio** (comercio → categoría) se aprenden al aprobar un pendiente; el usuario las cambia (a una categoría de gasto activa, G4) o las borra en Ajustes → Bancos → Reglas de comercio. Una regla borrada se vuelve a aprender. | Rechaza (categoría desactivada) | Decidido 2026-10-19 · Implementado 3.0.1 |
 | I5 | Un pendiente se aprueba contra cualquier tarjeta (bimoneda, T1) y va al saldo de su moneda; se rechaza una moneda no soportada. | Rechaza | Decidido · Cambiado 2.0.0 |
 
 ## Cuenta del usuario (2.6.0)

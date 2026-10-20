@@ -45,6 +45,8 @@ export type TransactionType =
 export type OpeningBalance = { amount: number; occurred_on: string };
 
 export type Transaction = {
+  /** G8 (3.0.1): ruta del comprobante en el bucket privado `receipts`. */
+  receipt_path?: string | null;
   id: string;
   user_id: string;
   type: TransactionType;

@@ -537,6 +537,12 @@ export function fakeStore(seed: {
     learn: async (key, category) => {
       rules.set(key, category);
     },
+    update: async (key, category) => {
+      rules.set(key, category);
+    },
+    delete: async (key) => {
+      rules.delete(key);
+    },
   };
 
   const loanRows = new Map<string, Omit<Loan, "id">>();

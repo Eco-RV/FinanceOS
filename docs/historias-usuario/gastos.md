@@ -130,6 +130,17 @@ financiamientos activos de todas las tarjetas.
   `/procesos/financiamientos`: cantidad, próximas cuotas y cuotas por
   cobrar; cada fila abre el detalle del financiamiento.
 
+### 8. Adjuntar el comprobante (3.0.1)
+Como usuario quiero guardar la factura o la foto del voucher con el gasto,
+para tenerla a mano si la necesito.
+
+**Criterios de aceptación**
+- En cada movimiento (gastos, ingresos, pagos de tarjeta), el clip
+  **Comprobante** abre un diálogo: adjuntar un JPG, PNG, WebP o PDF de hasta
+  5 MB (G8), verlo (enlace temporal de 10 minutos), reemplazarlo o quitarlo.
+- El clip se ve resaltado cuando el movimiento ya tiene comprobante.
+- Los archivos son privados: viven en la carpeta del usuario.
+
 ## Reglas de negocio
 
 - Un gasto puede tener como origen una cuenta **o** una tarjeta — no ambas ni
@@ -147,7 +158,7 @@ financiamientos activos de todas las tarjetas.
 
 - Los gastos recurrentes son gastos fijos de Planes (ver
   [`planes.md`](./planes.md)); no hay otro tipo de gasto automático.
-- No hay adjuntar comprobantes/recibos.
+- (Hecho en 3.0.1) Comprobantes adjuntos (G8).
 
 
 ## Historial
@@ -172,3 +183,5 @@ financiamientos activos de todas las tarjetas.
   el gasto rápido; acción "Compartir" para volver un gasto un gasto compartido
   (ver [`compartidos.md`](./compartidos.md)). Se corrigen las reglas del
   formulario rápido y el pendiente de gastos recurrentes.
+- **2026-10-19 (v3.0.1, en desarrollo)** — Comprobante adjunto (G8; SQL
+  `3.0.1/09_receipts.sql`, bucket privado `receipts`).
