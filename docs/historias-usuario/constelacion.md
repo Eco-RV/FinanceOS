@@ -45,7 +45,7 @@ Como usuario quiero enviar USDC a otra persona sin miedo a equivocarme.
 
 > Las historias 3 a 8 son de la Constelación familiar. Las 3 a 6 están en
 > la app desde 3.0.0 (Mi familia, invitaciones y Bóveda); apoyos (7) y
-> Academia (8) son **pendientes** para 3.1.0 (`docs/constelacion/plan-3.0.0.md`).
+> Academia (8) son **pendientes** para 4.0.0 (`docs/constelacion/plan-3.0.0.md`).
 
 ### 3. Armar mi constelación
 Como núcleo quiero crear la familia e invitar a los míos.
@@ -117,10 +117,10 @@ palabras sencillas.
 
 ## Pendiente / fuera de alcance
 
-- 3.1.0: apoyos por hitos (mesada) y meta con fecha (historia 7), pantalla
+- 4.0.0: apoyos por hitos (mesada) y meta con fecha (historia 7), pantalla
   de Academia (historia 8; el dominio, el caso de uso y la tabla
   `academy_progress` ya existen) y letra grande.
-- Ligar una estrella a un miembro de Cobros (D13): la columna
+- 4.0.0: ligar una estrella a un miembro de Cobros (D13): la columna
   `constellation_stars.member_id` existe, pero la pantalla todavía no la usa.
 - Mainnet.
 
@@ -135,3 +135,5 @@ palabras sencillas.
 - **2026-10-18 (v3.1.0, en desarrollo)** — K9 completo: el envío ya no
   advierte las estrellas de la familia ni las de la agenda. Apoyos, Academia,
   letra grande y el enlace estrella ↔ miembro quedan marcados como pendientes.
+- **2026-10-21 (v3.2.0, en desarrollo)** — Los pendientes (apoyos, Academia,
+  letra grande, D13 y la integración con Finance OS) pasan a la 4.0.0.
