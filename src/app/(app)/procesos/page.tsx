@@ -7,6 +7,7 @@ import {
   HandCoins,
   Inbox,
   Landmark,
+  LayoutGrid,
   PiggyBank,
   Receipt,
   Repeat,
@@ -14,7 +15,8 @@ import {
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { crToday, toISODate } from "@/domain";
+import { crToday, isRouteVisible, toISODate } from "@/domain";
+import { getEnabledFeatures } from "@/lib/features";
 import { loadFinancingBoard } from "@/lib/financing-board";
 import { loadSharedBoard } from "@/lib/shared-board";
 import { Badge } from "@/components/ui/badge";
@@ -94,19 +96,25 @@ const ITEMS: Item[] = [
 /** Lo que se usa todos los días (siempre arriba). */
 const FREQUENT = new Set(["/procesos/gastos", "/procesos/ingresos", "/procesos/tarjetas", "/procesos/cuentas"]);
 
+const EMPTY_BOARD = { groups: [] as { needsNotice: boolean }[] };
+
 export default async function ProcesosPage() {
-  await requireUser();
+  const [, enabled] = await Promise.all([requireUser(), getEnabledFeatures()]);
+  // 3.2.0 (E2): solo se consulta lo de las funciones encendidas.
+  const visible = (href: string) => isRouteVisible(enabled, href);
 
   const supabase = await createClient();
   const todayISO = toISODate(crToday());
   const [{ count }, board, shared] = await Promise.all([
-    supabase
-      .from("pending_transactions")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending")
-      .eq("archived", false),
-    loadFinancingBoard(supabase, todayISO),
-    loadSharedBoard(supabase, todayISO),
+    visible("/procesos/pendientes")
+      ? supabase
+          .from("pending_transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending")
+          .eq("archived", false)
+      : { count: 0 },
+    visible("/procesos/cobros") ? loadFinancingBoard(supabase, todayISO) : EMPTY_BOARD,
+    visible("/procesos/cobros") || visible("/procesos/compartidos") ? loadSharedBoard(supabase, todayISO) : EMPTY_BOARD,
   ]);
   const sharedNotices = shared.groups.filter((g) => g.needsNotice).length;
   const noticesToSend = board.groups.filter((g) => g.needsNotice).length + sharedNotices;
@@ -126,7 +134,7 @@ export default async function ProcesosPage() {
       icon: Inbox,
       badge: count ?? 0,
     },
-  ];
+  ].filter((item) => visible(item.href));
 
   // 3.1.0 · ley 06 (exceso de opciones): primero lo de todos los días y lo que
   // pide atención (con badge); el resto queda debajo, en "Más procesos".
@@ -156,12 +164,19 @@ export default async function ProcesosPage() {
         {primary.map(card)}
       </div>
 
-      {secondary.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-muted-foreground">Más procesos</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{secondary.map(card)}</div>
-        </section>
-      ) : null}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-muted-foreground">Más procesos</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {secondary.map(card)}
+          {/* 3.2.0: el catálogo de funciones (activar y apagar). */}
+          {card({
+            href: "/procesos/funciones",
+            label: "Más funciones",
+            description: "Activa lo que necesites: planes, ahorros, préstamos y más.",
+            icon: LayoutGrid,
+          })}
+        </div>
+      </section>
     </div>
   );
 }

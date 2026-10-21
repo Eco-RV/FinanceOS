@@ -315,6 +315,11 @@
   }
 }
 
+/* 3.2.0: la bienvenida solo la primera vez en cada dispositivo (ver THEME_SCRIPT). */
+[data-welcomed] [data-welcome-splash] {
+  display: none;
+}
+
 /* Movimiento reducido: los popups solo hacen fundido, sin escala ni desplazamiento. */
 @media (prefers-reduced-motion: reduce) {
   [data-slot] {

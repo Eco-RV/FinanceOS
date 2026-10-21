@@ -7,6 +7,7 @@ import { WelcomeSplash } from "@/components/welcome-splash";
 import { UrlNotice } from "@/components/url-notice";
 import { initialsOf } from "@/domain";
 import { getPreferences, getProfile } from "@/lib/preferences";
+import { getEnabledFeatures } from "@/lib/features";
 import { DateFormatProvider } from "@/components/date-format";
 import { PerfNavTimer } from "@/components/perf-nav-timer";
 import { DAILY_SYNC_COOKIE, ensureDailySync } from "@/lib/sync-plans";
@@ -30,7 +31,7 @@ export default async function AppLayout({
   // 3.2.0: todo en una sola tanda (antes el perfil iba en una segunda).
   // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
   // U9 (3.1.0): formato de fecha y moneda base del gasto rápido.
-  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards, profile, prefs] =
+  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards, profile, prefs, enabled] =
     await Promise.all([
       supabase.from("accounts").select("*").eq("archived", false),
       supabase.from("credit_cards").select("*").eq("archived", false),
@@ -49,6 +50,8 @@ export default async function AppLayout({
       loadDebitCards(supabase),
       getProfile(),
       getPreferences(),
+      // 3.2.0 (E2): el botón de ingreso es de la función "Ingresos".
+      getEnabledFeatures(),
     ]);
   const email = user.email ?? "";
   const account = {
@@ -97,7 +100,7 @@ export default async function AppLayout({
                 fab: true,
               }}
               income={
-                accounts.length > 0
+                accounts.length > 0 && enabled.has("ingresos")
                   ? {
                       type: "income",
                       accounts,

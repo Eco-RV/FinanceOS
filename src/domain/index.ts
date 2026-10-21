@@ -27,6 +27,7 @@ export * from "./catalog/lifecycle.ts";
 export * from "./loans/loan.ts";
 export * from "./ledger/fresh-start.ts";
 export * from "./account/profile.ts";
+export * from "./account/features.ts";
 export * from "./plans/plan.ts";
 export * from "./savings/goal.ts";
 export * from "./banking/debit-card.ts";

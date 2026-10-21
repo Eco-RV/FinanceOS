@@ -5,7 +5,8 @@ import { NextResponse, type NextRequest } from "next/server";
  * Paths reachable without an authenticated session. `/api/sync-mail` no lleva
  * sesión de usuario: la protege un secreto Bearer (CRON_SECRET) en la propia ruta.
  */
-const PUBLIC_PATHS = ["/login", "/auth", "/privacidad", "/api/sync-mail"];
+// 3.2.0: "/" es la página de inicio pública (con sesión, la página manda al Resumen).
+const PUBLIC_PATHS = ["/", "/login", "/auth", "/privacidad", "/api/sync-mail"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some(

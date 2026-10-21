@@ -156,6 +156,23 @@ Lo demás está apagado, pero no bloqueado.
 - **Estados vacíos** con una acción clara en cada lista.
 - La bienvenida (`WelcomeSplash`) se muestra la primera vez, no en cada carga.
 
+**Resultado (2026-10-21)**
+
+- ✅ Dominio `src/domain/account/features.ts` con las reglas **E1–E5** (`docs/dominio/reglas.md`) y 7 tests. Las funciones del catálogo son 10: las del plan, más **Análisis de gastos** (cards de período y gráfico del Resumen). Tipo de cambio, Verificar saldos y Arranque de 0 se agrupan en **Herramientas avanzadas** (ley de exceso de opciones).
+- ✅ Primeros pasos: quedaron **4** (tarjeta, cuenta, compra, pago). "Mira tu primer resultado" no es un paso: al tener tarjeta y cuenta, la card avisa que abajo ya se ve. Al terminar dice "Listo" y se cierra.
+- ✅ Estado en `profiles.preferences.features`. La primera vez, una cuenta con cuentas o tarjetas queda con todo encendido (`legacy`); una nueva, con el núcleo y las categorías sugeridas.
+- ✅ Catálogo **Más funciones** (`/procesos/funciones`, también desde Ajustes → Funciones), con "Ver de nuevo los primeros pasos".
+- ✅ Procesos, Ajustes, el Resumen y el botón de ingreso respetan las funciones. Procesos ya no consulta cobros ni pendientes si esas funciones están apagadas.
+- ✅ Constelación detrás de `NEXT_PUBLIC_FEATURE_CONSTELLATION` (`src/lib/flags.ts`): sin la variable no hay pestaña y `/trading` da 404.
+- ✅ Página de inicio pública en `/` y `/login?modo=crear`. El login y la descripción de la app cuentan la misma promesa.
+- ✅ Bienvenida solo la primera vez por dispositivo; después no tapa la app al abrirla.
+- ✅ Probado en local con la cuenta del autor, simulando una cuenta nueva y restaurándola después: menú reducido, primeros pasos, sugerencia → "Ahora no" → siguiente → "Activar" abre la pantalla.
+- ⏳ Pendiente de esta fase:
+  - Estados vacíos con una acción clara en cada lista del núcleo.
+  - Que "Agregar tarjeta/cuenta" abra el diálogo directo.
+  - Ocultar acciones de funciones apagadas dentro del núcleo ("Compartir", "Financiar").
+  - Probar el registro real de una cuenta nueva (necesita una cuenta de prueba).
+
 ## Fase 3 · Buzón de comentarios
 
 Un lugar **propio y tranquilo** para que cada usuario cuente su experiencia, pregunte o pida mejoras. No hay ventanas emergentes ni avisos que interrumpan.

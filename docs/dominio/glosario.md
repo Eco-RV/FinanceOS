@@ -125,6 +125,17 @@
 | **Aprobar** / **Descartar** | Aprobar convierte el pendiente en gasto; descartar lo ignora. | Decidido |
 | **Regla de comercio** | Categoría sugerida para un comercio, aprendida al aprobar. | Decidido |
 
+## Enfoque y funciones (3.2.0)
+
+| Término | Definición | Estado |
+|---|---|---|
+| **Promesa** | Lo que Finance OS resuelve de entrada: no pagar intereses en las tarjetas (cuánto pagar de contado, para cuándo y si la cuenta alcanza). | Decidido 2026-10-21 |
+| **Núcleo** | Lo que siempre se ve porque sirve a la promesa: Resumen, Tarjetas, Cuentas, Gastos y el gasto rápido (E1). | Decidido 2026-10-21 |
+| **Función** | Parte de la app que se activa o se apaga en Más funciones (Ingresos y transferencias, Planes, Análisis de gastos, Financiamientos, Préstamos, Ahorros y metas, Gastos compartidos, Cobros a miembros, Importar desde Gmail, Herramientas avanzadas). Apagada no se ve, pero no se borra nada (E2). | Decidido 2026-10-21 |
+| **Modo enfocado** | Cómo ve la app una cuenta nueva: solo el núcleo, con los primeros pasos arriba del Resumen. | Decidido 2026-10-21 |
+| **Logro** | Algo que el usuario ya hizo y que la app reconoce en sus datos (por ejemplo, el primer pago de tarjeta) para sugerirle la función que sigue (E4). | Decidido 2026-10-21 |
+| **Primeros pasos** | El camino del primer uso en el Resumen: tarjeta, cuenta con la que se paga, una compra y el pago (E5). | Decidido 2026-10-21 |
+
 ## Constelación (2.9.0, Stellar testnet)
 
 Contexto aparte del libro: su fuente de verdad es la **cadena** (Stellar

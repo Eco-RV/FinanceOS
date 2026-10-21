@@ -1,5 +1,38 @@
 # Changelog
 
+## 3.2.0 — en desarrollo
+
+Salida a producción para los primeros usuarios (early birds). Plan y avance en
+`docs/produccion/plan-3.2.0.md`. Los pendientes de la Constelación pasan a la
+4.0.0.
+
+### Multiusuario (Fase 0)
+- El formato de fecha ya no se comparte entre usuarios en el servidor: va por
+  request (cookie `fo-date` + contexto en el navegador).
+- Auditoría de RLS de solo lectura: `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql`.
+
+### Velocidad (Fase 1)
+- Esqueleto de carga con la forma de cada sección: el toque cambia de pantalla
+  en ~20 ms (antes ~1 s congelado dentro de Procesos).
+- La sesión se valida en local (`getClaims`): el proxy baja de ~170 ms a
+  1–27 ms por navegación.
+- Planes y tipo de cambio se sincronizan una vez al día, no en cada página.
+- El Resumen lee todo en una tanda (6 → 2).
+- Animaciones de entrada más cortas y formularios del botón flotante bajo demanda.
+- Medición: `PERF_LOG` / `NEXT_PUBLIC_PERF_LOG` (ver `docs/CONTEXT.md`).
+
+### Enfoque y funciones (Fase 2)
+- Promesa única: **no pagar intereses en las tarjetas**. Una cuenta nueva ve
+  solo el núcleo, con **Primeros pasos** en el Resumen.
+- **Más funciones** (`/procesos/funciones`): activar o apagar Ingresos,
+  Planes, Análisis, Financiamientos, Préstamos, Ahorros, Compartidos, Cobros,
+  Gmail (beta) y Herramientas. Las cuentas de antes siguen con todo encendido.
+- Sugerencias por logro en el Resumen, una a la vez (E4).
+- Página de inicio pública en `/`; bienvenida solo la primera vez.
+- Constelación oculta salvo con `NEXT_PUBLIC_FEATURE_CONSTELLATION=1`.
+
+Sin SQL obligatorio todavía (el de `3.2.0/` es solo una auditoría de lectura).
+
 ## 3.1.0 — 2026-10-20
 
 Versión oficial después de la 3.0.0 (la 3.0.1 de desarrollo quedó dentro de
