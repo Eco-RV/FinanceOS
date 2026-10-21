@@ -19,6 +19,7 @@ import { InactiveList, RemoveOrDeactivate } from "@/components/catalog-actions";
 import { idsWithHistory } from "@/lib/catalog-history";
 import { repositories } from "@/infrastructure/container";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
+import { AutoOpen } from "@/components/auto-open";
 import { CardFormDialog } from "./card-form";
 import { cardOpeningsById } from "@/lib/transactions";
 import { scheduledInterestByCard, withoutScheduledInterest } from "@/lib/card-balances";
@@ -29,8 +30,9 @@ import { allRows } from "@/lib/supabase/all-rows";
 
 type CardTxn = Pick<Transaction, "card_id" | "type" | "amount" | "occurred_on" | "currency">;
 
-export default async function TarjetasPage() {
-  await requireUser();
+export default async function TarjetasPage({ searchParams }: { searchParams: Promise<{ nueva?: string }> }) {
+  // 3.2.0: `?nueva=1` (primeros pasos, estados vacíos) abre "Nueva tarjeta".
+  const [, { nueva }] = await Promise.all([requireUser(), searchParams]);
 
   const supabase = await createClient();
   const [{ data: cardData }, { data: txData }, { data: bankData }] =
@@ -123,11 +125,16 @@ export default async function TarjetasPage() {
             Estado del corte y fecha límite de pago de cada tarjeta.
           </p>
         </div>
-        <CardFormDialog banks={banks} />
+        <AutoOpen when={nueva === "1"} param="nueva">
+          <CardFormDialog banks={banks} />
+        </AutoOpen>
       </div>
 
       {cards.length === 0 ? (
-        <EmptyRows>Aún no tienes tarjetas. Agrega la primera.</EmptyRows>
+        <EmptyRows action={<CardFormDialog banks={banks} />}>
+          Aún no tienes tarjetas. Agrega la primera con su día de corte y de pago: Finance OS te dice cuánto
+          pagar de contado y para cuándo, para que no pagues intereses.
+        </EmptyRows>
       ) : (
         <>
           {/* 2.5.0: toda la fila abre el detalle; los botones hacen lo suyo. */}

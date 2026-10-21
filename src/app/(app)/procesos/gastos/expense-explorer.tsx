@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { FilterX, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,8 @@ export function ExpenseExplorer({
   todayISO,
   initial,
   sharedLinks,
+  shareable,
+  emptyAction,
 }: {
   transactions: Transaction[];
   accounts: Account[];
@@ -52,6 +54,10 @@ export function ExpenseExplorer({
   initial?: Partial<Pick<Filters, "from" | "to" | "category">>;
   /** 3.1.0: movimiento → gasto compartido. */
   sharedLinks?: Record<string, string>;
+  /** 3.2.0 (E2): ofrecer "Compartir" (función "Gastos compartidos"). */
+  shareable?: boolean;
+  /** 3.2.0: el paso que sigue cuando no hay gastos (sin filtros). */
+  emptyAction?: ReactNode;
 }) {
   const [filters, setFilters] = useState<Filters>({ ...EMPTY, ...initial });
 
@@ -210,7 +216,13 @@ export function ExpenseExplorer({
         categories={categories}
         categoryIcons={categoryIcons}
         sharedLinks={sharedLinks}
-        emptyLabel={active ? "Ningún gasto coincide con los filtros." : "Aún no registrás gastos."}
+        shareable={shareable}
+        emptyLabel={
+          active
+            ? "Ningún gasto coincide con los filtros."
+            : "Aún no registras gastos. Anota cada compra con la tarjeta y sabrás cuánto te toca pagar al corte."
+        }
+        emptyAction={active ? undefined : emptyAction}
       />
 
       <PaginationFooter state={pager.footer} />

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { CheckCircle2, TriangleAlert } from "lucide-react";
@@ -39,6 +40,8 @@ import { cardOpeningsById } from "@/lib/transactions";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { CardStatusBadge } from "../card-status";
 import { TransactionForm } from "../../_transactions/transaction-form";
+import { AutoOpen } from "@/components/auto-open";
+import { getEnabledFeatures } from "@/lib/features";
 import { MovementExplorer } from "../../_transactions/movement-explorer";
 import { allRows } from "@/lib/supabase/all-rows";
 import { MinimumPaymentDialog } from "./minimum-payment-form";
@@ -48,9 +51,11 @@ import { FinancingList } from "../_financiamientos/financing-list";
 
 export default async function CardDetailPage({
   params,
+  searchParams,
 }: PageProps<"/procesos/tarjetas/[id]">) {
-  await requireUser();
-  const { id } = await params;
+  const [, { id }, query, enabled] = await Promise.all([requireUser(), params, searchParams, getEnabledFeatures()]);
+  // 3.2.0: `?pago=1` (primeros pasos) abre "Registrar pago / abono".
+  const openPayment = query.pago === "1";
 
   const supabase = await createClient();
   const [
@@ -327,51 +332,62 @@ export default async function CardDetailPage({
         />
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold tracking-tight">Financiamientos</h2>
-          <FinancingForm
-            cardId={card.id}
-            currency={card.currency}
-            categories={categories}
-          />
+      {/* 3.2.0 (E2): con la función apagada solo se ven los financiamientos que ya hay. */}
+      {enabled.has("financiamientos") || financings.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold tracking-tight">Financiamientos</h2>
+            {enabled.has("financiamientos") ? (
+              <FinancingForm
+                cardId={card.id}
+                currency={card.currency}
+                categories={categories}
+              />
+            ) : null}
+          </div>
+          {financings.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Sin financiamientos activos en esta tarjeta.
+            </p>
+          ) : (
+            <FinancingList
+              financings={financings}
+              transactions={transactions}
+              today={today}
+              categories={categories}
+            />
+          )}
         </div>
-        {financings.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Sin financiamientos activos en esta tarjeta.
-          </p>
-        ) : (
-          <FinancingList
-            financings={financings}
-            transactions={transactions}
-            today={today}
-            categories={categories}
-          />
-        )}
-      </div>
+      ) : null}
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold tracking-tight">Movimientos</h2>
           {accounts.length > 0 ? (
-            <TransactionForm
-              type="card_payment"
-              accounts={accounts}
-              fixedCardId={card.id}
-              fixedCardBalance={st.dueAmount > 0 ? st.dueAmount : balances[limitCurrency]}
-              fixedCardBalances={{
-                CRC: (multi.byCurrency.CRC?.dueAmount ?? 0) > 0 ? multi.byCurrency.CRC!.dueAmount : balances.CRC,
-                USD: (multi.byCurrency.USD?.dueAmount ?? 0) > 0 ? multi.byCurrency.USD!.dueAmount : balances.USD,
-              }}
-              cardDebts={balances}
-              exchangeRate={rate}
-              triggerLabel="Registrar pago / abono"
-            />
+            <AutoOpen when={openPayment} param="pago">
+              <TransactionForm
+                type="card_payment"
+                accounts={accounts}
+                fixedCardId={card.id}
+                fixedCardBalance={st.dueAmount > 0 ? st.dueAmount : balances[limitCurrency]}
+                fixedCardBalances={{
+                  CRC: (multi.byCurrency.CRC?.dueAmount ?? 0) > 0 ? multi.byCurrency.CRC!.dueAmount : balances.CRC,
+                  USD: (multi.byCurrency.USD?.dueAmount ?? 0) > 0 ? multi.byCurrency.USD!.dueAmount : balances.USD,
+                }}
+                cardDebts={balances}
+                exchangeRate={rate}
+                triggerLabel="Registrar pago / abono"
+              />
+            </AutoOpen>
           ) : null}
         </div>
         {accounts.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Agregá una cuenta de débito para registrar pagos.
+            Para registrar el pago, agrega la{" "}
+            <Link href="/procesos/cuentas?nueva=1" className="font-medium text-foreground underline underline-offset-2">
+              cuenta con la que pagas
+            </Link>
+            .
           </p>
         ) : null}
         <MovementExplorer
@@ -381,9 +397,10 @@ export default async function CardDetailPage({
           cards={[card]}
           categories={categories}
           todayISO={toISODate(today)}
-          emptyLabel="Sin movimientos registrados en esta tarjeta hasta hoy."
+          emptyLabel="Sin movimientos en esta tarjeta hasta hoy. Anota cada compra con el botón rojo de la flecha hacia arriba: así sabrás cuánto pagar al corte."
           cancelledFinancingIds={financings.filter((f) => f.cancelled_on).map((f) => f.id)}
           sharedLinks={await loadSharedLinks(supabase)}
+          shareable={enabled.has("compartidos")}
         />
       </div>
     </div>

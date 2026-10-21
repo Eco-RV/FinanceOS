@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getEnabledFeatures } from "@/lib/features";
 import { Banknote, Landmark, PiggyBank, WalletCards } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -34,8 +35,7 @@ const TYPE_ICONS = { checking: Landmark, savings: PiggyBank, cash: Banknote } as
  * movimientos (como origen o destino).
  */
 export default async function AccountDetailPage({ params }: PageProps<"/procesos/cuentas/[id]">) {
-  await requireUser();
-  const { id } = await params;
+  const [, { id }, enabled] = await Promise.all([requireUser(), params, getEnabledFeatures()]);
 
   const supabase = await createClient();
   const [
@@ -198,8 +198,9 @@ export default async function AccountDetailPage({ params }: PageProps<"/procesos
           categories={options.map((o) => o.name)}
           categoryIcons={iconsByName(options)}
           todayISO={toISODate(crToday())}
-          emptyLabel="Esta cuenta todavía no tiene movimientos hasta hoy."
+          emptyLabel="Esta cuenta todavía no tiene movimientos hasta hoy. Los gastos con débito, SINPE o efectivo se anotan con el botón rojo de la flecha hacia arriba."
           sharedLinks={await loadSharedLinks(supabase)}
+          shareable={enabled.has("compartidos")}
         />
       </section>
     </div>

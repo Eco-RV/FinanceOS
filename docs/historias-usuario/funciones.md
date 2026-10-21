@@ -66,17 +66,41 @@ no antes.
 - La Constelación no es una función del catálogo: se enciende solo por
   entorno (`NEXT_PUBLIC_FEATURE_CONSTELLATION`) y vuelve en la 4.0.0.
 
+### 5. Que cada pantalla vacía me diga qué hacer
+Como usuario nuevo quiero que una lista vacía me lleve al paso que sigue.
+
+**Criterios de aceptación**
+- Tarjetas y Cuentas vacías explican para qué sirve agregar una y traen el
+  botón "Nueva tarjeta" / "Nueva cuenta". Gastos vacío trae "Nuevo gasto"; sin
+  tarjeta ni cuenta, "Agregar tarjeta" y "Agregar cuenta".
+- El historial vacío de una tarjeta o cuenta explica cómo anotar una compra.
+- Los enlaces de los primeros pasos abren directo el diálogo:
+  `/procesos/tarjetas?nueva=1`, `/procesos/cuentas?nueva=1`,
+  `/procesos/gastos?nuevo=1` y, con una sola tarjeta, su detalle con
+  `?pago=1` ("Registrar pago / abono"). El parámetro se quita de la URL al
+  abrir (recargar no lo reabre).
+
+### 6. No ver acciones de lo que apagué
+Como usuario quiero que, si apago una función, sus botones no aparezcan en
+las pantallas del núcleo.
+
+**Criterios de aceptación**
+- Con "Gastos compartidos" apagada, los gastos no ofrecen "Compartir" (lo ya
+  compartido sigue enlazado: "Ver en Compartidos").
+- Con "Financiamientos" apagada, el detalle de una tarjeta no ofrece crear
+  uno y su sección solo aparece si ya hay financiamientos; Gastos no muestra el
+  botón "Financiamientos".
+
 ## Pendiente / fuera de alcance
 
-- Acciones dentro de pantallas del núcleo que pertenecen a una función (por
-  ejemplo, "Compartir" en la lista de gastos o "Financiar" en el detalle de
-  una tarjeta) siguen visibles aunque la función esté apagada.
-- Estados vacíos con una acción clara en cada lista del núcleo.
-- Enlaces que abran directo el formulario (p. ej. "Agregar tarjeta" desde
-  los primeros pasos abre la pantalla, no el diálogo).
+- Probar el registro real de una cuenta nueva de punta a punta (necesita una
+  cuenta de prueba).
 
 ## Historial
 
 - **2026-10-21 (v3.2.0, en desarrollo)** — Archivo nuevo: página de inicio
   pública, modo enfocado, catálogo "Más funciones", sugerencias por logro y
   primeros pasos (E1–E5). Constelación detrás de su interruptor de entorno.
+- **2026-10-21 (v3.2.0, en desarrollo)** — Estados vacíos con acción, enlaces
+  que abren el diálogo directo (`?nueva=1`, `?nuevo=1`, `?pago=1`) y sin
+  "Compartir" ni "Financiar" con esas funciones apagadas.

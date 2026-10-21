@@ -30,6 +30,11 @@ Salida a producción para los primeros usuarios (early birds). Plan y avance en
 - Sugerencias por logro en el Resumen, una a la vez (E4).
 - Página de inicio pública en `/`; bienvenida solo la primera vez.
 - Constelación oculta salvo con `NEXT_PUBLIC_FEATURE_CONSTELLATION=1`.
+- Estados vacíos con el paso que sigue y enlaces que abren el diálogo directo
+  (`?nueva=1`, `?nuevo=1`, `?pago=1`), también desde los primeros pasos.
+- Sin "Compartir" ni "Financiar" cuando esas funciones están apagadas.
+- La lista de movimientos respeta el formato de fecha del usuario también
+  dentro de los filtros de Gastos y de los detalles.
 
 Sin SQL obligatorio todavía (el de `3.2.0/` es solo una auditoría de lectura).
 

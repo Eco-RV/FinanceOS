@@ -493,7 +493,11 @@ export default async function DashboardPage() {
 
       {/* 3.2.0 · Fase 2: primeros pasos y, cuando ya no están, una sugerencia a la vez. */}
       {stepsVisible ? (
-        <FirstStepsCard steps={firstSteps(usage)} style={rise(1)} />
+        <FirstStepsCard
+          steps={firstSteps(usage)}
+          payHref={cards.length === 1 ? `/procesos/tarjetas/${cards[0].id}?pago=1` : undefined}
+          style={rise(1)}
+        />
       ) : suggestion ? (
         <SuggestionCard suggestion={suggestion} style={rise(1)} />
       ) : null}
@@ -790,7 +794,7 @@ export default async function DashboardPage() {
           {cards.length === 0 && loans.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No hay tarjetas ni préstamos registrados.{" "}
-              <Link href="/procesos/tarjetas" className="underline">
+              <Link href="/procesos/tarjetas?nueva=1" className="underline">
                 Agrega una tarjeta
               </Link>
               .

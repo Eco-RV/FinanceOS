@@ -167,11 +167,12 @@ Lo demás está apagado, pero no bloqueado.
 - ✅ Página de inicio pública en `/` y `/login?modo=crear`. El login y la descripción de la app cuentan la misma promesa.
 - ✅ Bienvenida solo la primera vez por dispositivo; después no tapa la app al abrirla.
 - ✅ Probado en local con la cuenta del autor, simulando una cuenta nueva y restaurándola después: menú reducido, primeros pasos, sugerencia → "Ahora no" → siguiente → "Activar" abre la pantalla.
-- ⏳ Pendiente de esta fase:
-  - Estados vacíos con una acción clara en cada lista del núcleo.
-  - Que "Agregar tarjeta/cuenta" abra el diálogo directo.
-  - Ocultar acciones de funciones apagadas dentro del núcleo ("Compartir", "Financiar").
-  - Probar el registro real de una cuenta nueva (necesita una cuenta de prueba).
+- ✅ **Cierre de la fase**:
+  - Estados vacíos con acción (`EmptyRows action`) en Tarjetas, Cuentas y Gastos, y con una explicación en los historiales de tarjeta y cuenta.
+  - `AutoOpen` (`src/components/auto-open.tsx`) abre el diálogo con `?nueva=1` / `?nuevo=1` / `?pago=1` y limpia la URL con `history.replaceState` (sin volver a pedir la página). Probado en local con los cuatro.
+  - Sin "Compartir" (`shareable`) ni "Financiar" con esas funciones apagadas.
+  - De paso: `TransactionList` pasó a client component con `useFormatDate()`. Se usaba desde componentes de cliente y ahí no veía el formato de fecha del usuario.
+- ⏳ Falta probar el registro real de una cuenta nueva de punta a punta (necesita una cuenta de prueba).
 
 ## Fase 3 · Buzón de comentarios
 

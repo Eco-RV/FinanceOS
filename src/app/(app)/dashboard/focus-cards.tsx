@@ -10,26 +10,26 @@ const STEPS: Record<FirstStepKey, { title: string; hint: string; href: string; c
   tarjeta: {
     title: "Agrega tu tarjeta de crédito",
     hint: "Banco, día de corte, día de pago y el saldo que tiene hoy.",
-    href: "/procesos/tarjetas",
+    href: "/procesos/tarjetas?nueva=1",
     cta: "Agregar tarjeta",
   },
   cuenta: {
     title: "Agrega la cuenta con la que la pagas",
     hint: "Tu cuenta de débito o de ahorro, con su saldo de hoy.",
-    href: "/procesos/cuentas",
+    href: "/procesos/cuentas?nueva=1",
     cta: "Agregar cuenta",
   },
   compra: {
     title: "Registra una compra con la tarjeta",
-    hint: "Con el botón rojo de la flecha hacia arriba, en cualquier pantalla.",
-    href: "/procesos/gastos",
-    cta: "Ver gastos",
+    hint: "Desde aquí o con el botón rojo de la flecha hacia arriba, en cualquier pantalla.",
+    href: "/procesos/gastos?nuevo=1",
+    cta: "Anotar compra",
   },
   pago: {
     title: "Registra el pago de la tarjeta",
-    hint: "Desde el detalle de la tarjeta, con “Registrar pago”.",
+    hint: "Cuando pagues el contado, anótalo en el detalle de la tarjeta.",
     href: "/procesos/tarjetas",
-    cta: "Ir a tarjetas",
+    cta: "Registrar pago",
   },
 };
 
@@ -37,7 +37,16 @@ const STEPS: Record<FirstStepKey, { title: string; hint: string; href: string; c
  * 3.2.0 · Fase 2 (E5): el camino del primer uso, con la promesa de la app.
  * Sale de los datos; se cierra a mano (también al terminar).
  */
-export function FirstStepsCard({ steps, style }: { steps: FirstStep[]; style?: CSSProperties }) {
+export function FirstStepsCard({
+  steps,
+  payHref,
+  style,
+}: {
+  steps: FirstStep[];
+  /** Con una sola tarjeta, el pago abre directo en su detalle (`?pago=1`). */
+  payHref?: string;
+  style?: CSSProperties;
+}) {
   const done = steps.filter((s) => s.done).length;
   const allDone = done === steps.length;
   const next = steps.find((s) => !s.done)?.key;
@@ -94,7 +103,7 @@ export function FirstStepsCard({ steps, style }: { steps: FirstStep[]; style?: C
                 </div>
                 {current ? (
                   <Link
-                    href={info.href}
+                    href={step.key === "pago" && payHref ? payHref : info.href}
                     className={cn("shrink-0 rounded-md px-2 py-1 text-sm font-medium text-primary hover:underline", FOCUS_OUTLINE)}
                   >
                     {info.cta}
