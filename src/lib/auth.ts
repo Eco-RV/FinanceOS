@@ -5,8 +5,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { loadRequestDateFormat } from "@/lib/preferences";
 
-/** Lo que una página necesita saber de la sesión. */
-export type SessionUser = { id: string; email: string | null };
+/**
+ * Lo que una página necesita saber de la sesión. `isAdmin` (3.2.0, buzón de
+ * comentarios) sale de `app_metadata.role = "admin"`, que el usuario no puede
+ * cambiar (ver `supabase/Versionamiento/3.2.0/02_feedback_admin.sql`).
+ */
+export type SessionUser = { id: string; email: string | null; isAdmin: boolean };
 
 /**
  * Usuario de la sesión (o null), una vez por request.
@@ -23,7 +27,8 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
     const { data } = await supabase.auth.getClaims();
     const claims = data?.claims;
     if (!claims?.sub) return null;
-    return { id: claims.sub, email: typeof claims.email === "string" ? claims.email : null };
+    const role = (claims.app_metadata as { role?: unknown } | undefined)?.role;
+    return { id: claims.sub, email: typeof claims.email === "string" ? claims.email : null, isAdmin: role === "admin" };
   } catch {
     // Supabase not configured yet, or auth service unreachable.
     return null;

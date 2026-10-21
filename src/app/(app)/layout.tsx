@@ -8,6 +8,7 @@ import { UrlNotice } from "@/components/url-notice";
 import { initialsOf } from "@/domain";
 import { getPreferences, getProfile } from "@/lib/preferences";
 import { getEnabledFeatures } from "@/lib/features";
+import { repositories } from "@/infrastructure/container";
 import { DateFormatProvider } from "@/components/date-format";
 import { PerfNavTimer } from "@/components/perf-nav-timer";
 import { DAILY_SYNC_COOKIE, ensureDailySync } from "@/lib/sync-plans";
@@ -31,7 +32,7 @@ export default async function AppLayout({
   // 3.2.0: todo en una sola tanda (antes el perfil iba en una segunda).
   // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
   // U9 (3.1.0): formato de fecha y moneda base del gasto rápido.
-  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards, profile, prefs, enabled] =
+  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards, profile, prefs, enabled, feedback] =
     await Promise.all([
       supabase.from("accounts").select("*").eq("archived", false),
       supabase.from("credit_cards").select("*").eq("archived", false),
@@ -52,6 +53,8 @@ export default async function AppLayout({
       getPreferences(),
       // 3.2.0 (E2): el botón de ingreso es de la función "Ingresos".
       getEnabledFeatures(),
+      // 3.2.0 (B5): el punto del menú del buzón (sin el SQL 3.2.0, 0).
+      repositories().then((repos) => repos.feedback.unread()),
     ]);
   const email = user.email ?? "";
   const account = {
@@ -59,6 +62,8 @@ export default async function AppLayout({
     name: profile?.full_name ?? null,
     avatarUrl: profile?.avatar_url ?? null,
     initials: initialsOf(profile?.full_name, email),
+    feedbackUnread: feedback.mine,
+    feedbackInbox: user.isAdmin ? feedback.inbox : null,
   };
 
   const accounts = (accData ?? []) as Account[];

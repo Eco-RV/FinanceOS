@@ -39,6 +39,7 @@ pierden. Esta carpeta es ese lugar fijo:
 | [`cuenta.md`](./cuenta.md) | Acceso, perfil, correo, contraseña y preferencias |
 | [`planes.md`](./planes.md) | Salario, suscripciones, seguros y línea base |
 | [`ahorros.md`](./ahorros.md) | Ahorros y metas |
+| [`comentarios.md`](./comentarios.md) | Buzón de comentarios: escribir al equipo, conversación y bandeja del admin (3.2.0) |
 | [`funciones.md`](./funciones.md) | Enfoque: primeros pasos, funciones por logros y catálogo "Más funciones" (3.2.0) |
 | [`constelacion.md`](./constelacion.md) | Constelación: bolsillo en USDC (2.9.0) y Constelación familiar (3.0.0) sobre Stellar |
 

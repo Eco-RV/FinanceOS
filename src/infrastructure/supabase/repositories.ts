@@ -10,6 +10,7 @@ import { supabaseAccount } from "./account";
 import { supabasePlans } from "./plans";
 import { supabaseSharedExpenses } from "./shared-expenses";
 import { supabaseReceipts } from "./receipts";
+import { supabaseFeedback } from "./feedback";
 import { haciendaExchangeRate } from "../exchange/hacienda";
 import { toLoanAdjustment } from "./loan-adjustments";
 import { supabaseConstellation } from "./constellation";
@@ -995,6 +996,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     ...supabasePlans(supabase),
     ...supabaseSharedExpenses(supabase),
     ...supabaseReceipts(supabase),
+    ...supabaseFeedback(supabase),
     ...supabaseConstellation(supabase),
   };
 }

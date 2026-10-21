@@ -843,6 +843,14 @@ export default async function DashboardPage() {
           </section>
         ) : null}
       </div>
+
+      {/* 3.2.0 · Fase 3: el buzón, sin interrumpir (un enlace al pie, no un aviso). */}
+      <p className="text-center text-sm text-muted-foreground">
+        ¿Algo que contarnos?{" "}
+        <Link href="/comentarios" className="font-medium text-foreground underline-offset-2 hover:underline">
+          Escríbenos
+        </Link>
+      </p>
     </div>
   );
 }

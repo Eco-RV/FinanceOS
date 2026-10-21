@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   DollarSign,
   Landmark,
+  MessageSquareText,
   LayoutGrid,
   RotateCcw,
   Scale,
@@ -27,6 +28,8 @@ type IconType = ComponentType<{ className?: string }>;
 const ACCOUNT: { href: string; label: string; description: string; icon: IconType }[] = [
   { href: "/ajustes/cuenta", label: "Mi cuenta", description: "Perfil, foto, correo y contraseña.", icon: UserRound },
   { href: "/ajustes/preferencias", label: "Preferencias", description: "Tema y configuraciones de la app.", icon: SlidersHorizontal },
+  // 3.2.0 · Fase 3: el buzón (privado con el equipo).
+  { href: "/comentarios", label: "Comentarios", description: "Tu experiencia, dudas o lo que te gustaría que tuviera.", icon: MessageSquareText },
 ];
 
 const LINKS: { href: string; label: string; description: string; icon: IconType }[] = [
@@ -72,7 +75,7 @@ export default async function AjustesPage() {
         <LinkChevron />
       </Link>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ACCOUNT.map(({ href, label, description, icon }) => (
           <NavCard key={href} href={href} icon={icon} label={label} description={description} />
         ))}

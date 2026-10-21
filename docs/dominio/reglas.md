@@ -154,6 +154,17 @@ Hasta 3.0.0 se llamaban S1–S3 (chocaban con S1 = SINPE); desde 3.1.0 son A1–
 | E4 | Las **sugerencias** salen de logros en los datos (primer pago de tarjeta → Planes; una compra a cuotas → Financiamientos; 10 gastos → Análisis; dos cuentas de banco → Ingresos; dos pagos de tarjeta → Ahorros). Se muestra una a la vez, nunca mientras están los primeros pasos, y "Ahora no" la descarta para siempre (sigue en el catálogo). | — | Decidido 2026-10-21 · Implementado 3.2.0 |
 | E5 | Los **primeros pasos** (tarjeta, cuenta con la que se paga, una compra con la tarjeta, el pago de la tarjeta) salen de los datos, no de un avance guardado. Se ven hasta que el usuario los cierra; se pueden volver a ver desde Más funciones. | — | Decidido 2026-10-21 · Implementado 3.2.0 |
 
+## Buzón de comentarios (3.2.0)
+
+| # | Regla | Tipo | Estado |
+|---|---|---|---|
+| B1 | Una publicación tiene tipo (Experiencia, Duda, Mejora, Me gustaría que tuviera), título de 3 a 120 caracteres y texto de 1 a 4000; una respuesta, texto de 1 a 4000. | Rechaza | Decidido 2026-10-21 · Implementado 3.2.0 |
+| B2 | El buzón es **privado**: cada usuario ve solo lo suyo y el equipo (admin, `app_metadata.role = "admin"`) ve todo. Va siempre con el nombre del autor: el del perfil o, si no hay, el correo. | Rechaza (sin nombre ni correo) | Decidido 2026-10-21 · Implementado 3.2.0 |
+| B3 | Estados: Recibido → En revisión → En planes → Hecho, o No por ahora. Solo el admin los cambia; "No por ahora" pide el motivo, que se envía como respuesta. | Rechaza | Decidido 2026-10-21 · Implementado 3.2.0 |
+| B4 | La captura opcional es JPG, PNG o WebP de hasta 5 MB, privada (la ven el autor y el admin). Si no se puede subir, la publicación queda y se avisa. | Rechaza (tipo o tamaño) | Decidido 2026-10-21 · Implementado 3.2.0 |
+| B5 | "Sin leer" = hay actividad del otro lado (un mensaje o, del admin, un cambio de estado) después de la última lectura. Abrir la conversación la marca leída. | — | Decidido 2026-10-21 · Implementado 3.2.0 |
+| B6 | Hecho y No por ahora **cierran** la conversación: el usuario ya no responde ahí (escribe una publicación nueva); el admin sí puede. | Rechaza | Decidido 2026-10-21 · Implementado 3.2.0 |
+
 ## Constelación · bolsillo (2.9.0, Stellar testnet)
 
 La familia y la bóveda (K3–K7) llegaron en la 3.0.0 (sección siguiente).

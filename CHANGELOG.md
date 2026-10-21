@@ -36,7 +36,23 @@ Salida a producción para los primeros usuarios (early birds). Plan y avance en
 - La lista de movimientos respeta el formato de fecha del usuario también
   dentro de los filtros de Gastos y de los detalles.
 
-Sin SQL obligatorio todavía (el de `3.2.0/` es solo una auditoría de lectura).
+### Buzón de comentarios (Fase 3)
+- **Comentarios** (`/comentarios`): el usuario cuenta su experiencia, pregunta o
+  pide mejoras (con captura opcional) y conversa con el equipo. Es privado y
+  va con su nombre (B1–B6).
+- Estados Recibido, En revisión, En planes, Hecho y No por ahora (con motivo);
+  Hecho y No por ahora cierran la conversación.
+- **Bandeja** (`/comentarios/bandeja`) solo para el admin: sin leer, abiertas,
+  cerradas y por tipo; responder y cambiar el estado.
+- Sin interrumpir: menú del usuario (con un punto si hay respuestas sin leer),
+  Ajustes → Comentarios y un enlace al pie del Resumen.
+
+### Base de datos
+Correr en orden en el SQL Editor de Supabase:
+1. `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql`: solo lectura, para revisar.
+2. `01_feedback.sql`: buzón (tablas, RLS, triggers, RPC y bucket `feedback`).
+3. `02_feedback_admin.sql`: cambiar el correo por el de la cuenta admin. Después,
+   cerrar sesión y volver a entrar.
 
 ## 3.1.0 — 2026-10-20
 

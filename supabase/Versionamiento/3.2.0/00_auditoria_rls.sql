@@ -19,7 +19,8 @@ where n.nspname = 'public'
 order by 1;
 
 -- 2) Tablas con menos de 4 policies o sin policy de algún comando.
---    Esperado: 0 filas.
+--    Esperado: solo feedback_messages (3.2.0, con select e insert: los
+--    mensajes del buzón no se editan ni se borran).
 select c.relname as tabla,
        count(p.polname) as policies,
        string_agg(distinct p.polcmd::text, '' order by p.polcmd::text) as comandos
@@ -33,7 +34,8 @@ having count(p.polname) < 4
 order by 1;
 
 -- 3) Policies que NO filtran por el usuario (no mencionan auth.uid()).
---    Esperado: 0 filas en `public`.
+--    Esperado: 0 filas en `public`. Las del buzón (3.2.0) también dejan pasar
+--    al admin con public.is_app_admin(), pero siempre mencionan auth.uid().
 select schemaname, tablename, policyname, cmd, qual, with_check
 from pg_policies
 where schemaname = 'public'

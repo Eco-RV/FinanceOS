@@ -188,6 +188,15 @@ Un lugar **propio y tranquilo** para que cada usuario cuente su experiencia, pre
 - **Dominio y código.** `src/domain/feedback/` (tipos, estados, transiciones válidas), caso de uso en `src/application/feedback.ts`, puerto + adaptador Supabase. Historia de usuario nueva: `docs/historias-usuario/comentarios.md`.
 - **Aviso al admin.** Más adelante, un correo cuando llega una publicación nueva (puerto `Mailer`). En la 3.2.0 basta con el contador en tu bandeja.
 
+**Resultado (2026-10-21)**
+
+- ✅ Reglas **B1–B6** (dominio , 6 tests) y casos de uso (, 4 tests con un repositorio en memoria).
+- ✅ SQL : tablas, RLS dueño o admin, triggers (el usuario no cambia el estado y el admin no cambia el contenido; actividad y lectura), RPC  y bucket privado.  da el rol.
+- ✅ Pantallas: Comentarios, conversación (con , respuesta y estado para el admin) y Bandeja con filtros (404 si no es admin).
+- ✅ Entradas: menú del usuario (punto y contador), Ajustes → Comentarios y enlace al pie del Resumen.
+- ✅ Probado en local sin el SQL: el buzón vacío, el formulario, las entradas y el 404 de la bandeja. **Falta**: correr  y  en Supabase y probar de punta a punta (publicar, responder como admin, el punto de sin leer, cerrar).
+- Cambio respecto al plan: el aviso por correo al admin queda fuera de la 3.2.0 (como estaba previsto).
+
 ## Fase 4 · Producción y seguridad
 
 - **Errores**: `error.tsx`, `global-error.tsx` y `not-found.tsx` con la marca y un camino de vuelta.
