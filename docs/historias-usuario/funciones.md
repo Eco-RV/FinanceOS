@@ -57,15 +57,6 @@ no antes.
   disponible en el catálogo).
 - Una cuenta que ya tenía todo encendido no recibe sugerencias.
 
-## Reglas de negocio
-
-- E1–E5 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
-- Las elecciones se guardan en `profiles.preferences.features` (sin SQL
-  nuevo). Una cuenta que ya tenía datos al llegar a la 3.2.0 queda con todo
-  encendido (no cambia lo que veía).
-- La Constelación no es una función del catálogo: se enciende solo por
-  entorno (`NEXT_PUBLIC_FEATURE_CONSTELLATION`) y vuelve en la 4.0.0.
-
 ### 5. Que cada pantalla vacía me diga qué hacer
 Como usuario nuevo quiero que una lista vacía me lleve al paso que sigue.
 
@@ -90,6 +81,15 @@ las pantallas del núcleo.
 - Con "Financiamientos" apagada, el detalle de una tarjeta no ofrece crear
   uno y su sección solo aparece si ya hay financiamientos; Gastos no muestra el
   botón "Financiamientos".
+
+## Reglas de negocio
+
+- E1–E5 en [`docs/dominio/reglas.md`](../dominio/reglas.md).
+- Las elecciones se guardan en `profiles.preferences.features` (sin SQL
+  nuevo). Una cuenta que ya tenía datos al llegar a la 3.2.0 queda con todo
+  encendido (no cambia lo que veía).
+- La Constelación no es una función del catálogo: se enciende solo por
+  entorno (`NEXT_PUBLIC_FEATURE_CONSTELLATION`) y vuelve en la 4.0.0.
 
 ## Pendiente / fuera de alcance
 
