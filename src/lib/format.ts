@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 const LOCALE = "es-CR";
 
 export function formatCurrency(amount: number, currency = "CRC") {
@@ -10,14 +12,21 @@ export function formatCurrency(amount: number, currency = "CRC") {
 }
 
 /**
- * U9 (3.1.0): formato de fecha elegido en Preferencias. Lo fija el layout de
- * la app en cada render (servidor) y `DateFormatSync` en el navegador.
+ * U9 (3.1.0): formato de fecha elegido en Preferencias.
+ *
+ * 3.2.0: ya no es una variable del módulo (en el servidor la compartían los
+ * requests de todos los usuarios). En el servidor vive en un almacén por
+ * request (`cache` de React) que llena `getPreferences()` antes de pintar; en
+ * los client components se pide con `useFormatDate()`
+ * (`src/components/date-format.tsx`). Fuera de un request vale "corto".
  */
 export type DateFormatChoice = "corto" | "numerico" | "largo";
-let dateFormat: DateFormatChoice = "corto";
 
-export function setDateFormat(choice: DateFormatChoice) {
-  dateFormat = choice;
+const requestDateFormat = cache((): { choice: DateFormatChoice } => ({ choice: "corto" }));
+
+/** Fija el formato de fecha del request en curso (solo servidor). */
+export function setRequestDateFormat(choice: DateFormatChoice) {
+  requestDateFormat().choice = choice;
 }
 
 const DATE_OPTIONS: Record<DateFormatChoice, Intl.DateTimeFormatOptions> = {
@@ -26,7 +35,7 @@ const DATE_OPTIONS: Record<DateFormatChoice, Intl.DateTimeFormatOptions> = {
   largo: { day: "numeric", month: "long", year: "numeric" },
 };
 
-export function formatDate(date: Date | string) {
+export function formatDate(date: Date | string, choice: DateFormatChoice = requestDateFormat().choice) {
   // Una fecha "YYYY-MM-DD" se interpreta como día calendario local, no UTC
   // (evita el corrimiento de un día en zonas al oeste de UTC).
   const value =
@@ -36,7 +45,7 @@ export function formatDate(date: Date | string) {
           return new Date(y, m - 1, d);
         })()
       : new Date(date);
-  return new Intl.DateTimeFormat(LOCALE, DATE_OPTIONS[dateFormat]).format(value);
+  return new Intl.DateTimeFormat(LOCALE, DATE_OPTIONS[choice]).format(value);
 }
 
 /** "hace 2 días" / "hoy" / "mañana" / "en 5 días". */

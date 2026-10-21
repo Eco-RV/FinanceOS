@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { REIMBURSEMENT_CHANNEL_LABELS } from "@/lib/schema";
 import type { FormResult } from "@/lib/forms";
 import {
@@ -197,6 +198,7 @@ function useFormAction(action: (formData: FormData) => Promise<FormResult>) {
 }
 
 export function ReimbursedBadge({ id, paidOn }: { id: string; paidOn: string }) {
+  const formatDate = useFormatDate();
   const { pending, run } = useFormAction(undoReimbursement);
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

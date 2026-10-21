@@ -20,7 +20,8 @@ import { readLastUsed, rememberLastUsed } from "@/lib/last-used";
 import { crToday, overdraftWarning, overpaymentWarning, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
 import { CURRENCIES } from "@/lib/schema";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import type { Account, CreditCard, DebitCard, Transaction, TransactionType } from "@/lib/types";
 import { saveTransaction } from "./actions";
 import { CategoryPicker } from "./category-picker";
@@ -121,6 +122,7 @@ function MovementForm({
   fab = false,
   categoryIcons,
 }: Props) {
+  const formatDate = useFormatDate();
   const editing = Boolean(transaction);
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveTransaction,

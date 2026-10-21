@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getPreferences } from "@/lib/preferences";
 
 /** Returns the current user (or null). Memoized per request. */
 export const getUser = cache(async () => {
@@ -18,9 +19,13 @@ export const getUser = cache(async () => {
   }
 });
 
-/** Returns the current user or redirects to /login. Use in protected pages/actions. */
+/**
+ * Returns the current user or redirects to /login. Use in protected pages/actions.
+ * 3.2.0: también carga las preferencias del request (formato de fecha) en
+ * paralelo con la sesión, antes de que la página pinte nada.
+ */
 export const requireUser = cache(async () => {
-  const user = await getUser();
+  const [user] = await Promise.all([getUser(), getPreferences()]);
   if (!user) redirect("/login");
   return user;
 });

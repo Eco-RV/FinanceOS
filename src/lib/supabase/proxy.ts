@@ -18,6 +18,8 @@ function isPublic(pathname: string) {
  * Adapted from the Supabase SSR guide for the Next.js 16 `proxy` convention.
  */
 export async function updateSession(request: NextRequest) {
+  // 3.2.0 · Fase 1.1: la ruta para el log de tiempos (`src/lib/perf.ts`).
+  request.headers.set("x-fo-path", request.nextUrl.pathname);
   let response = NextResponse.next({ request });
 
   // Before Supabase is configured, let every request through so the app still boots.
@@ -50,9 +52,11 @@ export async function updateSession(request: NextRequest) {
   );
 
   // IMPORTANT: do not run code between createServerClient and getUser().
+  const authStart = performance.now();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const authMs = Math.round(performance.now() - authStart);
 
   const { pathname } = request.nextUrl;
 
@@ -69,5 +73,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // 3.2.0 · Fase 1.1: cuánto tardó el proxy en validar la sesión (DevTools → Network → Timing).
+  response.headers.set("Server-Timing", `proxy-auth;dur=${authMs}`);
+  if (process.env.PERF_LOG === "1") console.log(`[perf] proxy ${request.nextUrl.pathname} auth=${authMs}ms`);
   return response;
 }

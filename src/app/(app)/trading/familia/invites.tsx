@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
-import { formatDate } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { inviteState, isStellarAddress, type FamilyView, type StarRole } from "@/domain";
 import type { FamilyInvite } from "@/application";
 import { shortAddress } from "@/lib/stellar/format";
@@ -45,6 +45,7 @@ export function InvitePanel({
   addPending: boolean;
   onAddRedeemed: (invite: FamilyInvite) => void;
 }) {
+  const formatDate = useFormatDate();
   const router = useRouter();
   const [now] = useState(() => new Date());
   const visible = invites.filter((i) => {

@@ -18,7 +18,8 @@ import { FormField, Select } from "@/components/form-field";
 import { confirmAction } from "@/lib/confirm";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { PrepaymentModePicker } from "../../prestamos/loan-adjustments";
 import { prepayFinancingAction, undoFinancingPrepaymentAction } from "./actions";
 
@@ -93,6 +94,7 @@ export function UndoFinancingPrepaymentButton({
   occurredOn: string;
   currency: string;
 }) {
+  const formatDate = useFormatDate();
   const [pending, start] = useTransition();
   return (
     <Button

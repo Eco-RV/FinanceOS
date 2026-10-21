@@ -36,6 +36,14 @@ cobertura con el débito) y responde a la pregunta que todos se hacen:
 | 0.3 | **Auditoría de RLS** con un script SQL de solo lectura: tablas sin RLS o sin las 4 policies, funciones `security definer`, buckets (`avatars` público, `receipts` privado). | Los datos de un usuario no pueden llegarle a otro. |
 | 0.4 | `/api/sync-mail` (cron con service role): confirmar que filtra por el `user_id` de cada conexión. | Corre fuera de RLS. |
 
+**Resultado (2026-10-21)**
+
+- **0.1 ✅** El formato de fecha es por request. En el servidor, `requireUser()` espera `getPreferences()` (`src/lib/preferences.ts`), que lo fija en un almacén con `cache` de React. En el navegador, `DateFormatProvider` + `useFormatDate()` (`src/components/date-format.tsx`). Se quitó `DateFormatSync`. Fuera de un render (Server Actions, como el texto de los avisos) vale "corto".
+- **0.2 ✅** No hay otro estado de módulo con datos de usuario en el servidor. Los dos `Set` de la Constelación (`wallet-linker`, `wallet-setup`) son de client components (un navegador = un usuario). El único texto de "uso individual" que queda es el de la política de privacidad (Fase 4).
+- **0.3 ✅ revisión estática / ⏳ en la base.** Las 30 tablas de `public` activan RLS y tienen las 4 policies `auth.uid() = user_id`. Solo hay 2 funciones `security definer`, las dos con `search_path` fijo. Los buckets limitan a la carpeta `<uid>/`. Falta correr `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql` (solo lectura) en Supabase para confirmar que la base real es igual a los archivos.
+  - Hallazgo menor: las FK no validan que el registro referido sea del mismo usuario (por ejemplo, un `financing_shares` con el `financing_id` de otro). RLS impide leer o cambiar lo ajeno y los ids son UUID, así que hay que conocerlos. Queda anotado para endurecerlo con checks compuestos si hace falta.
+- **0.4 ✅** `syncConnection` filtra por el `user_id` de la conexión en cada consulta (bancos, pendientes, tarjetas, reglas) y casa la tarjeta solo entre las del usuario.
+
 ## Fase 1 · Velocidad y fluidez
 
 Síntoma: desde que se toca un botón o una pestaña hasta que abre la página
@@ -43,7 +51,29 @@ pasa demasiado tiempo. **Primero se mide y después se cambia.**
 
 **1.1 Medir (línea base).** Con Sentry (tracing) y un `Server-Timing` en el servidor: tiempo del proxy, de la autenticación y de cada lectura en Resumen, Procesos, Tarjetas, detalle de tarjeta y Gastos. Se mide en el celular, con build de producción. Los números quedan en este archivo.
 
-**1.2 Causas probables** (revisando el código):
+**Cómo medir.** Con `PERF_LOG=1` (servidor) se escribe en el log una línea por render, con cada paso y cada consulta a Supabase (`src/lib/perf.ts`, `[perf] /ruta total=… | auth:user 170ms @0 · db:accounts …`). El proxy también deja su tiempo de sesión en la cabecera `Server-Timing`. Con `NEXT_PUBLIC_PERF_LOG=1` o `localStorage.setItem("fo-perf", "1")` (navegador), `PerfNavTimer` mide cada navegación desde el toque: `shell` = cuando se ve el esqueleto y `content` = cuando ya no queda esqueleto. Sin esas variables no hace nada.
+
+**Línea base local (2026-10-21).** Build de producción en la PC del autor (Costa Rica) contra la base real; 2 vueltas por 9 navegaciones. Desde aquí, cada llamada a Supabase tarda ~170 ms.
+
+| Ruta | Render en el servidor | Tandas de consultas en cascada | Toque → contenido | ¿Esqueleto? |
+|---|---|---|---|---|
+| `/dashboard` | 963–1353 ms | 6 | 1176–1596 ms | sí (~20 ms) |
+| `/procesos` | 594–1040 ms | 3 | 784–1235 ms | sí |
+| `/procesos/tarjetas` | 721–744 ms | 4 | 950–962 ms | **no**: pantalla congelada |
+| `/procesos/tarjetas/[id]` | 646–922 ms | 3 | 919–1256 ms | **no** |
+| `/procesos/cuentas` | 582–781 ms | 3 | 806–1002 ms | **no** |
+| `/procesos/gastos` | 374–382 ms | 2 | 635–653 ms | sí |
+| `/ajustes` | 181 ms | 1 | 364–374 ms | sí |
+
+Lectura:
+1. **Lo que cuesta es el número de tandas seguidas, no cada consulta.** Cada tanda paga un viaje completo a Supabase.
+2. **La sesión se valida dos veces y en serie**: el proxy (`auth:user`, ~170 ms) antes del render y la página otra vez (`auth:user`) en la primera tanda.
+3. **Cada prefetch también valida la sesión con Supabase Auth.** Abrir Ajustes dispara ~10 prefetches y cada uno es una llamada a Auth. Con varios usuarios, eso además gasta los límites de Supabase Auth.
+4. **Dentro de `/procesos/*` no hay esqueleto.** El único `loading.tsx` está en `(app)/`, así que al pasar de `/procesos` a una subpágina la pantalla queda congelada hasta que llega todo (~1 s). Esto es lo que más se siente como lentitud.
+5. **En el Resumen, la sincronización de planes y del tipo de cambio ocupa una tanda entera** en cada visita, aunque casi nunca haya nada que hacer.
+6. En producción el tiempo por consulta depende de que Vercel y Supabase estén en la misma región (falta confirmarlo); el número de tandas y la falta de esqueleto pesan igual.
+
+**1.2 Causas y cambios:**
 
 | Causa | Dónde | Cambio |
 |---|---|---|

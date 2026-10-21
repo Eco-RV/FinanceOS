@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate, type AmortizationRow } from "@/domain";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import type { Account } from "@/lib/types";
 import { payLoanInstallment, undoLoanInstallment } from "./actions";
 
@@ -39,6 +40,7 @@ export function PayInstallmentDialog({
   accounts: Pick<Account, "id" | "name">[];
   defaultAccountId: string | null;
 }) {
+  const formatDate = useFormatDate();
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     payLoanInstallment,
     `Cuota ${row.no}/${months} pagada`,

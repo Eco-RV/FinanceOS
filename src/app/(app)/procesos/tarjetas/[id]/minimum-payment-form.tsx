@@ -14,7 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { saveMinimumPayment } from "../actions";
 
 /** T8: digitar el pago mínimo que trae el estado de cuenta del corte vigente. */
@@ -31,6 +32,7 @@ export function MinimumPaymentDialog({
   statementBalance: number;
   current: number | null;
 }) {
+  const formatDate = useFormatDate();
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveMinimumPayment,
     "Pago mínimo guardado",

@@ -19,7 +19,8 @@ import { FormField, Select } from "@/components/form-field";
 import { confirmAction } from "@/lib/confirm";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { REIMBURSEMENT_CHANNEL_LABELS } from "@/lib/schema";
 import type { FormResult } from "@/lib/forms";
 import { deleteSharedExpense, recordSharedPayment, undoSharedPayment } from "./actions";
@@ -181,6 +182,7 @@ export function SharedPaidBadge({
   channelLabel: string;
   withIncome: boolean;
 }) {
+  const formatDate = useFormatDate();
   const { pending, run } = useAction(undoSharedPayment);
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

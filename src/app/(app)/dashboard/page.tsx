@@ -18,7 +18,6 @@ import {
   buildReminders,
   spendingFrom,
   spendingInColones,
-  readPreferences,
   minimumPaymentStatus,
   cardAvailability,
   cardStatementsByCurrency,
@@ -47,6 +46,7 @@ import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
 import { loadSharedBoard } from "@/lib/shared-board";
 import { ensureExchangeRateToday, ensurePlansUpToDate } from "@/lib/sync-plans";
+import { getPreferences } from "@/lib/preferences";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import type {
@@ -217,7 +217,7 @@ export default async function DashboardPage() {
   ]);
   const goals = (goalData ?? []) as Goal[];
   // U9 (3.1.0): moneda base para mostrar el patrimonio también en dólares.
-  const basePrefs = readPreferences((await (await repositories()).profiles.get().catch(() => null))?.preferences);
+  const basePrefs = await getPreferences();
   const noticesToSend =
     board.groups.filter((g) => g.needsNotice).length + sharedBoard.groups.filter((g) => g.needsNotice).length;
   const receivableCrc = [...board.receivables, ...sharedBoard.receivables]
