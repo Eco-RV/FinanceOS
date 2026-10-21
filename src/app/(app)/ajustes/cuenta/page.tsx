@@ -1,8 +1,9 @@
 import { LogOut, ShieldCheck } from "lucide-react";
-import { requireUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getAuthUser, requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { signOutAction } from "@/lib/session-actions";
-import { repositories } from "@/infrastructure/container";
+import { getProfile } from "@/lib/preferences";
 import { initialsOf } from "@/domain";
 import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
@@ -12,8 +13,10 @@ import { DeleteAccountSection } from "./delete-account-section";
 
 /** Mi cuenta (2.6.0): perfil, foto, correo, contraseña y sesión. */
 export default async function CuentaPage() {
-  const user = await requireUser();
-  const profile = await (await repositories()).profiles.get().catch(() => null);
+  await requireUser();
+  // La fecha de alta y el último ingreso no van en el token: aquí sí se consulta a Auth.
+  const [user, profile] = await Promise.all([getAuthUser(), getProfile()]);
+  if (!user) redirect("/login");
   const email = user.email ?? "";
 
   return (

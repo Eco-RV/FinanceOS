@@ -45,7 +45,7 @@ import { loadLoanAdjustments } from "@/lib/loan-adjustments";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
 import { loadSharedBoard } from "@/lib/shared-board";
-import { ensureExchangeRateToday, ensurePlansUpToDate } from "@/lib/sync-plans";
+import { ensureDailySync } from "@/lib/sync-plans";
 import { getPreferences } from "@/lib/preferences";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
@@ -129,8 +129,8 @@ type Installment = Pick<
 const rise = (i: number) => ({ "--rise-i": i }) as CSSProperties;
 
 export default async function DashboardPage() {
-  await requireUser();
-  await Promise.all([ensurePlansUpToDate(), ensureExchangeRateToday()]);
+  // 3.2.0: sesión y sincronización del día en paralelo (solo la primera visita del día espera).
+  await Promise.all([requireUser(), ensureDailySync()]);
 
   const today = crToday();
   const todayISO = toISODate(today);
@@ -140,84 +140,94 @@ export default async function DashboardPage() {
   const expensesFrom = sinceISO < yearStartISO ? sinceISO : yearStartISO;
 
   const supabase = await createClient();
+  // 3.2.0 · Fase 1.2: todas las lecturas salen juntas en una sola tanda (antes
+  // eran cuatro seguidas: datos → tableros → preferencias → ajustes de préstamos).
   const [
-    { data: accountsData },
-    { data: cardsData },
-    { data: cardTxData },
-    { data: expenseData },
-    { data: financingData },
-    { data: installmentData },
-    { data: loanData },
-    { data: loanPayData },
-    { data: categoryData },
-    { data: rateData },
+    [
+      { data: accountsData },
+      { data: cardsData },
+      { data: cardTxData },
+      { data: expenseData },
+      { data: financingData },
+      { data: installmentData },
+      { data: loanData },
+      { data: loanPayData },
+      { data: categoryData },
+      { data: rateData },
+    ],
+    [board, sharedBoard, plansBoard, { data: goalData }, estimated, { data: minimumData }],
+    basePrefs,
+    loanAdjustments,
   ] = await Promise.all([
-    supabase.from("accounts").select("*").eq("archived", false),
-    supabase.from("credit_cards").select("*").eq("archived", false),
-    // Todas las filas (paginado): con muchas cuotas se pasa del tope de ~1000.
-    allRows<CardTxn>((from, to) =>
+    Promise.all([
+      supabase.from("accounts").select("*").eq("archived", false),
+      supabase.from("credit_cards").select("*").eq("archived", false),
+      // Todas las filas (paginado): con muchas cuotas se pasa del tope de ~1000.
+      allRows<CardTxn>((from, to) =>
+        supabase
+          .from("transactions")
+          .select("card_id, type, amount, occurred_on, financing_id, currency, interest_amount")
+          .eq("archived", false)
+          .not("card_id", "is", null)
+          .order("id")
+          .range(from, to),
+      ).then((data) => ({ data })),
+      // G10 (3.1.0): desde el inicio del año pasado, para comparar períodos (todas las filas).
+      allRows<Pick<Transaction, "amount" | "occurred_on" | "category" | "currency">>((from, to) =>
+        supabase
+          .from("transactions")
+          .select("id, amount, occurred_on, category, currency")
+          .eq("type", "expense")
+          .eq("archived", false)
+          .gte("occurred_on", spendingFrom(todayISO) < expensesFrom ? spendingFrom(todayISO) : expensesFrom)
+          .lte("occurred_on", todayISO)
+          .order("id")
+          .range(from, to),
+      ).then((data) => ({ data })),
+      supabase.from("financings").select("*").eq("archived", false).is("cancelled_on", null),
       supabase
         .from("transactions")
-        .select("card_id, type, amount, occurred_on, financing_id, currency, interest_amount")
+        .select("financing_id, installment_no, occurred_on, amount, interest_amount")
         .eq("archived", false)
-        .not("card_id", "is", null)
-        .order("id")
-        .range(from, to),
-    ).then((data) => ({ data })),
-    // G10 (3.1.0): desde el inicio del año pasado, para comparar períodos (todas las filas).
-    allRows<Pick<Transaction, "amount" | "occurred_on" | "category" | "currency">>((from, to) =>
+        .not("financing_id", "is", null)
+        .not("installment_no", "is", null),
+      supabase.from("loans").select("*").eq("archived", false),
       supabase
         .from("transactions")
-        .select("id, amount, occurred_on, category, currency")
-        .eq("type", "expense")
+        .select("loan_id, installment_no")
+        .not("loan_id", "is", null)
+        .not("installment_no", "is", null)
+        .eq("archived", false),
+      supabase.from("categories").select("*").eq("kind", "expense").eq("archived", false),
+      supabase
+        .from("exchange_rates")
+        .select("rate_on, usd_crc")
         .eq("archived", false)
-        .gte("occurred_on", spendingFrom(todayISO) < expensesFrom ? spendingFrom(todayISO) : expensesFrom)
-        .lte("occurred_on", todayISO)
-        .order("id")
-        .range(from, to),
-    ).then((data) => ({ data })),
-    supabase.from("financings").select("*").eq("archived", false).is("cancelled_on", null),
-    supabase
-      .from("transactions")
-      .select("financing_id, installment_no, occurred_on, amount, interest_amount")
-      .eq("archived", false)
-      .not("financing_id", "is", null)
-      .not("installment_no", "is", null),
-    supabase.from("loans").select("*").eq("archived", false),
-    supabase
-      .from("transactions")
-      .select("loan_id, installment_no")
-      .not("loan_id", "is", null)
-      .not("installment_no", "is", null)
-      .eq("archived", false),
-    supabase.from("categories").select("*").eq("kind", "expense").eq("archived", false),
-    supabase
-      .from("exchange_rates")
-      .select("rate_on, usd_crc")
-      .eq("archived", false)
-      .order("rate_on", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
-
-  // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
-  // 2.7.0: planes (línea base y programados) y metas de ahorro.
-  // 3.1.0: también los gastos compartidos (X5).
-  const [board, sharedBoard, plansBoard, { data: goalData }, estimated, { data: minimumData }] = await Promise.all([
-    loadFinancingBoard(supabase, todayISO),
-    loadSharedBoard(supabase, todayISO),
-    repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
-    supabase
-      .from("savings_goals")
-      .select("*")
-      .eq("archived", false),
-    // P8 (3.1.0): montos por confirmar (P7) y pagos mínimos digitados (T8).
-    repositories().then((repos) => repos.plans.estimatedOccurrences()),
-    supabase.from("card_minimum_payments").select("card_id, cutoff_on, currency, amount"),
+        .order("rate_on", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]),
+    // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
+    // 2.7.0: planes (línea base y programados) y metas de ahorro.
+    // 3.1.0: también los gastos compartidos (X5).
+    Promise.all([
+      loadFinancingBoard(supabase, todayISO),
+      loadSharedBoard(supabase, todayISO),
+      repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
+      supabase
+        .from("savings_goals")
+        .select("*")
+        .eq("archived", false),
+      // P8 (3.1.0): montos por confirmar (P7) y pagos mínimos digitados (T8).
+      repositories().then((repos) => repos.plans.estimatedOccurrences()),
+      supabase.from("card_minimum_payments").select("card_id, cutoff_on, currency, amount"),
+    ]),
+    // U9 (3.1.0): moneda base para mostrar el patrimonio también en dólares.
+    getPreferences(),
+    // L7/L8 (3.1.0): abonos y cambios de tasa de los préstamos.
+    loadLoanAdjustments(supabase),
   ]);
   const goals = (goalData ?? []) as Goal[];
-  // U9 (3.1.0): moneda base para mostrar el patrimonio también en dólares.
-  const basePrefs = await getPreferences();
   const noticesToSend =
     board.groups.filter((g) => g.needsNotice).length + sharedBoard.groups.filter((g) => g.needsNotice).length;
   const receivableCrc = [...board.receivables, ...sharedBoard.receivables]
@@ -258,7 +268,6 @@ export default async function DashboardPage() {
   for (const p of (loanPayData ?? []) as { loan_id: string; installment_no: number }[]) {
     paidByLoan.set(p.loan_id, [...(paidByLoan.get(p.loan_id) ?? []), Number(p.installment_no)]);
   }
-  const loanAdjustments = await loadLoanAdjustments(supabase);
   const loanEntries: CoverageLoan<Loan>[] = loans.map((loan) => {
     const currency = loan.currency === "USD" ? "USD" : "CRC";
     const progress = loanProgress(

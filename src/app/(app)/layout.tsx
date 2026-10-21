@@ -9,7 +9,8 @@ import { initialsOf } from "@/domain";
 import { getPreferences, getProfile } from "@/lib/preferences";
 import { DateFormatProvider } from "@/components/date-format";
 import { PerfNavTimer } from "@/components/perf-nav-timer";
-import { ensurePlansUpToDate } from "@/lib/sync-plans";
+import { DAILY_SYNC_COOKIE, ensureDailySync } from "@/lib/sync-plans";
+import { DailySyncMark } from "@/components/daily-sync-mark";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { loadDebitCards } from "@/lib/debit-cards";
@@ -21,12 +22,15 @@ export default async function AppLayout({
 }: {
   children: ReactNode;
 }) {
-  const user = await requireUser();
   // 2.7.0: salarios, suscripciones y seguros que ya llegaron (M7).
-  await ensurePlansUpToDate();
+  // 3.2.0: una vez al día (la primera visita espera; las demás solo leen una cookie).
+  const [user, sync] = await Promise.all([requireUser(), ensureDailySync()]);
 
   const supabase = await createClient();
-  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards] =
+  // 3.2.0: todo en una sola tanda (antes el perfil iba en una segunda).
+  // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
+  // U9 (3.1.0): formato de fecha y moneda base del gasto rápido.
+  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards, profile, prefs] =
     await Promise.all([
       supabase.from("accounts").select("*").eq("archived", false),
       supabase.from("credit_cards").select("*").eq("archived", false),
@@ -43,11 +47,9 @@ export default async function AppLayout({
         .eq("archived", false)
         .order("name", { ascending: true }),
       loadDebitCards(supabase),
+      getProfile(),
+      getPreferences(),
     ]);
-
-  // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
-  // U9 (3.1.0): formato de fecha y moneda base del gasto rápido (ya leídos por requireUser).
-  const [profile, prefs] = await Promise.all([getProfile(), getPreferences()]);
   const email = user.email ?? "";
   const account = {
     email,
@@ -67,6 +69,7 @@ export default async function AppLayout({
     <DateFormatProvider value={prefs.dateFormat}>
       <div className="flex min-h-full flex-col">
         <AppBackdrop />
+        {sync.ran ? <DailySyncMark name={DAILY_SYNC_COOKIE} mark={sync.mark} /> : null}
         <WelcomeSplash name={account.name?.split(" ")[0] ?? null} />
         <Suspense fallback={null}>
           <UrlNotice />

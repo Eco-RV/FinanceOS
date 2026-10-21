@@ -1,10 +1,12 @@
 import "server-only";
 
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { crToday, toISODate } from "@/domain";
 import { refreshExchangeRate, syncPlans } from "@/application";
 import { repositories } from "@/infrastructure/container";
 import { timed } from "@/lib/perf";
+import { getUser } from "@/lib/auth";
 
 /**
  * M7 (2.7.0): registra las ocurrencias de los planes que ya llegaron. Una vez
@@ -38,3 +40,22 @@ export const ensureExchangeRateToday = cache(async (): Promise<void> =>
     }
   }),
 );
+
+/** Cookie que marca la última sincronización del día: `<id del usuario>:<YYYY-MM-DD>`. */
+export const DAILY_SYNC_COOKIE = "fo-sync";
+
+/**
+ * 3.2.0 · Fase 1.2: planes (M7) y tipo de cambio (T10) se sincronizan **una
+ * vez al día por usuario y dispositivo**, no en cada página. La primera visita
+ * del día (en Costa Rica) espera la sincronización antes de leer, para que
+ * los saldos ya traigan lo que llegó hoy; las demás solo leen la cookie, sin
+ * consultar nada. `DailySyncMark` guarda la cookie en el navegador cuando el
+ * render sí sincronizó. Planes y cada acción siguen sincronizando siempre.
+ */
+export const ensureDailySync = cache(async (): Promise<{ ran: boolean; mark: string }> => {
+  const [user, jar] = await Promise.all([getUser(), cookies()]);
+  const mark = `${user?.id ?? ""}:${toISODate(crToday())}`;
+  if (!user || jar.get(DAILY_SYNC_COOKIE)?.value === mark) return { ran: false, mark };
+  await Promise.all([ensurePlansUpToDate(), ensureExchangeRateToday()]);
+  return { ran: true, mark };
+});

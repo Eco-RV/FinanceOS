@@ -38,7 +38,7 @@ cobertura con el débito) y responde a la pregunta que todos se hacen:
 
 **Resultado (2026-10-21)**
 
-- **0.1 ✅** El formato de fecha es por request. En el servidor, `requireUser()` espera `getPreferences()` (`src/lib/preferences.ts`), que lo fija en un almacén con `cache` de React. En el navegador, `DateFormatProvider` + `useFormatDate()` (`src/components/date-format.tsx`). Se quitó `DateFormatSync`. Fuera de un render (Server Actions, como el texto de los avisos) vale "corto".
+- **0.1 ✅** El formato de fecha es por request. En el servidor, `requireUser()` espera `loadRequestDateFormat()` (`src/lib/preferences.ts`), que lo lee de la cookie `fo-date` (sin consultar la base, Fase 1.2) y lo fija en un almacén con `cache` de React. La cookie la guarda la acción de Preferencias y la corrige `DateFormatProvider` si no coincide con el perfil. En el navegador, `DateFormatProvider` + `useFormatDate()` (`src/components/date-format.tsx`). Se quitó `DateFormatSync`. Fuera de un render (Server Actions, como el texto de los avisos) vale "corto".
 - **0.2 ✅** No hay otro estado de módulo con datos de usuario en el servidor. Los dos `Set` de la Constelación (`wallet-linker`, `wallet-setup`) son de client components (un navegador = un usuario). El único texto de "uso individual" que queda es el de la política de privacidad (Fase 4).
 - **0.3 ✅ revisión estática / ⏳ en la base.** Las 30 tablas de `public` activan RLS y tienen las 4 policies `auth.uid() = user_id`. Solo hay 2 funciones `security definer`, las dos con `search_path` fijo. Los buckets limitan a la carpeta `<uid>/`. Falta correr `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql` (solo lectura) en Supabase para confirmar que la base real es igual a los archivos.
   - Hallazgo menor: las FK no validan que el registro referido sea del mismo usuario (por ejemplo, un `financing_shares` con el `financing_id` de otro). RLS impide leer o cambiar lo ajeno y los ids son UUID, así que hay que conocerlos. Queda anotado para endurecerlo con checks compuestos si hace falta.
@@ -85,6 +85,28 @@ Lectura:
 | **Región**: si la función de Vercel y la base de Supabase están en regiones distintas, cada consulta paga la distancia. | Vercel / Supabase | Verificar las dos regiones y ponerlas juntas. |
 | **Animaciones de entrada lentas**: `rise` dura 520 ms + 55 ms por fila, así que el contenido "llega tarde" aunque ya esté. | `src/app/globals.css` | ~200 ms y un tope a la cascada. |
 | **JavaScript del layout**: los dos formularios del botón flotante (gasto e ingreso) se cargan en todas las páginas. | `(app)/layout.tsx` | Cargar el diálogo al abrirlo (`next/dynamic`) y revisar el tamaño del bundle. |
+
+**Hecho en la 1.2 (2026-10-21)**
+
+- ✅ **Esqueletos por sección**: `PageSkeleton` (`src/components/page-skeleton.tsx`) y un `loading.tsx` en cada sección de Procesos y Ajustes, en sus detalles (`[id]`) y en el Resumen. Llevan el título real y el "regresar".
+- ✅ **Sesión sin viaje extra**: el proxy y `getUser()` usan `auth.getClaims()`. El proyecto **ya firma con llaves asimétricas**, así que el JWT se valida en local: solo se baja la llave pública (`auth:.well-known`) una vez por instancia. `requireUser()` devuelve `{ id, email }`; para datos que no van en el token (fecha de alta, último ingreso) está `getAuthUser()`. Ya no espera el perfil (el formato de fecha sale de la cookie).
+- ✅ **Sincronizaciones una vez al día**: `ensureDailySync()` (`src/lib/sync-plans.ts`) corre planes y tipo de cambio solo en la primera visita del día (usuario + fecha de Costa Rica en la cookie `fo-sync`, que guarda `DailySyncMark` cuando el render sí sincronizó). Las demás visitas solo leen la cookie. No se usó `after()`: la primera visita del día debe mostrar lo que llegó hoy (salario, gasto fijo). Planes y cada acción siguen sincronizando siempre.
+- ✅ **Resumen en una tanda**: datos, tableros, preferencias y ajustes de préstamos salen juntos. Queda la segunda tanda de los tableros de cobros, que necesita los ids de la primera. El layout también lee el perfil en la misma tanda que el resto.
+- ⏳ Pendiente: revalidar solo lo afectado, región Vercel/Supabase, animaciones de entrada y JS del botón flotante.
+
+**Después de la 1.2 (2026-10-21)**, mismas condiciones que la línea base:
+
+| Ruta | Proxy (sesión) | Tandas en el servidor | Toque → esqueleto | Toque → contenido |
+|---|---|---|---|---|
+| `/dashboard` | 170 → **1–27 ms** | 6 → **2** | ~20 ms | 1176–1596 → **513–761 ms** (una vez 1323 por una consulta lenta) |
+| `/procesos` | | 3 → **2** | ~20 ms | 784–1235 → **375–430 ms** |
+| `/procesos/tarjetas` | | 4 → **3** | 950 → **16–25 ms** | 950–962 → **601–724 ms** |
+| `/procesos/tarjetas/[id]` | | 3 → **2** | 919–1256 → **14–24 ms** | 919–1256 → **513–1099 ms** |
+| `/procesos/cuentas` | | 3 → **2** | 806–1002 → **12–21 ms** | 806–1002 → **409–455 ms** |
+| `/procesos/gastos` | | 2 → **1** | ~20 ms | 635–653 → **331–378 ms** |
+| `/ajustes` | | 1 | ~20 ms | 364–374 → **323–331 ms** |
+
+Con esto, la respuesta al toque ya cumple el objetivo (< 100 ms) en todas las rutas. El contenido queda por debajo de 1 s desde Costa Rica contra Supabase; en Vercel, si la región coincide con la de Supabase, cada tanda debería costar mucho menos que los ~170 ms de aquí.
 
 **1.3 Objetivo.** Respuesta visual al toque en < 100 ms (estado "cargando" en el botón o la pestaña) y contenido de la página en < 1 s (p75, celular en 4G). Se vuelve a medir y se anota el antes y el después.
 

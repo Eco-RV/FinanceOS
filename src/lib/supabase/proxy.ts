@@ -51,11 +51,13 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // IMPORTANT: do not run code between createServerClient and getUser().
+  // IMPORTANT: do not run code between createServerClient and getClaims().
+  // 3.2.0 · Fase 1.2: `getClaims()` refresca la sesión si hace falta y valida
+  // el JWT en local cuando el proyecto usa JWT Signing Keys (asimétricas); así
+  // la navegación y cada prefetch no esperan un viaje a Supabase Auth.
   const authStart = performance.now();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
   const authMs = Math.round(performance.now() - authStart);
 
   const { pathname } = request.nextUrl;

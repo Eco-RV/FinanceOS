@@ -16,11 +16,15 @@ export function formatCurrency(amount: number, currency = "CRC") {
  *
  * 3.2.0: ya no es una variable del módulo (en el servidor la compartían los
  * requests de todos los usuarios). En el servidor vive en un almacén por
- * request (`cache` de React) que llena `getPreferences()` antes de pintar; en
- * los client components se pide con `useFormatDate()`
- * (`src/components/date-format.tsx`). Fuera de un request vale "corto".
+ * request (`cache` de React) que llena `loadRequestDateFormat()` (cookie
+ * `fo-date`, la espera `requireUser()`) antes de pintar; en los client
+ * components se pide con `useFormatDate()` (`src/components/date-format.tsx`).
+ * Fuera de un request vale "corto".
  */
 export type DateFormatChoice = "corto" | "numerico" | "largo";
+
+/** Cookie con el formato de fecha, para leerlo en el servidor sin consultar la base. */
+export const DATE_FORMAT_COOKIE = "fo-date";
 
 const requestDateFormat = cache((): { choice: DateFormatChoice } => ({ choice: "corto" }));
 
