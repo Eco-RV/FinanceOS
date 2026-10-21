@@ -196,6 +196,7 @@ Un lugar **propio y tranquilo** para que cada usuario cuente su experiencia, pre
 - ✅ Entradas: menú del usuario (punto y contador), Ajustes → Comentarios y enlace al pie del Resumen.
 - ✅ Probado en local sin el SQL: el buzón vacío, el formulario, las entradas y el 404 de la bandeja. **Falta**: correr `01_` y `02_` en Supabase y probar de punta a punta (publicar, responder como admin, el punto de sin leer, cerrar).
 - Cambio respecto al plan: el aviso por correo al admin queda fuera de la 3.2.0 (como estaba previsto).
+- **Prueba con el SQL corrido (2026-10-21), lado del autor ✅**: publicar con captura (sube al bucket privado y el enlace firmado responde 200), conversación, responder y lista con estado, sin errores en el servidor. Apareció y se corrigió un bug: el adaptador insertaba `body` en `feedback_posts`. ⏳ **Lado del equipo**: el rol admin no quedó guardado (el update de `02_` no encontró la cuenta). Además, con una sola cuenta la Bandeja oculta lo propio, así que hace falta una segunda cuenta que publique.
 
 ## Fase 4 · Producción y seguridad
 
@@ -212,6 +213,7 @@ Un lugar **propio y tranquilo** para que cada usuario cuente su experiencia, pre
 - Auditoría pantalla por pantalla con las 6 leyes (`docs/diseno/leyes-ux.md`) a 375 px y en escritorio, en claro y oscuro, empezando por el camino del early bird. Los hallazgos van a una tabla en este archivo, y luego se corrigen.
 - Textos: sin jerga interna (G5, M8, "Arranque de 0"…) en la UI; los errores dicen qué hacer.
 - Accesibilidad básica: contraste, foco visible, `aria-label` en botones de ícono, objetivos táctiles ≥ 44 px.
+- **Hallazgo (Fase 3)**: 29 formularios usan `<form action={submit}>`. Con `action`, React 19 vacía los campos al terminar, aunque haya un error de validación: el usuario pierde lo que escribió. Hay que pasarlos a `onSubmit` (como el del buzón) o hacerlos controlados.
 
 ## Fase 6 · Release
 
