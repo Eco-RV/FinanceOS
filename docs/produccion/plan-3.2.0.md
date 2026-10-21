@@ -190,11 +190,11 @@ Un lugar **propio y tranquilo** para que cada usuario cuente su experiencia, pre
 
 **Resultado (2026-10-21)**
 
-- ✅ Reglas **B1–B6** (dominio , 6 tests) y casos de uso (, 4 tests con un repositorio en memoria).
-- ✅ SQL : tablas, RLS dueño o admin, triggers (el usuario no cambia el estado y el admin no cambia el contenido; actividad y lectura), RPC  y bucket privado.  da el rol.
-- ✅ Pantallas: Comentarios, conversación (con , respuesta y estado para el admin) y Bandeja con filtros (404 si no es admin).
+- ✅ Reglas **B1–B6** (dominio `src/domain/feedback/feedback.ts`, 6 tests) y casos de uso (`src/application/feedback.ts`, 4 tests con un repositorio en memoria).
+- ✅ SQL `01_feedback.sql`: tablas, RLS dueño o admin, triggers (el usuario no cambia el estado y el admin no cambia el contenido; actividad y lectura), RPC `feedback_unread` y bucket privado. `02_feedback_admin.sql` da el rol.
+- ✅ Pantallas: Comentarios, conversación (con `MarkRead`, respuesta y estado para el admin) y Bandeja con filtros (404 si no es admin).
 - ✅ Entradas: menú del usuario (punto y contador), Ajustes → Comentarios y enlace al pie del Resumen.
-- ✅ Probado en local sin el SQL: el buzón vacío, el formulario, las entradas y el 404 de la bandeja. **Falta**: correr  y  en Supabase y probar de punta a punta (publicar, responder como admin, el punto de sin leer, cerrar).
+- ✅ Probado en local sin el SQL: el buzón vacío, el formulario, las entradas y el 404 de la bandeja. **Falta**: correr `01_` y `02_` en Supabase y probar de punta a punta (publicar, responder como admin, el punto de sin leer, cerrar).
 - Cambio respecto al plan: el aviso por correo al admin queda fuera de la 3.2.0 (como estaba previsto).
 
 ## Fase 4 · Producción y seguridad
