@@ -255,7 +255,7 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 | 2.9 | Mi bolsillo en Stellar (testnet): wallet con Cavos o extensión, USDC de persona a persona (enviar con revisión, recibir con QR), pestaña Constelación | ✅ v2.9.0 (en `main`) |
 | 3.0 | Constelación familiar: contrato `family` desplegado, dominio, Supabase y pantallas de familia, invitaciones y bóveda | ✅ v3.0.0 (en `main`) |
 | 3.1 | Auditoría y cierre de pendientes del BusinessLogic (`docs/dominio/pendientes.md`), historial con filtros, leyes de UX, botones de gasto e ingreso, Gastos compartidos (X1–X7), tipo de cambio del BCCR y multimoneda (G7, G9, G10), pago mínimo, abonos extraordinarios y tasa variable, monto variable y recordatorios, varias metas por cuenta, comprobantes, cuenta (Google, borrar, preferencias). La 3.0.1 de desarrollo quedó dentro | ✅ v3.1.0 (en `main`) |
-| 3.2 | Ajustes de UI/UX y salida a producción para los primeros usuarios (early birds) | 📝 plan |
+| 3.2 | Salida a producción para los primeros usuarios (early birds): promesa única "no pagar intereses" con funciones por logros, buzón de comentarios, velocidad y fluidez, seguridad multiusuario y pulido UI/UX (`docs/produccion/plan-3.2.0.md`) | 📝 plan |
 | 4.0 | Constelación completa: Apoyos (Trustless Work), Academia, letra grande, encaje con Finance OS (Fase 7), estrella ↔ miembro (D13) y guion de prueba (Fase 8) | 📝 plan |
 | 2.8 | Correcciones: día de corte al siguiente corte (BAC), abono anticipado, abono en otra moneda con tipo de cambio, SINPE y débito en el gasto rápido, tarjetas de débito y detalle de cuenta, gasto fijo con débito | ✅ v2.8.0 (en `main`) |
 
