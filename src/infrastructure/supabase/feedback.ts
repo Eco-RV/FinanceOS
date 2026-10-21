@@ -30,6 +30,8 @@ function missing(error: PgError): boolean {
 function check(error: PgError, message: string): void {
   if (!error) return;
   if (missing(error)) throw new InfrastructureError("Falta correr el SQL 3.2.0 (buzón de comentarios) en Supabase");
+  // El detalle queda en el log del servidor; al usuario, un mensaje claro.
+  console.error(`[feedback] ${message}:`, error.code, error.message);
   throw new InfrastructureError(message);
 }
 
@@ -65,13 +67,14 @@ export function supabaseFeedback(supabase: SupabaseClient) {
   }
 
   const feedback: FeedbackRepository = {
-    async create(input) {
-      const { data, error } = await supabase.from("feedback_posts").insert(input).select("id").single();
+    async create({ body, ...post }) {
+      // El texto no es columna de la publicación: va como primer mensaje.
+      const { data, error } = await supabase.from("feedback_posts").insert(post).select("id").single();
       check(error, "No se pudo publicar");
       const id = (data as { id: string }).id;
       const { error: messageError } = await supabase
         .from("feedback_messages")
-        .insert({ post_id: id, body: input.body, from_admin: false });
+        .insert({ post_id: id, body, from_admin: false });
       if (messageError) {
         await supabase.from("feedback_posts").delete().eq("id", id);
         check(messageError, "No se pudo publicar");

@@ -72,7 +72,14 @@ export function NewPostDialog({ label = "Escribir" }: { label?: string }) {
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        {/* Con onSubmit (no `action`): si falla, React no vacía lo que se escribió. */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit(new FormData(e.currentTarget));
+          }}
+          className="flex flex-col gap-4"
+        >
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-sm font-medium">¿De qué se trata?</legend>
             <div className="grid grid-cols-2 gap-2">
