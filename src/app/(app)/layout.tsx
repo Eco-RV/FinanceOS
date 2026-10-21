@@ -15,7 +15,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { loadDebitCards } from "@/lib/debit-cards";
 import type { Account, Category, CreditCard } from "@/lib/types";
-import { TransactionForm } from "./procesos/_transactions/transaction-form";
+import { QuickAdd } from "./quick-add";
 
 export default async function AppLayout({
   children,
@@ -83,27 +83,32 @@ export default async function AppLayout({
         {/* 3.1.0: acceso rápido — gasto (sale ↑, rojo) arriba e ingreso (entra ↓, verde) abajo. */}
         {canRegister ? (
           <div className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex flex-col gap-3 sm:right-6 sm:bottom-6">
-            <TransactionForm
-              type="expense"
-              accounts={accounts}
-              cards={cards}
-              debitCards={debitCards}
-              categories={categories}
-              categoryIcons={iconsByName(options)}
-              triggerLabel="Nuevo gasto"
-              defaultCurrency={prefs.baseCurrency}
-              fab
+            {/* 3.2.0: los formularios se cargan cuando el navegador queda libre o al tocar. */}
+            <QuickAdd
+              expense={{
+                type: "expense",
+                accounts,
+                cards,
+                debitCards,
+                categories,
+                categoryIcons: iconsByName(options),
+                triggerLabel: "Nuevo gasto",
+                defaultCurrency: prefs.baseCurrency,
+                fab: true,
+              }}
+              income={
+                accounts.length > 0
+                  ? {
+                      type: "income",
+                      accounts,
+                      categories: incomeOptions.map((o) => o.name),
+                      categoryIcons: iconsByName(incomeOptions),
+                      triggerLabel: "Nuevo ingreso",
+                      fab: true,
+                    }
+                  : null
+              }
             />
-            {accounts.length > 0 ? (
-              <TransactionForm
-                type="income"
-                accounts={accounts}
-                categories={incomeOptions.map((o) => o.name)}
-                categoryIcons={iconsByName(incomeOptions)}
-                triggerLabel="Nuevo ingreso"
-                fab
-              />
-            ) : null}
           </div>
         ) : null}
         <AppBottomNav />

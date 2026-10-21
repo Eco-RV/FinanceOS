@@ -104,7 +104,7 @@ export function WalletCardHero({ card }: { card: CardFace }) {
       <div
         data-motion
         className="relative"
-        style={{ animation: "card-enter 750ms var(--ease-spring) both" }}
+        style={{ animation: "card-enter 500ms var(--ease-spring) both" }}
       >
         <WalletCard card={card} size="lg" />
         <span

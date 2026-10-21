@@ -198,16 +198,19 @@
 /*
  * Entrada escalonada (2.5.0): `rise` sube y aparece; el retraso sale de
  * `--rise-i` (índice del bloque), así una grilla entra en cascada.
+ * 3.2.0 · Fase 1.2: más corta (520 → 220 ms) y con tope a la cascada (antes
+ * la fila 20 aparecía 1,6 s después de que llegaran los datos; ahora como
+ * mucho a los ~420 ms).
  */
 @utility rise {
-  animation: rise 520ms var(--ease-fluid) both;
-  animation-delay: calc(var(--rise-i, 0) * 55ms);
+  animation: rise 220ms var(--ease-fluid) both;
+  animation-delay: calc(min(var(--rise-i, 0), 8) * 25ms);
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.99);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;

@@ -192,7 +192,7 @@ export default async function AhorrosPage() {
                         )}
                         style={{
                           width: `${Math.max(2, progress.ratio * 100)}%`,
-                          animation: "grow-x 800ms var(--ease-fluid) both",
+                          animation: "grow-x 450ms var(--ease-fluid) both",
                         }}
                       />
                     </div>
