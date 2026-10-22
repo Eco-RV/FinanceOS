@@ -208,6 +208,15 @@ Un lugar **propio y tranquilo** para que cada usuario cuente su experiencia, pre
 - **Legal**: Términos de uso nuevos y una Política de privacidad reescrita para varios usuarios (hoy dice "uso individual"). Los redacta el agente; **los revisa una persona**.
 - **Respaldo**: backups/PITR en Supabase y un procedimiento escrito de restauración.
 
+**Resultado (2026-10-21)**
+
+- ✅ Errores: `(app)/error.tsx` (con la navegación), `global-error.tsx` (estilos en línea) y `not-found.tsx`, con `ErrorState` (`src/components/error-state.tsx`): reintentar, ir al Resumen y código del error. Next 16 usa `retry` (no `reset`).
+- ✅ Sentry `@sentry/nextjs` 11.6.0 por `instrumentation.ts` / `instrumentation-client.ts`; solo se inicia con `NEXT_PUBLIC_SENTRY_DSN`. No recoge datos del usuario ni del request (`src/lib/sentry-options.ts`; en v11 `sendDefaultPii` ya no existe y se usa `dataCollection`). Tiempos al 10 %. Las pantallas de error reportan con `reportError`.
+- ✅ Cabeceras: `X-Frame-Options`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` y HSTS (comprobadas con curl).
+- ✅ Legal: `/terminos` nuevo y `/privacidad` reescrita para varios usuarios (Ley 8968, encargados, cookies, derechos; conserva lo de Google). Enlazados desde el registro ("Al crear tu cuenta aceptas…"), el inicio y entre sí. ⏳ **Los revisa una persona antes de anunciar.**
+- ✅ Guía `docs/produccion/guia-produccion.md`: Supabase Auth (plantillas en español, leaked password protection, límites), SMTP, región y variables de Vercel, Sentry, Gmail en modo Testing y respaldos con `supabase db dump` y cómo restaurar.
+- ⏳ Pendientes que son tuyos: lo de la guía (§8) y el DSN de Sentry.
+
 ## Fase 5 · Pulido de UI/UX
 
 - Auditoría pantalla por pantalla con las 6 leyes (`docs/diseno/leyes-ux.md`) a 375 px y en escritorio, en claro y oscuro, empezando por el camino del early bird. Los hallazgos van a una tabla en este archivo, y luego se corrigen.

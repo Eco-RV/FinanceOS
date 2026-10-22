@@ -308,6 +308,18 @@ function SignUpForm({
       </div>
       {state?.error ? <Banner tone="error">{state.error}</Banner> : null}
       <Submit pending={pending}>Crear cuenta</Submit>
+      {/* 3.2.0 · Fase 4: lo que se acepta al registrarse. */}
+      <p className="text-center text-xs text-muted-foreground">
+        Al crear tu cuenta aceptas los{" "}
+        <a href="/terminos" target="_blank" className="underline underline-offset-2">
+          Términos de uso
+        </a>{" "}
+        y la{" "}
+        <a href="/privacidad" target="_blank" className="underline underline-offset-2">
+          Política de privacidad
+        </a>
+        .
+      </p>
     </form>
   );
 }

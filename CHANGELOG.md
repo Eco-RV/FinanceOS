@@ -47,6 +47,14 @@ Salida a producción para los primeros usuarios (early birds). Plan y avance en
 - Sin interrumpir: menú del usuario (con un punto si hay respuestas sin leer),
   Ajustes → Comentarios y un enlace al pie del Resumen.
 
+### Producción y seguridad (Fase 4)
+- Pantallas propias de error (con reintentar) y de página no encontrada.
+- Sentry opcional (`NEXT_PUBLIC_SENTRY_DSN`), sin datos del usuario.
+- Cabeceras de seguridad (sin iframes, nosniff, HSTS, permisos del navegador).
+- **Términos de uso** (`/terminos`) y **Política de privacidad** reescrita para
+  varios usuarios; el registro las enlaza. Pendientes de revisión.
+- Guía de producción: `docs/produccion/guia-produccion.md`.
+
 ### Base de datos
 Correr en orden en el SQL Editor de Supabase:
 1. `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql`: solo lectura, para revisar.

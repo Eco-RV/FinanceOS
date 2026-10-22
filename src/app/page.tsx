@@ -129,6 +129,9 @@ export default async function Home() {
         <span className="flex items-center gap-1.5">
           <ShieldCheck className="size-3.5" /> Privado: cada usuario ve solo sus datos.
         </span>
+        <Link href="/terminos" className={cn("underline-offset-2 hover:underline", FOCUS_OUTLINE)}>
+          Términos de uso
+        </Link>
         <Link href="/privacidad" className={cn("underline-offset-2 hover:underline", FOCUS_OUTLINE)}>
           Política de privacidad
         </Link>
