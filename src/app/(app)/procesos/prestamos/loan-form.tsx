@@ -71,7 +71,7 @@ export function LoanFormDialog({ accounts }: { accounts: AccountOption[] }) {
           <DialogTitle>Nuevo préstamo</DialogTitle>
           <DialogDescription>
             Cuota fija (sistema francés). El calendario se calcula con estos datos;
-            cada cuota se registra como gasto cuando la pagás.
+            cada cuota se registra como gasto cuando la pagas.
           </DialogDescription>
         </DialogHeader>
 

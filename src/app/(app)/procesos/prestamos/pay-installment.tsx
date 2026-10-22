@@ -85,7 +85,7 @@ export function PayInstallmentDialog({
           <FormField label="Desde la cuenta" htmlFor="account_id" error={errors?.account_id}>
             <Select id="account_id" name="account_id" defaultValue={preselected} required>
               <option value="" disabled>
-                Elegí una cuenta…
+                Elige una cuenta…
               </option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>

@@ -70,7 +70,7 @@ export function SharesDialog({
         </DialogHeader>
         {members.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Primero agregá miembros en Ajustes → Miembros.
+            Primero agrega miembros en Ajustes → Miembros.
           </p>
         ) : (
           <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
@@ -130,7 +130,7 @@ export function ReimburseDialog({
   );
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="outline" className="h-7 px-2 text-xs" />}>
+      <DialogTrigger render={<Button size="sm" variant="outline" className="h-9 px-2 text-xs sm:h-7" />}>
         Pagó
       </DialogTrigger>
       <DialogContent>

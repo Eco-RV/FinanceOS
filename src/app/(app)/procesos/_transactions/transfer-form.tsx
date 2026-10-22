@@ -77,7 +77,7 @@ export function TransferForm({
                 name="from_account_id"
                 defaultValue={transaction?.account_id ?? ""}
               >
-                <option value="">Elegí…</option>
+                <option value="">Elige…</option>
                 {options}
               </Select>
             </FormField>
@@ -87,7 +87,7 @@ export function TransferForm({
                 name="to_account_id"
                 defaultValue={transaction?.to_account_id ?? ""}
               >
-                <option value="">Elegí…</option>
+                <option value="">Elige…</option>
                 {options}
               </Select>
             </FormField>

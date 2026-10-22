@@ -62,7 +62,7 @@ export default async function TipoCambioPage() {
             {rates.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={2} className="py-10 text-center text-muted-foreground">
-                  Aún no registrás ningún tipo de cambio.
+                  Aún no registras ningún tipo de cambio.
                 </TableCell>
               </TableRow>
             ) : (

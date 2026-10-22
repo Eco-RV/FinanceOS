@@ -35,7 +35,7 @@ export function PaginationFooter({ state }: { state: PaginationState }) {
         <Button
           type="button"
           variant="outline"
-          size="icon-sm"
+          size="icon"
           aria-label="Página anterior"
           disabled={!state.canPrev}
           onClick={state.prev}
@@ -45,7 +45,7 @@ export function PaginationFooter({ state }: { state: PaginationState }) {
         <Button
           type="button"
           variant="outline"
-          size="icon-sm"
+          size="icon"
           aria-label="Página siguiente"
           disabled={!state.canNext}
           onClick={state.next}

@@ -64,7 +64,7 @@ export function SharedPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="outline" className="h-7 px-2 text-xs" />}>
+      <DialogTrigger render={<Button size="sm" variant="outline" className="h-9 px-2 text-xs sm:h-7" />}>
         Pagó
       </DialogTrigger>
       <DialogContent>

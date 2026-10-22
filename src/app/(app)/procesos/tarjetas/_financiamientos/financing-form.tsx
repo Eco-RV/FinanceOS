@@ -67,7 +67,7 @@ function CategorySelect({
   return (
     <FormField label="Categoría" htmlFor="category" error={error}>
       <Select id="category" name="category" defaultValue={defaultValue}>
-        <option value="">Elegí una categoría…</option>
+        <option value="">Elige una categoría…</option>
         {options.map((c) => (
           <option key={c} value={c}>
             {c}

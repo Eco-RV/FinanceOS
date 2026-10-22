@@ -57,6 +57,8 @@ Salida a producción para los primeros usuarios (early birds). Plan y avance en
 
 ### Pulido (Fase 5)
 - Los formularios ya no borran lo escrito cuando hay un error (32 diálogos).
+- Todo el texto en "tú" (había voseo mezclado).
+- Botones más grandes en pantallas táctiles (40 px) y mejor contraste del verde y el rojo en modo claro.
 
 ### Base de datos
 Correr en orden en el SQL Editor de Supabase:

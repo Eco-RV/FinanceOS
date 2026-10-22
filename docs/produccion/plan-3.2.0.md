@@ -225,6 +225,25 @@ Un lugar **propio y tranquilo** para que cada usuario cuente su experiencia, pre
 - **Hallazgo (Fase 3)**: 29 formularios usan `<form action={submit}>`. Con `action`, React 19 vacía los campos al terminar, aunque haya un error de validación: el usuario pierde lo que escribió. Hay que pasarlos a `onSubmit` (como el del buzón) o hacerlos controlados.
   - ✅ **Corregido (2026-10-21)**: `keepOnError` (`src/lib/keep-on-error.ts`) envía con `onSubmit` (incluye el botón que envió) y los 32 formularios de diálogo lo usan. Probado: una categoría repetida muestra "Ya existe esa categoría" y el campo conserva lo escrito. Los de acceso (login, registro, restablecer) quedan con `action`: las contraseñas del registro y el correo son controlados; que una contraseña se borre tras un error es lo habitual.
 
+**Auditoría (2026-10-21)**, build de producción en local con la cuenta del autor.
+
+| Pantalla | Móvil 375 px | Escritorio | Hallazgos y estado |
+|---|---|---|---|
+| Resumen | ✅ claro | ✅ oscuro | Sin desborde. Los botones flotantes tapan el borde derecho de algunas cards al desplazar; se acepta (el contenido tiene margen abajo). |
+| Procesos, Tarjetas, Cuentas, Planes | ✅ | — | Sin hallazgos. |
+| Detalle de tarjeta | ✅ | — | "Digitar pago mínimo" de 28 px → 36 px (táctil) ✅. |
+| Gastos | ✅ | — | Paginación de 28 px → 40 px (táctil) ✅. |
+| Gasto rápido | ✅ claro | — | "X" de los diálogos 28 → 40 px y "Más opciones" más alto en táctil ✅. "Entretenimiento" se corta en la grilla de categorías (aceptable). |
+| Ajustes, Más funciones, Comentarios | ✅ | ✅ oscuro | Sin hallazgos. |
+| Términos | ✅ | — | Sin hallazgos. |
+
+Revisión automática en cada pantalla (`main` a 375 px): 0 desbordes horizontales, 0 botones o enlaces sin nombre accesible, 0 imágenes sin `alt` y 0 campos sin etiqueta.
+
+- ✅ **Táctil**: `Button` `sm`, `icon` e `icon-sm` pasan a 40 px con `pointer-coarse:` (en escritorio no cambian). Los disparadores `h-7` de cobros pasan a `h-9` en móvil.
+- ✅ **Contraste** (tokens, AA 4,5:1 para texto pequeño): en oscuro todo pasa. En claro, `--success` 3,69 → ~5,5 y `--destructive` 4,45 → ~5,2 (oscurecidos).
+- ✅ **Textos**: 22 archivos tenían voseo ("Registrá", "Elegí", "tenés", "podés"…) mezclado con el "tú" del resto; todo pasa a "tú", incluidos los mensajes de validación (Zod) y de error del servidor. No hay ids de reglas visibles en la interfaz (solo en comentarios del código).
+- ⏳ Sin revisar en esta pasada: todos los diálogos uno por uno, lector de pantalla real y navegación solo con teclado de punta a punta.
+
 ## Fase 6 · Release
 
 - `npm run lint`, `npm test` y `npm run build` en verde.

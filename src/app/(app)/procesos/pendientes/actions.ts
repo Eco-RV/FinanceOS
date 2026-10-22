@@ -64,7 +64,7 @@ export async function syncNow(): Promise<SyncNowResult> {
     .select("user_id, refresh_token_enc, last_synced_at")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (!conn) return { ok: false, message: "Conectá tu correo en Ajustes → Bancos" };
+  if (!conn) return { ok: false, message: "Conecta tu correo en Ajustes → Bancos" };
 
   try {
     const r = await syncConnection(supabase, conn);

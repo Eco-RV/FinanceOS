@@ -156,7 +156,7 @@ export default async function ProcesosPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Procesos</h1>
         <p className="text-sm text-muted-foreground">
-          Registrá y consultá tus movimientos.
+          Registra y consulta tus movimientos.
         </p>
       </div>
 

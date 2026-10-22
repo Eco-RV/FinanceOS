@@ -59,7 +59,7 @@ export function FreshStartForm({ rows }: { rows: FreshStartRow[] }) {
 
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No tenés cuentas ni tarjetas activas: el arranque solo archivará la historia.
+            No tienes cuentas ni tarjetas activas: el arranque solo archivará la historia.
           </p>
         ) : (
           <div className="surface divide-y overflow-hidden">
@@ -99,7 +99,7 @@ export function FreshStartForm({ rows }: { rows: FreshStartRow[] }) {
           <Input id="on" name="on" type="date" defaultValue={toISODate(crToday())} required />
         </FormField>
         <FormField
-          label={`Escribí ${FRESH_START_CONFIRMATION} para confirmar`}
+          label={`Escribe ${FRESH_START_CONFIRMATION} para confirmar`}
           htmlFor="confirmation"
         >
           <Input

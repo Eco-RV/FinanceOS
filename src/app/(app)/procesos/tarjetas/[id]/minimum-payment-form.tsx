@@ -40,7 +40,7 @@ export function MinimumPaymentDialog({
   );
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="ghost" className="h-7 px-2 text-xs" />}>
+      <DialogTrigger render={<Button size="sm" variant="ghost" className="h-9 px-2 text-xs sm:h-7" />}>
         {current ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
         {current ? "Editar mínimo" : "Digitar pago mínimo"}
       </DialogTrigger>

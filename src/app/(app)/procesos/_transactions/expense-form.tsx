@@ -509,7 +509,7 @@ export function ExpenseForm({
               type="button"
               onClick={() => setMore((m) => !m)}
               aria-expanded={more}
-              className="flex w-fit items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-sm text-muted-foreground transition-[background-color,color,scale] duration-150 hover:text-foreground motion-safe:active:scale-95"
+              className="flex w-fit items-center gap-2 rounded-full bg-muted px-3 py-1.5 pointer-coarse:py-2.5 text-sm text-muted-foreground transition-[background-color,color,scale] duration-150 hover:text-foreground motion-safe:active:scale-95"
             >
               <Plus
                 className={cn(

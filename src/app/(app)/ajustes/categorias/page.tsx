@@ -34,7 +34,7 @@ export default async function CategoriasPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Categorías</h1>
         <p className="text-sm text-muted-foreground">
-          Las que usás al registrar gastos e ingresos.
+          Las que usas al registrar gastos e ingresos.
         </p>
       </div>
 
@@ -79,7 +79,7 @@ function CategorySection({
       {items.length === 0 ? (
         <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed p-4">
           <p className="text-sm text-muted-foreground">
-            No tenés categorías de {title.toLowerCase()}.
+            No tienes categorías de {title.toLowerCase()}.
           </p>
           <form action={seedCategories}>
             <input type="hidden" name="kind" value={kind} />

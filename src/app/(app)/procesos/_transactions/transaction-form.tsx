@@ -396,7 +396,7 @@ function MovementForm({
                 value={origin}
                 onChange={(e) => setOrigin(e.target.value)}
               >
-                <option value="">Elegí…</option>
+                <option value="">Elige…</option>
                 {type === "expense" ? (
                   <>
                     <optgroup label="Cuentas">
