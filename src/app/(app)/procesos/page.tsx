@@ -96,26 +96,23 @@ const ITEMS: Item[] = [
 /** Lo que se usa todos los días (siempre arriba). */
 const FREQUENT = new Set(["/procesos/gastos", "/procesos/ingresos", "/procesos/tarjetas", "/procesos/cuentas"]);
 
-const EMPTY_BOARD = { groups: [] as { needsNotice: boolean }[] };
-
 export default async function ProcesosPage() {
-  const [, enabled] = await Promise.all([requireUser(), getEnabledFeatures()]);
-  // 3.2.0 (E2): solo se consulta lo de las funciones encendidas.
-  const visible = (href: string) => isRouteVisible(enabled, href);
-
   const supabase = await createClient();
   const todayISO = toISODate(crToday());
-  const [{ count }, board, shared] = await Promise.all([
-    visible("/procesos/pendientes")
-      ? supabase
-          .from("pending_transactions")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending")
-          .eq("archived", false)
-      : { count: 0 },
-    visible("/procesos/cobros") ? loadFinancingBoard(supabase, todayISO) : EMPTY_BOARD,
-    visible("/procesos/cobros") || visible("/procesos/compartidos") ? loadSharedBoard(supabase, todayISO) : EMPTY_BOARD,
+  // 3.2.0: las lecturas salen junto con las funciones activas (una sola tanda);
+  // lo de una función apagada se descarta (E2: no se muestra).
+  const [, enabled, { count }, board, shared] = await Promise.all([
+    requireUser(),
+    getEnabledFeatures(),
+    supabase
+      .from("pending_transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .eq("archived", false),
+    loadFinancingBoard(supabase, todayISO),
+    loadSharedBoard(supabase, todayISO),
   ]);
+  const visible = (href: string) => isRouteVisible(enabled, href);
   const sharedNotices = shared.groups.filter((g) => g.needsNotice).length;
   const noticesToSend = board.groups.filter((g) => g.needsNotice).length + sharedNotices;
 

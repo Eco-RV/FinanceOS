@@ -251,6 +251,26 @@ Revisión automática en cada pantalla (`main` a 375 px): 0 desbordes horizontal
 - Medición de velocidad final contra la línea base de la Fase 1.
 - SQL en `supabase/Versionamiento/3.2.0/`, CHANGELOG, historias de usuario, glosario (Función, Logro, Buzón) y `CONTEXT.md` al día.
 
+**Resultado (2026-10-21)**
+
+- ✅ Lint, 265 tests y build en verde.
+- ✅ Guion: `docs/produccion/guion-prueba-early-bird.md` (29 pasos: entrada, modo enfocado, no pagar intereses, funciones, buzón, velocidad, cuenta y errores).
+- ✅ Medición final (mismas condiciones que la línea base):
+
+| Ruta | Línea base: toque → contenido | Final | Toque → pantalla |
+|---|---|---|---|
+| `/dashboard` | 1176–1596 ms | **465–515 ms** | ~15 ms |
+| `/procesos` | 784–1235 ms | **415–436 ms** | ~15 ms |
+| `/procesos/tarjetas` | 950–962 ms (congelada) | **598–719 ms** | ~14 ms |
+| `/procesos/tarjetas/[id]` | 919–1256 ms (congelada) | **632–665 ms** | ~14–27 ms |
+| `/procesos/cuentas` | 806–1002 ms (congelada) | **393–430 ms** | ~10–14 ms |
+| `/procesos/gastos` | 635–653 ms | **417–418 ms** | ~14 ms |
+| `/ajustes` | 364–374 ms | **314–332 ms** | ~15 ms |
+
+  En la medición apareció una regresión de la Fase 2: Procesos esperaba las funciones activas antes de leer los cobros (526–602 ms). Ahora todo sale en una tanda.
+- ✅ `package.json` 3.2.0, CHANGELOG (con Base de datos, Configuración y Probado), README (versión y SQL) y roadmap.
+- ⏳ Antes de publicar: correr el guion en el preview de Vercel con una cuenta nueva, completar §8 de la guía y revisar los textos legales.
+
 ## Decisiones (2026-10-21)
 
 1. **Promesa**: no pagar intereses en las tarjetas.

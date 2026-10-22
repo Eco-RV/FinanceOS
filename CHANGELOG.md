@@ -1,10 +1,13 @@
 # Changelog
 
-## 3.2.0 — en desarrollo
+## 3.2.0 — en desarrollo (lista para publicar)
 
-Salida a producción para los primeros usuarios (early birds). Plan y avance en
-`docs/produccion/plan-3.2.0.md`. Los pendientes de la Constelación pasan a la
-4.0.0.
+Salida a producción para los primeros usuarios (early birds): una promesa
+("no vuelvas a pagar intereses en tus tarjetas") con funciones que llegan por
+logros, buzón de comentarios, más velocidad, seguridad multiusuario y pulido.
+Plan y avance en `docs/produccion/plan-3.2.0.md`; guion de prueba en
+`docs/produccion/guion-prueba-early-bird.md`. Los pendientes de la
+Constelación pasan a la 4.0.0.
 
 ### Multiusuario (Fase 0)
 - El formato de fecha ya no se comparte entre usuarios en el servidor: va por
@@ -60,12 +63,29 @@ Salida a producción para los primeros usuarios (early birds). Plan y avance en
 - Todo el texto en "tú" (había voseo mezclado).
 - Botones más grandes en pantallas táctiles (40 px) y mejor contraste del verde y el rojo en modo claro.
 
-### Base de datos
-Correr en orden en el SQL Editor de Supabase:
+### Base de datos (correr a mano, en orden, DESPUÉS de todo 3.1.0 y ANTES de desplegar)
 1. `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql`: solo lectura, para revisar.
 2. `01_feedback.sql`: buzón (tablas, RLS, triggers, RPC y bucket `feedback`).
 3. `02_feedback_admin.sql`: cambiar el correo por el de la cuenta admin. Después,
    cerrar sesión y volver a entrar.
+
+### Configuración
+- `NEXT_PUBLIC_SENTRY_DSN` (opcional): errores en Sentry.
+- `NEXT_PUBLIC_FEATURE_CONSTELLATION`: **no** ponerla en producción (la
+  Constelación queda apagada hasta la 4.0.0). En local, `1` para verla.
+- `PERF_LOG` / `NEXT_PUBLIC_PERF_LOG` (opcionales): solo para medir.
+- Fuera del código (Supabase Auth, plantillas en español, SMTP, región,
+  respaldos): `docs/produccion/guia-produccion.md`.
+
+### Probado
+- Velocidad final (build de producción en local contra la base real, desde
+  Costa Rica): el toque cambia de pantalla en 10–27 ms en todas las rutas;
+  contenido en 0,3–0,7 s (antes 0,37–1,6 s).
+- Buzón de punta a punta con dos cuentas, modo enfocado simulando una cuenta
+  nueva, diálogos que abren desde enlaces, formularios que conservan lo escrito
+  y auditoría a 375 px.
+- Pendiente antes de anunciar: el guion completo con una cuenta nueva real en el
+  preview de Vercel.
 
 ## 3.1.0 — 2026-10-20
 
