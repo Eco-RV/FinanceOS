@@ -75,7 +75,7 @@ export default async function CobrosPage() {
             <p className="text-xs text-muted-foreground">
               Para enviar por correo,{" "}
               <Link href="/ajustes/bancos" className="underline">
-                conectá (o reconectá) Gmail
+                conecta (o reconecta) Gmail
               </Link>{" "}
               con permiso de enviar.
             </p>

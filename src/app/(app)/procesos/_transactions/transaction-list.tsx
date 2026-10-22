@@ -1,10 +1,14 @@
+"use client";
+
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { EmptyRows, RowActions, RowItem, RowList } from "@/components/row-list";
 import { CategoryBadge } from "@/components/category-icon";
 import { defaultIconFor, type CategoryIconKey } from "@/lib/category-icon-keys";
 import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { debitCardLabel, signedAmount } from "@/domain";
 import { originLabel, productLabel, touchesInactive } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
@@ -33,6 +37,8 @@ type Props = {
   /** Tarjetas de débito (también desactivadas) para nombrarlas y editar gastos (2.8.0). */
   debitCards?: DebitCard[];
   emptyLabel?: string;
+  /** 3.2.0: el paso que sigue cuando no hay movimientos (botón o enlace). */
+  emptyAction?: ReactNode;
   /** Financiamientos cancelados: sus cuotas conservadas se pueden quitar a mano (F4). */
   cancelledFinancingIds?: string[];
   /** Nombre de categoría (minúsculas) → ícono (2.5.0). */
@@ -42,6 +48,8 @@ type Props = {
    * Si viene, los gastos sin compartir ofrecen "Compartir".
    */
   sharedLinks?: Record<string, string>;
+  /** 3.2.0 (E2): con la función "Gastos compartidos" apagada no se ofrece "Compartir". */
+  shareable?: boolean;
   /** 3.1.0: solo lectura (movimientos archivados por el Arranque de 0). */
   readOnly?: boolean;
 };
@@ -87,11 +95,15 @@ export function TransactionList({
   accountId,
   debitCards = [],
   emptyLabel = "Aún no hay movimientos.",
+  emptyAction,
   cancelledFinancingIds = [],
   categoryIcons = {},
   sharedLinks,
+  shareable = true,
   readOnly = false,
 }: Props) {
+  // 3.2.0: se usa desde server y client components; el formato de fecha va por contexto.
+  const formatDate = useFormatDate();
   const debitById = new Map(debitCards.map((d) => [d.id, d]));
   const activeDebitCards = debitCards.filter((d) => !d.archived);
   const iconOf = (t: Transaction): CategoryIconKey =>
@@ -105,7 +117,7 @@ export function TransactionList({
   const activeCards = cards.filter((c) => !c.archived);
 
   if (transactions.length === 0) {
-    return <EmptyRows>{emptyLabel}</EmptyRows>;
+    return <EmptyRows action={emptyAction}>{emptyLabel}</EmptyRows>;
   }
 
   const rows = transactions.map((t) => {
@@ -200,7 +212,7 @@ export function TransactionList({
         categories={categories}
         categoryIcons={categoryIcons}
         debitCards={activeDebitCards}
-        canShare={Boolean(sharedLinks) && t.type === "expense"}
+        canShare={Boolean(sharedLinks) && shareable && t.type === "expense"}
       />
     );
     return { t, amount, amountCurrency, isInstallment, detail: detailWithInterest, typeBadge, actions };

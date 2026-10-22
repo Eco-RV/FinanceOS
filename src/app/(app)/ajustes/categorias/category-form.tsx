@@ -24,6 +24,7 @@ import {
 import type { Category, CategoryKind } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { saveCategory } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 export function CategoryFormDialog({
   kind,
@@ -71,7 +72,7 @@ export function CategoryFormDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="kind" value={category?.kind ?? kind} />
           <input type="hidden" name="icon" value={icon} />
           {category ? (

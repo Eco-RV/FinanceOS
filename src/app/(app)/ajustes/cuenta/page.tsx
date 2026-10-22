@@ -1,8 +1,8 @@
 import { LogOut, ShieldCheck } from "lucide-react";
-import { requireUser } from "@/lib/auth";
+import { getAuthUser, requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { signOutAction } from "@/lib/session-actions";
-import { repositories } from "@/infrastructure/container";
+import { getProfile } from "@/lib/preferences";
 import { initialsOf } from "@/domain";
 import { BackLink } from "@/components/back-link";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,10 @@ import { DeleteAccountSection } from "./delete-account-section";
 
 /** Mi cuenta (2.6.0): perfil, foto, correo, contraseña y sesión. */
 export default async function CuentaPage() {
-  const user = await requireUser();
-  const profile = await (await repositories()).profiles.get().catch(() => null);
-  const email = user.email ?? "";
+  // La fecha de alta y el último ingreso no van en el token: aquí sí se consulta a
+  // Auth. Si Auth no responde, la página sigue (sin esas fechas) en vez de sacarte.
+  const [session, authUser, profile] = await Promise.all([requireUser(), getAuthUser(), getProfile()]);
+  const email = session.email ?? authUser?.email ?? "";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
@@ -52,12 +53,16 @@ export default async function CuentaPage() {
           </span>
           <div className="text-sm">
             <h2 className="text-base font-semibold tracking-tight">Sesión</h2>
-            <p className="text-muted-foreground">
-              Cuenta creada el {formatDate(user.created_at.slice(0, 10))}
-              {user.last_sign_in_at
-                ? ` · último ingreso el ${formatDate(user.last_sign_in_at.slice(0, 10))}`
-                : ""}
-            </p>
+            {authUser ? (
+              <p className="text-muted-foreground">
+                Cuenta creada el {formatDate(authUser.created_at.slice(0, 10))}
+                {authUser.last_sign_in_at
+                  ? ` · último ingreso el ${formatDate(authUser.last_sign_in_at.slice(0, 10))}`
+                  : ""}
+              </p>
+            ) : (
+              <p className="text-muted-foreground">Sesión iniciada como {email}.</p>
+            )}
           </div>
         </div>
         <form action={signOutAction}>

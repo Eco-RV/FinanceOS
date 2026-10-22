@@ -101,11 +101,15 @@ export function RowActions({
   );
 }
 
-/** Estado vacío con la misma superficie. */
-export function EmptyRows({ children }: { children: ReactNode }) {
+/**
+ * Estado vacío con la misma superficie. 3.2.0: con `action`, el paso que
+ * sigue (p. ej. el botón que abre "Nueva tarjeta") debajo del texto.
+ */
+export function EmptyRows({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="surface px-4 py-10 text-center text-sm text-muted-foreground">
-      {children}
+    <div className="surface flex flex-col items-center gap-4 px-4 py-10 text-center text-sm text-muted-foreground">
+      <div className="max-w-md text-pretty">{children}</div>
+      {action ? <div className="flex flex-wrap items-center justify-center gap-2">{action}</div> : null}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { CategoryPicker } from "../_transactions/category-picker";
 import { savePlanAction } from "./actions";
 import { suggestFixedCategory } from "@/domain";
 import { FREQUENCY_LABEL, KIND_LABEL } from "./labels";
+import { keepOnError } from "@/lib/keep-on-error";
 
 type Kind = Plan["kind"];
 
@@ -128,7 +129,7 @@ export function PlanFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex min-w-0 flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex min-w-0 flex-col gap-4">
           {plan ? <input type="hidden" name="id" value={plan.id} /> : null}
           <input type="hidden" name="kind" value={kind} />
 

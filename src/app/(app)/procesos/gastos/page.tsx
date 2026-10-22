@@ -10,6 +10,9 @@ import type { Account, Category, CreditCard, Transaction } from "@/lib/types";
 import { BackLink } from "@/components/back-link";
 import { buttonVariants } from "@/components/ui/button";
 import { TransactionForm } from "../_transactions/transaction-form";
+import { AutoOpen } from "@/components/auto-open";
+import { EmptyRows } from "@/components/row-list";
+import { getEnabledFeatures } from "@/lib/features";
 import { loadSharedLinks } from "@/lib/shared-board";
 import { ExpenseExplorer } from "./expense-explorer";
 
@@ -27,10 +30,12 @@ function initialFilters(params: { desde?: string; hasta?: string; categoria?: st
 export default async function GastosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ desde?: string; hasta?: string; categoria?: string }>;
+  searchParams: Promise<{ desde?: string; hasta?: string; categoria?: string; nuevo?: string }>;
 }) {
-  await requireUser();
-  const filters = initialFilters(await searchParams);
+  const [, params, enabled] = await Promise.all([requireUser(), searchParams, getEnabledFeatures()]);
+  const filters = initialFilters(params);
+  // 3.2.0: `?nuevo=1` (primeros pasos) abre "Nuevo gasto".
+  const openNew = params.nuevo === "1";
 
   const supabase = await createClient();
   // 3.1.0: qué gastos están compartidos (en paralelo con el resto).
@@ -90,12 +95,15 @@ export default async function GastosPage({
         </div>
         {canRegister ? (
           <div className="flex flex-wrap gap-2 sm:justify-end">
-            <Link
-              href="/procesos/financiamientos"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              <Layers className="size-4" /> Financiamientos
-            </Link>
+            {/* 3.2.0 (E2): función "Financiamientos". */}
+            {enabled.has("financiamientos") ? (
+              <Link
+                href="/procesos/financiamientos"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <Layers className="size-4" /> Financiamientos
+              </Link>
+            ) : null}
             {accounts.length > 0 ? (
               <TransactionForm
                 type="expense"
@@ -108,14 +116,16 @@ export default async function GastosPage({
                 triggerLabel="Nuevo SINPE"
               />
             ) : null}
-            <TransactionForm
-              type="expense"
-              accounts={accounts}
-              cards={cards}
-              debitCards={debitCards}
-              categories={categories}
-              categoryIcons={categoryIcons}
-            />
+            <AutoOpen when={openNew} param="nuevo">
+              <TransactionForm
+                type="expense"
+                accounts={accounts}
+                cards={cards}
+                debitCards={debitCards}
+                categories={categories}
+                categoryIcons={categoryIcons}
+              />
+            </AutoOpen>
           </div>
         ) : null}
       </div>
@@ -132,19 +142,33 @@ export default async function GastosPage({
           todayISO={toISODate(crToday())}
           initial={filters}
           sharedLinks={await linksPromise}
+          shareable={enabled.has("compartidos")}
+          emptyAction={
+            <TransactionForm
+              type="expense"
+              accounts={accounts}
+              cards={cards}
+              debitCards={debitCards}
+              categories={categories}
+              categoryIcons={categoryIcons}
+            />
+          }
         />
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Primero agregá una{" "}
-          <Link href="/procesos/cuentas" className="underline">
-            cuenta
-          </Link>{" "}
-          o una{" "}
-          <Link href="/procesos/tarjetas" className="underline">
-            tarjeta
-          </Link>
-          .
-        </p>
+        <EmptyRows
+          action={
+            <>
+              <Link href="/procesos/tarjetas?nueva=1" className={buttonVariants({ size: "sm" })}>
+                Agregar tarjeta
+              </Link>
+              <Link href="/procesos/cuentas?nueva=1" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                Agregar cuenta
+              </Link>
+            </>
+          }
+        >
+          Para anotar gastos primero agrega la tarjeta o la cuenta con la que pagas.
+        </EmptyRows>
       )}
     </div>
   );

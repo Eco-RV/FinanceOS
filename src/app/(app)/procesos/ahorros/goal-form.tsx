@@ -22,6 +22,7 @@ import type { Goal } from "@/application";
 import type { Account } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { saveGoalAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** Íconos sugeridos primero para metas. */
 const GOAL_ICONS: CategoryIconKey[] = [
@@ -101,7 +102,7 @@ export function GoalFormDialog({
             Liga la meta a una cuenta: lo ahorrado es su saldo y los aportes son transferencias hacia ella.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex min-w-0 flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex min-w-0 flex-col gap-4">
           {goal ? <input type="hidden" name="id" value={goal.id} /> : null}
           <input type="hidden" name="icon" value={icon} />
 

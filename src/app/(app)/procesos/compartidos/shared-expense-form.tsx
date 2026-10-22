@@ -18,7 +18,8 @@ import {
   toISODate,
   type CardCycle,
 } from "@/domain";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import type { CategoryIconKey } from "@/lib/category-icon-keys";
 import type { FormResult } from "@/lib/forms";
 import type { Account, CreditCard, DebitCard } from "@/lib/types";
@@ -74,6 +75,7 @@ export function SharedExpenseForm({
   categories?: string[];
   categoryIcons?: Record<string, CategoryIconKey>;
 }) {
+  const formatDate = useFormatDate();
   const router = useRouter();
   const today = toISODate(crToday());
   const [step, setStep] = useState(source ? 1 : 0);
@@ -619,6 +621,7 @@ export function SharedExpenseForm({
 }
 
 function SourceSummary({ source, compact }: { source: SharedSourceView; compact?: boolean }) {
+  const formatDate = useFormatDate();
   return (
     <div className={cn("flex items-center justify-between gap-3 rounded-xl bg-muted/50", compact ? "px-3 py-2" : "p-4")}>
       <div className="min-w-0">

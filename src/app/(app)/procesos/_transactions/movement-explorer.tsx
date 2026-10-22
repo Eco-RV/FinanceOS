@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { FilterX, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,9 @@ export function MovementExplorer({
   cancelledFinancingIds,
   todayISO,
   emptyLabel,
+  emptyAction,
   sharedLinks,
+  shareable,
 }: {
   context: "card" | "account";
   transactions: Transaction[];
@@ -82,8 +84,12 @@ export function MovementExplorer({
   cancelledFinancingIds?: string[];
   todayISO: string;
   emptyLabel: string;
+  /** 3.2.0: el paso que sigue cuando no hay movimientos (sin filtros). */
+  emptyAction?: ReactNode;
   /** 3.1.0: movimiento → gasto compartido. */
   sharedLinks?: Record<string, string>;
+  /** 3.2.0 (E2): ofrecer "Compartir" (función "Gastos compartidos"). */
+  shareable?: boolean;
 }) {
   const [filters, setFilters] = useState<Filters>(EMPTY);
   const [more, setMore] = useState(false);
@@ -264,7 +270,9 @@ export function MovementExplorer({
         accountId={accountId}
         cancelledFinancingIds={cancelledFinancingIds}
         sharedLinks={sharedLinks}
+        shareable={shareable}
         emptyLabel={active ? "Ningún movimiento coincide con los filtros." : emptyLabel}
+        emptyAction={active ? undefined : emptyAction}
       />
 
       <PaginationFooter state={pager.footer} />

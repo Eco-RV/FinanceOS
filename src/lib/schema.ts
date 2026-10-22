@@ -137,7 +137,7 @@ const optionalNote = z
 /** "account:<uuid>" | "card:<uuid>" desde el <select> de origen. */
 const originToken = z
   .string()
-  .regex(/^(account|card):[0-9a-fA-F-]{36}$/, "Elegí un origen");
+  .regex(/^(account|card):[0-9a-fA-F-]{36}$/, "Elige un origen");
 
 export const transactionSchema = z
   .object({
@@ -233,14 +233,14 @@ export const transactionSchema = z
       ctx.addIssue({
         path: ["category"],
         code: "custom",
-        message: "Elegí una categoría",
+        message: "Elige una categoría",
       });
     }
   });
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
 
-const accountId = z.string().regex(/^[0-9a-fA-F-]{36}$/, "Elegí una cuenta");
+const accountId = z.string().regex(/^[0-9a-fA-F-]{36}$/, "Elige una cuenta");
 
 /** Transferencia entre cuentas propias (M2). */
 export const transferSchema = z
@@ -256,7 +256,7 @@ export const transferSchema = z
   })
   .refine((v) => v.from_account_id !== v.to_account_id, {
     path: ["to_account_id"],
-    message: "Elegí una cuenta distinta a la de origen",
+    message: "Elige una cuenta distinta a la de origen",
   });
 
 export const categorySchema = z.object({
@@ -287,7 +287,7 @@ const financingText = {
   category: z
     .string()
     .trim()
-    .min(1, "Elegí una categoría")
+    .min(1, "Elige una categoría")
     .max(40),
 };
 
@@ -381,7 +381,7 @@ export const loanRenameSchema = z.object({
 
 export const loanPaymentSchema = z.object({
   loan_id: uuid("Préstamo inválido"),
-  account_id: uuid("Elegí una cuenta"),
+  account_id: uuid("Elige una cuenta"),
   occurred_on: isoDate,
 });
 
@@ -398,14 +398,14 @@ const senderList = z
   .pipe(
     z
       .array(z.email("Correo inválido"))
-      .min(1, "Agregá al menos un remitente")
+      .min(1, "Agrega al menos un remitente")
       .max(10, "Máximo 10 remitentes"),
   );
 
 export const bankSchema = z.object({
   name: z.string().trim().min(1, "El nombre es obligatorio").max(60),
   sender_emails: senderList,
-  parser_key: z.enum(PARSER_KEYS, "Elegí un formato"),
+  parser_key: z.enum(PARSER_KEYS, "Elige un formato"),
   enabled: z
     .string()
     .optional()

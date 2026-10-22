@@ -10,6 +10,7 @@ import { supabaseAccount } from "./account";
 import { supabasePlans } from "./plans";
 import { supabaseSharedExpenses } from "./shared-expenses";
 import { supabaseReceipts } from "./receipts";
+import { supabaseFeedback } from "./feedback";
 import { haciendaExchangeRate } from "../exchange/hacienda";
 import { toLoanAdjustment } from "./loan-adjustments";
 import { supabaseConstellation } from "./constellation";
@@ -772,7 +773,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
   };
 
   /** Correo desde el Gmail conectado del usuario (F8). */
-  const RECONNECT = "Reconectá Gmail en Ajustes → Bancos para permitir enviar avisos";
+  const RECONNECT = "Reconecta Gmail en Ajustes → Bancos para permitir enviar avisos";
   const mailer: Mailer = {
     async send(mail) {
       const { data: conn } = await supabase
@@ -780,7 +781,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .select("refresh_token_enc, scopes")
         .eq("provider", "gmail")
         .maybeSingle();
-      if (!conn) throw new InfrastructureError("Conectá Gmail en Ajustes → Bancos para enviar avisos por correo");
+      if (!conn) throw new InfrastructureError("Conecta Gmail en Ajustes → Bancos para enviar avisos por correo");
       if (!String(conn.scopes ?? "").includes(SEND_SCOPE)) throw new InfrastructureError(RECONNECT);
       try {
         const token = await refreshAccessToken(decryptToken(conn.refresh_token_enc as string));
@@ -995,6 +996,7 @@ export function supabaseRepositories(supabase: SupabaseClient) {
     ...supabasePlans(supabase),
     ...supabaseSharedExpenses(supabase),
     ...supabaseReceipts(supabase),
+    ...supabaseFeedback(supabase),
     ...supabaseConstellation(supabase),
   };
 }

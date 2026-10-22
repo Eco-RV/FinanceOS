@@ -7,6 +7,7 @@ import {
   HandCoins,
   Inbox,
   Landmark,
+  LayoutGrid,
   PiggyBank,
   Receipt,
   Repeat,
@@ -14,7 +15,8 @@ import {
 } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { crToday, toISODate } from "@/domain";
+import { crToday, isRouteVisible, toISODate } from "@/domain";
+import { getEnabledFeatures } from "@/lib/features";
 import { loadFinancingBoard } from "@/lib/financing-board";
 import { loadSharedBoard } from "@/lib/shared-board";
 import { Badge } from "@/components/ui/badge";
@@ -95,11 +97,13 @@ const ITEMS: Item[] = [
 const FREQUENT = new Set(["/procesos/gastos", "/procesos/ingresos", "/procesos/tarjetas", "/procesos/cuentas"]);
 
 export default async function ProcesosPage() {
-  await requireUser();
-
   const supabase = await createClient();
   const todayISO = toISODate(crToday());
-  const [{ count }, board, shared] = await Promise.all([
+  // 3.2.0: las lecturas salen junto con las funciones activas (una sola tanda);
+  // lo de una función apagada se descarta (E2: no se muestra).
+  const [, enabled, { count }, board, shared] = await Promise.all([
+    requireUser(),
+    getEnabledFeatures(),
     supabase
       .from("pending_transactions")
       .select("id", { count: "exact", head: true })
@@ -108,6 +112,7 @@ export default async function ProcesosPage() {
     loadFinancingBoard(supabase, todayISO),
     loadSharedBoard(supabase, todayISO),
   ]);
+  const visible = (href: string) => isRouteVisible(enabled, href);
   const sharedNotices = shared.groups.filter((g) => g.needsNotice).length;
   const noticesToSend = board.groups.filter((g) => g.needsNotice).length + sharedNotices;
 
@@ -126,7 +131,7 @@ export default async function ProcesosPage() {
       icon: Inbox,
       badge: count ?? 0,
     },
-  ];
+  ].filter((item) => visible(item.href));
 
   // 3.1.0 · ley 06 (exceso de opciones): primero lo de todos los días y lo que
   // pide atención (con badge); el resto queda debajo, en "Más procesos".
@@ -148,7 +153,7 @@ export default async function ProcesosPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Procesos</h1>
         <p className="text-sm text-muted-foreground">
-          Registrá y consultá tus movimientos.
+          Registra y consulta tus movimientos.
         </p>
       </div>
 
@@ -156,12 +161,19 @@ export default async function ProcesosPage() {
         {primary.map(card)}
       </div>
 
-      {secondary.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-muted-foreground">Más procesos</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{secondary.map(card)}</div>
-        </section>
-      ) : null}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-muted-foreground">Más procesos</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {secondary.map(card)}
+          {/* 3.2.0: el catálogo de funciones (activar y apagar). */}
+          {card({
+            href: "/procesos/funciones",
+            label: "Más funciones",
+            description: "Activa lo que necesites: planes, ahorros, préstamos y más.",
+            icon: LayoutGrid,
+          })}
+        </div>
+      </section>
     </div>
   );
 }

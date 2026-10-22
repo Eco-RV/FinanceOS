@@ -2,6 +2,8 @@ import Link from "next/link";
 import {
   DollarSign,
   Landmark,
+  MessageSquareText,
+  LayoutGrid,
   RotateCcw,
   Scale,
   SlidersHorizontal,
@@ -11,8 +13,9 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { requireUser } from "@/lib/auth";
-import { repositories } from "@/infrastructure/container";
-import { initialsOf } from "@/domain";
+import { initialsOf, isRouteVisible } from "@/domain";
+import { getProfile } from "@/lib/preferences";
+import { getEnabledFeatures } from "@/lib/features";
 import { NavCard } from "@/components/nav-card";
 import { Avatar } from "@/components/user-menu";
 import { LinkChevron } from "@/components/link-pending";
@@ -25,9 +28,12 @@ type IconType = ComponentType<{ className?: string }>;
 const ACCOUNT: { href: string; label: string; description: string; icon: IconType }[] = [
   { href: "/ajustes/cuenta", label: "Mi cuenta", description: "Perfil, foto, correo y contraseña.", icon: UserRound },
   { href: "/ajustes/preferencias", label: "Preferencias", description: "Tema y configuraciones de la app.", icon: SlidersHorizontal },
+  // 3.2.0 · Fase 3: el buzón (privado con el equipo).
+  { href: "/comentarios", label: "Comentarios", description: "Tu experiencia, dudas o lo que te gustaría que tuviera.", icon: MessageSquareText },
 ];
 
 const LINKS: { href: string; label: string; description: string; icon: IconType }[] = [
+  { href: "/procesos/funciones", label: "Funciones", description: "Activa o apaga partes de la app.", icon: LayoutGrid },
   { href: "/ajustes/categorias", label: "Categorías", description: "Categorías de gastos e ingresos.", icon: Tags },
   { href: "/ajustes/bancos", label: "Bancos", description: "Correos de compras con tarjeta.", icon: Landmark },
   { href: "/ajustes/miembros", label: "Miembros", description: "Familia que paga parte de tus financiamientos.", icon: Users },
@@ -37,8 +43,9 @@ const LINKS: { href: string; label: string; description: string; icon: IconType 
 ];
 
 export default async function AjustesPage() {
-  const user = await requireUser();
-  const profile = await (await repositories()).profiles.get().catch(() => null);
+  const [user, profile, enabled] = await Promise.all([requireUser(), getProfile(), getEnabledFeatures()]);
+  // 3.2.0 (E2): lo de una función apagada no se muestra (su URL sigue funcionando).
+  const links = LINKS.filter((l) => isRouteVisible(enabled, l.href));
   const email = user.email ?? "";
   const name = profile?.full_name ?? null;
 
@@ -68,7 +75,7 @@ export default async function AjustesPage() {
         <LinkChevron />
       </Link>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {ACCOUNT.map(({ href, label, description, icon }) => (
           <NavCard key={href} href={href} icon={icon} label={label} description={description} />
         ))}
@@ -77,7 +84,7 @@ export default async function AjustesPage() {
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Datos de la app</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {LINKS.map(({ href, label, description, icon }) => (
+          {links.map(({ href, label, description, icon }) => (
             <NavCard key={href} href={href} icon={icon} label={label} description={description} />
           ))}
         </div>

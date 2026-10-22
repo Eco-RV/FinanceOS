@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, SlidersHorizontal, UserRound } from "lucide-react";
+import { Inbox, LogOut, MessageSquareText, SlidersHorizontal, UserRound } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,10 @@ export type AccountSummary = {
   name: string | null;
   avatarUrl: string | null;
   initials: string;
+  /** 3.2.0 (B5): respuestas del equipo sin leer en el buzón. */
+  feedbackUnread?: number;
+  /** 3.2.0: publicaciones sin leer en la bandeja (solo admin; si no, null). */
+  feedbackInbox?: number | null;
 };
 
 /** Foto de perfil o, si no hay, las iniciales. */
@@ -46,13 +50,20 @@ export function Avatar({
 }
 
 export function UserMenu({ account }: { account: AccountSummary }) {
+  const unread = account.feedbackUnread ?? 0;
+  const inbox = account.feedbackInbox ?? null;
+  // 3.2.0: un punto discreto sobre la foto si hay algo por leer (no un aviso).
+  const dot = unread > 0 || (inbox ?? 0) > 0;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Cuenta"
-        className="rounded-full ring-1 ring-foreground/5 transition-[box-shadow,scale] duration-150 ease-fluid outline-none hover:ring-foreground/20 focus-visible:ring-3 focus-visible:ring-ring/50 motion-safe:active:scale-95"
+        aria-label={dot ? "Cuenta (hay mensajes sin leer)" : "Cuenta"}
+        className="relative rounded-full ring-1 ring-foreground/5 transition-[box-shadow,scale] duration-150 ease-fluid outline-none hover:ring-foreground/20 focus-visible:ring-3 focus-visible:ring-ring/50 motion-safe:active:scale-95"
       >
         <Avatar account={account} className="size-8" />
+        {dot ? (
+          <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-primary ring-2 ring-background" aria-hidden />
+        ) : null}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="w-64">
         <div className="flex items-center gap-3 px-2 py-2">
@@ -77,6 +88,26 @@ export function UserMenu({ account }: { account: AccountSummary }) {
           <SlidersHorizontal />
           Preferencias
         </DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/comentarios" />}>
+          <MessageSquareText />
+          Comentarios
+          {unread > 0 ? (
+            <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+              {unread}
+            </span>
+          ) : null}
+        </DropdownMenuItem>
+        {inbox !== null ? (
+          <DropdownMenuItem render={<Link href="/comentarios/bandeja" />}>
+            <Inbox />
+            Bandeja
+            {inbox > 0 ? (
+              <span className="ml-auto rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                {inbox}
+              </span>
+            ) : null}
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => signOutAction()}>
           <LogOut />

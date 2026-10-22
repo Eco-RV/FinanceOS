@@ -115,7 +115,7 @@ export default async function PendientesPage() {
                       required
                     >
                       <option value="" disabled>
-                        Elegí la tarjeta
+                        Elige la tarjeta
                       </option>
                       {options.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -131,7 +131,7 @@ export default async function PendientesPage() {
                       required
                     >
                       <option value="" disabled>
-                        Elegí la categoría
+                        Elige la categoría
                       </option>
                       {cats.map((c) => (
                         <option key={c} value={c}>
@@ -143,7 +143,7 @@ export default async function PendientesPage() {
 
                   {options.length === 0 ? (
                     <p className="text-xs text-destructive">
-                      No tenés ninguna tarjeta para registrar esta compra.
+                      No tienes ninguna tarjeta para registrar esta compra.
                     </p>
                   ) : null}
 

@@ -242,7 +242,7 @@ export function ExpenseOverview({
                         className={cn("h-full origin-left rounded-full", BAR_COLORS[i % BAR_COLORS.length])}
                         style={{
                           width: `${Math.max(2, (b.amount / max) * 100)}%`,
-                          animation: `grow-x 700ms var(--ease-fluid) ${i * 60}ms both`,
+                          animation: `grow-x 450ms var(--ease-fluid) ${Math.min(i, 8) * 30}ms both`,
                         }}
                       />
                     </div>

@@ -19,8 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Finance OS",
   applicationName: "Finance OS",
+  // 3.2.0: la promesa de la app (la misma de la página de inicio).
   description:
-    "Cortes y pagos de tarjetas, financiamientos, préstamos, gastos y ahorros.",
+    "No vuelvas a pagar intereses en tus tarjetas: cuánto pagar de contado, para cuándo y si tu cuenta alcanza.",
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
   appleWebApp: {
     capable: true,

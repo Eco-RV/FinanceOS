@@ -16,6 +16,7 @@ import { FormField } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import type { DebitCard } from "@/lib/types";
 import { saveDebitCard } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** Agregar o editar la tarjeta de débito de una cuenta (2.8.0, C3). */
 export function DebitCardFormDialog({
@@ -58,7 +59,7 @@ export function DebitCardFormDialog({
             tarjeta de débito activa.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="account_id" value={accountId} />
           {card ? <input type="hidden" name="id" value={card.id} /> : null}
           <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">

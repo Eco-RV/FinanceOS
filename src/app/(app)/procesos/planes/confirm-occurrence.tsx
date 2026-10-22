@@ -5,7 +5,8 @@ import { Check, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { confirmOccurrenceAction } from "./actions";
 
 /**
@@ -25,6 +26,7 @@ export function ConfirmOccurrenceRow({
   amount: number;
   currency: string;
 }) {
+  const formatDate = useFormatDate();
   const [value, setValue] = useState(String(amount));
   const [pending, start] = useTransition();
   return (

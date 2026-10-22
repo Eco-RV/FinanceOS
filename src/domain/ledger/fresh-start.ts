@@ -45,7 +45,7 @@ export function planFreshStart(input: {
   openings: FreshStartOpening[];
 }): FreshStartOpening[] {
   if (!isFreshStartConfirmed(input.confirmation)) {
-    throw new DomainError("M8", `Escribí ${FRESH_START_CONFIRMATION} para confirmar el arranque de 0`);
+    throw new DomainError("M8", `Escribe ${FRESH_START_CONFIRMATION} para confirmar el arranque de 0`);
   }
 
   const key = (o: { kind: string; id: string }, currency: string) => `${o.kind}:${o.id}:${currency}`;

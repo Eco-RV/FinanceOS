@@ -2,18 +2,19 @@ import { AppBackdrop } from "@/components/app-backdrop";
 import { LogoMark } from "@/components/brand-logo";
 import { LoginForm } from "./login-form";
 
+// 3.2.0: la misma promesa que la página de inicio.
 const POINTS = [
-  "Cortes y pagos de contado de cada tarjeta",
-  "Financiamientos, préstamos y cobros a la familia",
-  "Liquidez y gastos del mes de un vistazo",
+  "Cuánto pagar de contado y para cuándo, en cada tarjeta",
+  "Si tu cuenta alcanza para los pagos que vienen",
+  "Lo demás (planes, ahorros, préstamos) cuando lo necesites",
 ];
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aviso?: string; next?: string }>;
+  searchParams: Promise<{ aviso?: string; next?: string; modo?: string }>;
 }) {
-  const { aviso, next } = await searchParams;
+  const { aviso, next, modo } = await searchParams;
   return (
     <div className="relative flex flex-1 items-stretch">
       <AppBackdrop />
@@ -28,7 +29,7 @@ export default async function LoginPage({
         </div>
         <div className="flex max-w-md flex-col gap-6">
           <h2 className="text-4xl leading-tight font-semibold tracking-tight">
-            Tus finanzas personales, en orden y a tiempo.
+            No vuelvas a pagar intereses en tus tarjetas.
           </h2>
           <ul className="flex flex-col gap-3 text-sm opacity-80">
             {POINTS.map((p, i) => (
@@ -51,7 +52,7 @@ export default async function LoginPage({
       </aside>
 
       <div className="flex flex-1 items-center justify-center p-6">
-        <LoginForm aviso={aviso} next={next} />
+        <LoginForm aviso={aviso} next={next} initialMode={modo === "crear" ? "signup" : "login"} />
       </div>
     </div>
   );

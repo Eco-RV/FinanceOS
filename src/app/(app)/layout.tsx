@@ -5,28 +5,34 @@ import { AppBottomNav, AppTopBar } from "@/components/app-nav";
 import { AppBackdrop } from "@/components/app-backdrop";
 import { WelcomeSplash } from "@/components/welcome-splash";
 import { UrlNotice } from "@/components/url-notice";
+import { initialsOf } from "@/domain";
+import { getPreferences, getProfile } from "@/lib/preferences";
+import { getEnabledFeatures } from "@/lib/features";
 import { repositories } from "@/infrastructure/container";
-import { initialsOf, readPreferences } from "@/domain";
-import { setDateFormat } from "@/lib/format";
-import { DateFormatSync } from "@/components/date-format-sync";
-import { ensurePlansUpToDate } from "@/lib/sync-plans";
+import { DateFormatProvider } from "@/components/date-format";
+import { PerfNavTimer } from "@/components/perf-nav-timer";
+import { DAILY_SYNC_COOKIE, ensureDailySync } from "@/lib/sync-plans";
+import { DailySyncMark } from "@/components/daily-sync-mark";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/schema";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { loadDebitCards } from "@/lib/debit-cards";
 import type { Account, Category, CreditCard } from "@/lib/types";
-import { TransactionForm } from "./procesos/_transactions/transaction-form";
+import { QuickAdd } from "./quick-add";
 
 export default async function AppLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const user = await requireUser();
   // 2.7.0: salarios, suscripciones y seguros que ya llegaron (M7).
-  await ensurePlansUpToDate();
+  // 3.2.0: una vez al día (la primera visita espera; las demás solo leen una cookie).
+  const [user, sync] = await Promise.all([requireUser(), ensureDailySync()]);
 
   const supabase = await createClient();
-  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards] =
+  // 3.2.0: todo en una sola tanda (antes el perfil iba en una segunda).
+  // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
+  // U9 (3.1.0): formato de fecha y moneda base del gasto rápido.
+  const [{ data: accData }, { data: cardData }, { data: catData }, { data: incData }, debitCards, profile, prefs, enabled, feedback] =
     await Promise.all([
       supabase.from("accounts").select("*").eq("archived", false),
       supabase.from("credit_cards").select("*").eq("archived", false),
@@ -43,19 +49,21 @@ export default async function AppLayout({
         .eq("archived", false)
         .order("name", { ascending: true }),
       loadDebitCards(supabase),
+      getProfile(),
+      getPreferences(),
+      // 3.2.0 (E2): el botón de ingreso es de la función "Ingresos".
+      getEnabledFeatures(),
+      // 3.2.0 (B5): el punto del menú del buzón (sin el SQL 3.2.0, 0).
+      repositories().then((repos) => repos.feedback.unread()),
     ]);
-
-  // 2.6.0: nombre y foto para la barra y la bienvenida (si falta el SQL, vacío).
-  const profile = await (await repositories()).profiles.get().catch(() => null);
-  // U9 (3.1.0): formato de fecha (servidor) y moneda base del gasto rápido.
-  const prefs = readPreferences(profile?.preferences);
-  setDateFormat(prefs.dateFormat);
   const email = user.email ?? "";
   const account = {
     email,
     name: profile?.full_name ?? null,
     avatarUrl: profile?.avatar_url ?? null,
     initials: initialsOf(profile?.full_name, email),
+    feedbackUnread: feedback.mine,
+    feedbackInbox: user.isAdmin ? feedback.inbox : null,
   };
 
   const accounts = (accData ?? []) as Account[];
@@ -66,46 +74,54 @@ export default async function AppLayout({
   const canRegister = accounts.length > 0 || cards.length > 0;
 
   return (
-    <div className="flex min-h-full flex-col">
-      <DateFormatSync value={prefs.dateFormat} />
-      <AppBackdrop />
-      <WelcomeSplash name={account.name?.split(" ")[0] ?? null} />
-      <Suspense fallback={null}>
-        <UrlNotice />
-      </Suspense>
-      <AppTopBar account={account} />
-      {/* 2.5.0: el contenido crece con el monitor; en móvil sigue a lo ancho. */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-56 sm:px-6 sm:pb-40 lg:px-8 2xl:max-w-[1600px]">
-        {children}
-      </main>
-      {/* 3.1.0: acceso rápido — gasto (sale ↑, rojo) arriba e ingreso (entra ↓, verde) abajo. */}
-      {canRegister ? (
-        <div className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex flex-col gap-3 sm:right-6 sm:bottom-6">
-          <TransactionForm
-            type="expense"
-            accounts={accounts}
-            cards={cards}
-            debitCards={debitCards}
-            categories={categories}
-            categoryIcons={iconsByName(options)}
-            triggerLabel="Nuevo gasto"
-            defaultCurrency={prefs.baseCurrency}
-            fab
-          />
-          {accounts.length > 0 ? (
-            <TransactionForm
-              type="income"
-              accounts={accounts}
-              categories={incomeOptions.map((o) => o.name)}
-              categoryIcons={iconsByName(incomeOptions)}
-              triggerLabel="Nuevo ingreso"
-              fab
+    <DateFormatProvider value={prefs.dateFormat}>
+      <div className="flex min-h-full flex-col">
+        <AppBackdrop />
+        {sync.ran ? <DailySyncMark name={DAILY_SYNC_COOKIE} mark={sync.mark} /> : null}
+        <WelcomeSplash name={account.name?.split(" ")[0] ?? null} />
+        <Suspense fallback={null}>
+          <UrlNotice />
+          <PerfNavTimer />
+        </Suspense>
+        <AppTopBar account={account} />
+        {/* 2.5.0: el contenido crece con el monitor; en móvil sigue a lo ancho. */}
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-56 sm:px-6 sm:pb-40 lg:px-8 2xl:max-w-[1600px]">
+          {children}
+        </main>
+        {/* 3.1.0: acceso rápido — gasto (sale ↑, rojo) arriba e ingreso (entra ↓, verde) abajo. */}
+        {canRegister ? (
+          <div className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 flex flex-col gap-3 sm:right-6 sm:bottom-6">
+            {/* 3.2.0: los formularios se cargan cuando el navegador queda libre o al tocar. */}
+            <QuickAdd
+              expense={{
+                type: "expense",
+                accounts,
+                cards,
+                debitCards,
+                categories,
+                categoryIcons: iconsByName(options),
+                triggerLabel: "Nuevo gasto",
+                defaultCurrency: prefs.baseCurrency,
+                fab: true,
+              }}
+              income={
+                accounts.length > 0 && enabled.has("ingresos")
+                  ? {
+                      type: "income",
+                      accounts,
+                      categories: incomeOptions.map((o) => o.name),
+                      categoryIcons: iconsByName(incomeOptions),
+                      triggerLabel: "Nuevo ingreso",
+                      fab: true,
+                    }
+                  : null
+              }
             />
-          ) : null}
-        </div>
-      ) : null}
-      <AppBottomNav />
-    </div>
+          </div>
+        ) : null}
+        <AppBottomNav />
+      </div>
+    </DateFormatProvider>
   );
 }
 

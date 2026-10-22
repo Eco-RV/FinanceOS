@@ -19,10 +19,12 @@ import { FormField, Select } from "@/components/form-field";
 import { confirmAction } from "@/lib/confirm";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { REIMBURSEMENT_CHANNEL_LABELS } from "@/lib/schema";
 import type { FormResult } from "@/lib/forms";
 import { deleteSharedExpense, recordSharedPayment, undoSharedPayment } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 type AccountOption = { id: string; name: string };
 
@@ -62,7 +64,7 @@ export function SharedPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="outline" className="h-7 px-2 text-xs" />}>
+      <DialogTrigger render={<Button size="sm" variant="outline" className="h-9 px-2 text-xs sm:h-7" />}>
         Pagó
       </DialogTrigger>
       <DialogContent>
@@ -73,7 +75,7 @@ export function SharedPaymentDialog({
             solo para llevar el control.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="member_id" value={memberId} />
           <div className="grid grid-cols-2 gap-3">
@@ -181,6 +183,7 @@ export function SharedPaidBadge({
   channelLabel: string;
   withIncome: boolean;
 }) {
+  const formatDate = useFormatDate();
   const { pending, run } = useAction(undoSharedPayment);
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

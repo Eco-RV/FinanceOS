@@ -18,9 +18,11 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate, type AmortizationRow } from "@/domain";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import type { Account } from "@/lib/types";
 import { payLoanInstallment, undoLoanInstallment } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** L2: paga la próxima cuota (la única que se puede pagar). */
 export function PayInstallmentDialog({
@@ -39,6 +41,7 @@ export function PayInstallmentDialog({
   accounts: Pick<Account, "id" | "name">[];
   defaultAccountId: string | null;
 }) {
+  const formatDate = useFormatDate();
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     payLoanInstallment,
     `Cuota ${row.no}/${months} pagada`,
@@ -77,12 +80,12 @@ export function PayInstallmentDialog({
           </div>
         </dl>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="loan_id" value={loanId} />
           <FormField label="Desde la cuenta" htmlFor="account_id" error={errors?.account_id}>
             <Select id="account_id" name="account_id" defaultValue={preselected} required>
               <option value="" disabled>
-                Elegí una cuenta…
+                Elige una cuenta…
               </option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>

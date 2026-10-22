@@ -169,7 +169,7 @@ export default async function PlanesPage() {
                 )}
                 style={{
                   width: `${Math.min(100, (b.ratio ?? 0) * 100)}%`,
-                  animation: "grow-x 700ms var(--ease-fluid) both",
+                  animation: "grow-x 450ms var(--ease-fluid) both",
                 }}
               />
               <span

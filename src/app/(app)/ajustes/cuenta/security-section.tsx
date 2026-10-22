@@ -9,6 +9,7 @@ import { PasswordInput } from "@/app/login/login-form";
 import { useFormAction } from "@/lib/use-form-action";
 import { cn } from "@/lib/utils";
 import { changeEmailAction, changePasswordAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 function SectionTitle({
   icon: Icon,
@@ -63,7 +64,7 @@ export function EmailSection({ email }: { email: string }) {
           </div>
         </div>
       ) : (
-        <form action={submit} className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex-1">
             <FormField label="Correo nuevo" htmlFor="new-email" error={errors?.email}>
               <Input
@@ -112,7 +113,7 @@ export function PasswordSection() {
         title="Contraseña"
         description="Para cambiarla, confirma primero la actual."
       />
-      <form ref={form} action={submit} className="grid gap-4 sm:grid-cols-3">
+      <form ref={form} onSubmit={keepOnError(submit)} className="grid gap-4 sm:grid-cols-3">
         <FormField label="Contraseña actual" htmlFor="current" error={errors?.current}>
           <PasswordInput
             id="current"

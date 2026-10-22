@@ -85,9 +85,9 @@ export default async function BancosPage({
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Correo</h2>
           <p className="text-sm text-muted-foreground">
-            Finance OS lee los avisos de los bancos de abajo y, si lo usás,
+            Finance OS lee los avisos de los bancos de abajo y, si lo usas,
             envía desde tu cuenta los avisos de cuota a tus miembros. Nunca ve
-            tu contraseña y podés revocarlo cuando quieras.
+            tu contraseña y puedes revocarlo cuando quieras.
           </p>
         </div>
         {conn ? (
@@ -129,7 +129,7 @@ export default async function BancosPage({
 
       {banks.length === 0 ? (
         <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-          Todavía no agregaste ningún banco. Agregá uno con el correo desde el
+          Todavía no agregaste ningún banco. Agrega uno con el correo desde el
           que te llegan los avisos de compra.
         </div>
       ) : (

@@ -9,6 +9,8 @@
 
 import type {
   Currency,
+  FeedbackKind,
+  FeedbackStatus,
   ExchangeRate,
   FinancingInstallment,
   FreshStartOpening,
@@ -699,4 +701,50 @@ export interface AcademyRepository {
   list(): Promise<AcademyProgress[]>;
   /** Guarda el mejor puntaje de una lección. */
   record(lesson: AcademyLesson, score: number): Promise<void>;
+}
+
+/** 3.2.0 (B1–B6): una publicación del buzón de comentarios. */
+export type FeedbackPostRecord = {
+  id: string;
+  user_id: string;
+  author_name: string;
+  kind: FeedbackKind;
+  title: string;
+  status: FeedbackStatus;
+  has_attachment: boolean;
+  user_activity_at: string;
+  admin_activity_at: string | null;
+  user_read_at: string;
+  admin_read_at: string | null;
+  created_at: string;
+};
+
+export type FeedbackMessageRecord = {
+  id: string;
+  post_id: string;
+  from_admin: boolean;
+  body: string;
+  created_at: string;
+};
+
+/** 3.2.0: buzón de comentarios (privado entre el usuario y el admin, B2). */
+export interface FeedbackRepository {
+  /** Crea la publicación con su primer mensaje (el texto). */
+  create(input: { author_name: string; kind: FeedbackKind; title: string; body: string }): Promise<{ id: string }>;
+  /** B4: sube la captura y la liga a la publicación. */
+  attach(postId: string, file: { bytes: ArrayBuffer; type: string }): Promise<void>;
+  /** Enlace temporal de la captura, o `null` si no tiene. */
+  attachmentUrl(postId: string): Promise<string | null>;
+  /** Las publicaciones propias, la actividad más reciente primero. */
+  mine(): Promise<FeedbackPostRecord[]>;
+  /** Todas (solo el admin las ve: RLS). */
+  all(): Promise<FeedbackPostRecord[]>;
+  find(postId: string): Promise<FeedbackPostRecord | null>;
+  messages(postId: string): Promise<FeedbackMessageRecord[]>;
+  reply(postId: string, body: string, fromAdmin: boolean): Promise<void>;
+  setStatus(postId: string, status: FeedbackStatus): Promise<void>;
+  /** B5: marca leída la publicación del lado que corresponda. */
+  markRead(postId: string, side: "user" | "admin"): Promise<void>;
+  /** B5: sin leer propias (`mine`) y en la bandeja del admin (`inbox`). */
+  unread(): Promise<{ mine: number; inbox: number }>;
 }

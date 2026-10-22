@@ -14,8 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { saveMinimumPayment } from "../actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** T8: digitar el pago mínimo que trae el estado de cuenta del corte vigente. */
 export function MinimumPaymentDialog({
@@ -31,13 +33,14 @@ export function MinimumPaymentDialog({
   statementBalance: number;
   current: number | null;
 }) {
+  const formatDate = useFormatDate();
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveMinimumPayment,
     "Pago mínimo guardado",
   );
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="ghost" className="h-7 px-2 text-xs" />}>
+      <DialogTrigger render={<Button size="sm" variant="ghost" className="h-9 px-2 text-xs sm:h-7" />}>
         {current ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
         {current ? "Editar mínimo" : "Digitar pago mínimo"}
       </DialogTrigger>
@@ -49,7 +52,7 @@ export function MinimumPaymentDialog({
             {formatCurrency(statementBalance, currency)}. Déjalo en blanco para quitarlo.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="card_id" value={cardId} />
           <input type="hidden" name="cutoff_on" value={cutoffOn} />
           <input type="hidden" name="currency" value={currency} />

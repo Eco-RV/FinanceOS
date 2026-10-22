@@ -38,7 +38,7 @@ export default async function TransferenciasPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Transferencias</h1>
           <p className="text-sm text-muted-foreground">
-            Dinero que movés entre tus propias cuentas. No cuenta como gasto.
+            Dinero que mueves entre tus propias cuentas. No cuenta como gasto.
           </p>
         </div>
         {canRegister ? <TransferForm accounts={accounts} /> : null}
@@ -49,11 +49,11 @@ export default async function TransferenciasPage() {
           transactions={transactions}
           accounts={allAccounts}
           cards={[]}
-          emptyLabel="Aún no registrás transferencias."
+          emptyLabel="Aún no registras transferencias."
         />
       ) : (
         <p className="text-sm text-muted-foreground">
-          Necesitás al menos dos{" "}
+          Necesitas al menos dos{" "}
           <Link href="/procesos/cuentas" className="underline">
             cuentas
           </Link>{" "}

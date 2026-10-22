@@ -54,8 +54,17 @@ const NOTICES: Record<string, { tone: "ok" | "error"; text: string }> = {
 
 const RESEND_SECONDS = 60;
 
-export function LoginForm({ aviso, next }: { aviso?: string; next?: string }) {
-  const [mode, setMode] = useState<Mode>("login");
+export function LoginForm({
+  aviso,
+  next,
+  initialMode = "login",
+}: {
+  aviso?: string;
+  next?: string;
+  /** 3.2.0: la página de inicio abre directo en "Crear cuenta" (`/login?modo=crear`). */
+  initialMode?: Mode;
+}) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [loginState, loginAction, loginPending] = useActionState<AuthState, FormData>(login, undefined);
   const [signUpState, signUpAction, signUpPending] = useActionState<AuthState, FormData>(signUp, undefined);
@@ -299,6 +308,18 @@ function SignUpForm({
       </div>
       {state?.error ? <Banner tone="error">{state.error}</Banner> : null}
       <Submit pending={pending}>Crear cuenta</Submit>
+      {/* 3.2.0 · Fase 4: lo que se acepta al registrarse. */}
+      <p className="text-center text-xs text-muted-foreground">
+        Al crear tu cuenta aceptas los{" "}
+        <a href="/terminos" target="_blank" className="underline underline-offset-2">
+          Términos de uso
+        </a>{" "}
+        y la{" "}
+        <a href="/privacidad" target="_blank" className="underline underline-offset-2">
+          Política de privacidad
+        </a>
+        .
+      </p>
     </form>
   );
 }

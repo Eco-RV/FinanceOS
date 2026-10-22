@@ -11,6 +11,7 @@ import { MobileCard, MobileField, MobileList } from "@/components/mobile-list";
 import { openingsById } from "@/lib/transactions";
 import { loadDebitCards } from "@/lib/debit-cards";
 import { debitCardLabel } from "@/domain";
+import { AutoOpen } from "@/components/auto-open";
 import { AccountFormDialog } from "./account-form";
 import { deleteAccount, setAccountActive } from "./actions";
 
@@ -20,8 +21,9 @@ const TYPE_LABELS: Record<AccountType, string> = {
   cash: "Efectivo",
 };
 
-export default async function CuentasPage() {
-  await requireUser();
+export default async function CuentasPage({ searchParams }: { searchParams: Promise<{ nueva?: string }> }) {
+  // 3.2.0: `?nueva=1` (primeros pasos, estados vacíos) abre "Nueva cuenta".
+  const [, { nueva }] = await Promise.all([requireUser(), searchParams]);
 
   const supabase = await createClient();
   const [{ data }, { data: openingData }, debitCards] = await Promise.all([
@@ -77,11 +79,16 @@ export default async function CuentasPage() {
             sus movimientos.
           </p>
         </div>
-        <AccountFormDialog />
+        <AutoOpen when={nueva === "1"} param="nueva">
+          <AccountFormDialog />
+        </AutoOpen>
       </div>
 
       {accounts.length === 0 ? (
-        <EmptyRows>Aún no tienes cuentas. Agrega la primera.</EmptyRows>
+        <EmptyRows action={<AccountFormDialog />}>
+          Aún no tienes cuentas. Agrega la cuenta con la que pagas tus tarjetas y su saldo de hoy: así sabrás si
+          te alcanza para los pagos que vienen.
+        </EmptyRows>
       ) : (
         <>
           <RowList
