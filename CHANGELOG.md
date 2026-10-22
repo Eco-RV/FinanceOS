@@ -1,6 +1,6 @@
 # Changelog
 
-## 3.2.0 — en desarrollo (lista para publicar)
+## 3.2.0 — 2026-10-21
 
 Salida a producción para los primeros usuarios (early birds): una promesa
 ("no vuelvas a pagar intereses en tus tarjetas") con funciones que llegan por
