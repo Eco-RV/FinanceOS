@@ -7,7 +7,7 @@ a la familia. Pensada para el celular (web) e **instalable** en la pantalla de
 inicio. Colones (₡) por defecto; lo que está en dólares se convierte con el tipo de
 cambio del BCCR, que la app trae sola cada día.
 
-**Versión actual:** 3.1.0 — ver [`CHANGELOG.md`](./CHANGELOG.md) y los
+**Versión actual:** 3.2.0 — ver [`CHANGELOG.md`](./CHANGELOG.md) y los
 [releases](https://github.com/Eco-RV/FinanceOS/releases).
 
 **Stack:** Next.js 16 (App Router, Turbopack) · React 19 · TypeScript ·
@@ -66,9 +66,10 @@ en [`docs/dominio/`](./docs/dominio/).
    | 2.7.0 | `00_plans.sql`, `01_savings_goals.sql` |
    | 2.8.0 | `00_card_cutoff_rollover.sql`, `01_debit_cards.sql`, `02_card_payment_exchange.sql` |
    | 3.0.0 | `00_stellar_wallets.sql`, `01_constellation_stars.sql`, `02_family_invites.sql`, `03_academy_progress.sql` |
+   | 3.2.0 | `00_auditoria_rls.sql` (solo lectura), `01_feedback.sql`, `02_feedback_admin.sql` (cambiar el correo) |
    | 3.1.0 | `00_shared_expenses.sql`, `01_fresh_start_shared.sql`, `02_insurance_debit_card.sql`, `03_card_minimum_payments.sql`, `04_financing_currency.sql`, `05_loan_adjustments.sql`, `06_financing_prepayments.sql`, `07_variable_plans.sql`, `08_goal_allocations.sql`, `09_receipts.sql` |
 
-   Al actualizar una base existente, corré solo las carpetas de las versiones
+   Al actualizar una base existente, corre solo las carpetas de las versiones
    nuevas, **antes** de desplegar el código.
 
 3. **Correr en local**

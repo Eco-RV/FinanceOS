@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { PERF_ENABLED, timedFetch } from "@/lib/perf";
 
 /**
  * Supabase client for use in Server Components, Route Handlers and Server Actions.
@@ -12,6 +13,8 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // 3.2.0 · Fase 1.1: con PERF_LOG=1 cada consulta queda en el log de tiempos.
+      ...(PERF_ENABLED ? { global: { fetch: timedFetch } } : {}),
       cookies: {
         getAll() {
           return cookieStore.getAll();

@@ -15,6 +15,7 @@ import { UserMenu, type AccountSummary } from "@/components/user-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FOCUS_OUTLINE } from "@/lib/interactive";
 import { LogoTile } from "@/components/brand-logo";
+import { CONSTELLATION_ENABLED } from "@/lib/flags";
 
 type IconType = ComponentType<{ className?: string }>;
 
@@ -23,7 +24,8 @@ type NavItem = { href: string; label: string; icon: IconType; beta?: boolean };
 const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Resumen", icon: LayoutDashboard },
   { href: "/procesos", label: "Procesos", icon: Workflow },
-  { href: "/trading", label: "Constelación", icon: Sparkles, beta: true },
+  // 3.2.0: la Constelación solo se ve con su interruptor de entorno (4.0.0).
+  ...(CONSTELLATION_ENABLED ? [{ href: "/trading", label: "Constelación", icon: Sparkles, beta: true }] : []),
   { href: "/ajustes", label: "Ajustes", icon: Settings2 },
 ];
 

@@ -16,6 +16,7 @@ import { FormField } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
 import { saveExchangeRate } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 export function RateFormDialog({ lastRate }: { lastRate?: number }) {
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
@@ -36,7 +37,7 @@ export function RateFormDialog({ lastRate }: { lastRate?: number }) {
             en otra moneda. Si ya hay uno para esa fecha, se reemplaza.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <FormField label="₡ por $1" htmlFor="usd_crc" error={errors?.usd_crc}>
               <Input

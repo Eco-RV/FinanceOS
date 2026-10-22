@@ -16,6 +16,7 @@ import { useDialogForm } from "@/lib/use-dialog-form";
 import type { Bank } from "@/lib/types";
 import { PARSERS } from "@/lib/mail/parsers/index.ts";
 import { saveBank } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 export function BankFormDialog({ bank }: { bank?: Bank }) {
   const editing = Boolean(bank);
@@ -49,7 +50,7 @@ export function BankFormDialog({ bank }: { bank?: Bank }) {
           <DialogTitle>{editing ? "Editar banco" : "Nuevo banco"}</DialogTitle>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           {bank ? <input type="hidden" name="id" value={bank.id} /> : null}
 
           <FormField label="Nombre" htmlFor="name" error={errors?.name}>

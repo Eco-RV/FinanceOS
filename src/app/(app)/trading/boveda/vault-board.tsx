@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormField, Select } from "@/components/form-field";
 import { celebrate } from "@/lib/celebrate";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import {
   approvalBlocker,
   assertCanDeposit,
@@ -43,6 +44,7 @@ import type { ExchangeRateView } from "@/components/stellar/pocket";
 const usdc = (units: bigint) => displayStellarBalance(formatStellarAmount(units));
 
 export function VaultBoard({ stars, rate }: { stars: StarLabel[]; rate: ExchangeRateView }) {
+  const formatDate = useFormatDate();
   const { address, balances } = useWallet();
   const { state, refresh } = useMyFamily();
   const { run, pending, needsApprovalModal } = useFamilyWrite();

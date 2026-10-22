@@ -135,7 +135,7 @@ Como usuario quiero corregir el reparto o dejar de compartir un gasto.
 ## Pendiente / fuera de alcance
 
 - Repartir por consumo de cada persona (por porcentaje ya existe, X7).
-- Cobrar en USDC desde la Constelación (Fase 7 de 3.x).
+- Cobrar en USDC desde la Constelación (Fase 7, 4.0.0).
 - Recordatorios automáticos (el envío es manual, como en F8).
 - Compartir un gasto entre usuarios de Finance OS (hoy las personas son
   contactos, no tienen cuenta).

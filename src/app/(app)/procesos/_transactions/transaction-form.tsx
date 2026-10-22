@@ -20,11 +20,13 @@ import { readLastUsed, rememberLastUsed } from "@/lib/last-used";
 import { crToday, overdraftWarning, overpaymentWarning, toISODate } from "@/domain";
 import { originValue } from "@/lib/transactions";
 import { CURRENCIES } from "@/lib/schema";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import type { Account, CreditCard, DebitCard, Transaction, TransactionType } from "@/lib/types";
 import { saveTransaction } from "./actions";
 import { CategoryPicker } from "./category-picker";
 import { ExpenseForm } from "./expense-form";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /**
  * Tipos que se registran con este formulario. El saldo inicial va en el de
@@ -121,6 +123,7 @@ function MovementForm({
   fab = false,
   categoryIcons,
 }: Props) {
+  const formatDate = useFormatDate();
   const editing = Boolean(transaction);
   const { open, setOpen, submit, pending, errors, message } = useDialogForm(
     saveTransaction,
@@ -259,7 +262,7 @@ function MovementForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(handleSubmit)} className="flex flex-col gap-4">
           <input type="hidden" name="type" value={type} />
           {transaction ? (
             <input type="hidden" name="id" value={transaction.id} />
@@ -393,7 +396,7 @@ function MovementForm({
                 value={origin}
                 onChange={(e) => setOrigin(e.target.value)}
               >
-                <option value="">Elegí…</option>
+                <option value="">Elige…</option>
                 {type === "expense" ? (
                   <>
                     <optgroup label="Cuentas">

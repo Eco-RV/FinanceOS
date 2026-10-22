@@ -8,7 +8,7 @@ import { deleteFinancing } from "./actions";
 import { FinancingEditDialog } from "./financing-form";
 
 const CONFIRM =
-  "¿Eliminar este financiamiento? Se borran las cuotas futuras (y su interés); las que ya se cobraron se conservan (podés quitarlas a mano).";
+  "¿Eliminar este financiamiento? Se borran las cuotas futuras (y su interés); las que ya se cobraron se conservan (puedes quitarlas a mano).";
 
 type Props = {
   financings: Financing[];

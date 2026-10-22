@@ -352,5 +352,5 @@ archivos distintos (`contracts/` contra `src/`).
   - La invitación vive en `/trading/unirse/[token]`.
   - No existen `/ajustes/constelacion`, `/trading/apoyos` ni
     `/trading/academia`; Apoyos y Academia son cards "Próximamente".
-- **Fases 6–8**: pendientes para 3.1.0. El detalle está en
+- **Fases 6–8**: pendientes para 4.0.0 (antes 3.1.0). El detalle está en
   `docs/dominio/pendientes.md`.

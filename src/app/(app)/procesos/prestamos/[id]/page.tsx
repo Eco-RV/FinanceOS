@@ -186,7 +186,7 @@ export default async function LoanDetailPage({ params }: PageProps<"/procesos/pr
         </div>
         {!loan.archived && p.next && payAccounts.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Necesitás una cuenta activa en {currency} para pagar las cuotas.
+            Necesitas una cuenta activa en {currency} para pagar las cuotas.
           </p>
         ) : null}
 

@@ -107,6 +107,23 @@ estoy gastando más o menos que antes.
   convierten lo de dólares con el último tipo de cambio. Sin tipo de cambio, lo
   de dólares se lista pero no suma, y el patrimonio lo indica.
 
+### Primeros pasos y sugerencias (3.2.0)
+Como usuario nuevo quiero que el Resumen me guíe a no pagar intereses, y
+después me proponga lo que me puede servir.
+
+**Criterios de aceptación**
+- Arriba del Resumen, la card **Primeros pasos** (E5) con 4 pasos y una barra
+  de avance; el paso que sigue tiene su explicación y su enlace. Al tener
+  tarjeta y cuenta, avisa que abajo ya se ve cuánto pagar y si alcanza.
+- Al terminar dice "Listo" y se cierra con **Cerrar** (o antes con
+  **Ocultar**). Se puede volver a ver desde Más funciones.
+- Sin primeros pasos, una **sugerencia** a la vez por logro (E4), con
+  **Activar** (activa la función y la abre) y **Ahora no**.
+- Las secciones de una función apagada no se muestran (E2): Análisis de gastos
+  (cards de período y gráfico), Cobros a miembros, Financiamientos y Línea
+  base y metas (Planes o Ahorros). El núcleo (liquidez, a pagar, consumo sin
+  cortar, faltante, disponible, pagos próximos y cortes) siempre está.
+
 ## Pendiente / fuera de alcance
 
 - Comparar contra un presupuesto (comparar períodos ya existe, G10).
@@ -122,3 +139,7 @@ estoy gastando más o menos que antes.
 - **2026-10-19 (v3.1.0, en desarrollo)** — Card "Recordatorios" (P8).
 - **2026-10-20 (v3.1.0, en desarrollo)** — Gastos en dólares en el gráfico y
   las cards (G9) y comparación con el período anterior (G10).
+- **2026-10-21 (v3.2.0, en desarrollo)** — Primeros pasos, sugerencias por
+  logro y secciones según las funciones activas (E1–E5). El tipo de cambio y
+  los planes se sincronizan una vez al día en la primera página que se abre,
+  no solo en el Resumen.

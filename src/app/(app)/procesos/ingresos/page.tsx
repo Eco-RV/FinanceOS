@@ -71,11 +71,11 @@ export default async function IngresosPage() {
           categories={categories}
           categoryIcons={categoryIcons}
           sharedLinks={await linksPromise}
-          emptyLabel="Aún no registrás ingresos."
+          emptyLabel="Aún no registras ingresos."
         />
       ) : (
         <p className="text-sm text-muted-foreground">
-          Primero agregá una{" "}
+          Primero agrega una{" "}
           <Link href="/procesos/cuentas" className="underline">
             cuenta
           </Link>

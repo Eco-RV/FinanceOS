@@ -18,6 +18,7 @@ import { useDialogForm } from "@/lib/use-dialog-form";
 import { confirmAction } from "@/lib/confirm";
 import { cn } from "@/lib/utils";
 import { attachReceiptAction, openReceiptAction, removeReceiptAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** G8 (3.1.0): adjuntar, ver o quitar el comprobante de un movimiento. */
 export function ReceiptDialog({ movementId, hasReceipt }: { movementId: string; hasReceipt: boolean }) {
@@ -95,7 +96,7 @@ export function ReceiptDialog({ movementId, hasReceipt }: { movementId: string; 
             </Button>
           </div>
         ) : null}
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="movement_id" value={movementId} />
           <label className="flex cursor-pointer flex-col gap-1 text-sm">
             <span className="font-medium">{hasReceipt ? "Reemplazar por otro" : "Archivo"}</span>

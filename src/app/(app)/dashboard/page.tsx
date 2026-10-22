@@ -18,14 +18,17 @@ import {
   buildReminders,
   spendingFrom,
   spendingInColones,
-  readPreferences,
   minimumPaymentStatus,
   cardAvailability,
   cardStatementsByCurrency,
   computeCoverage,
   coverageShortfall,
   financingProgress,
+  firstSteps,
   isCurrency,
+  isFeatureEnabled,
+  nextSuggestion,
+  showFirstSteps,
   crToday,
   daysUntil,
   loanDue,
@@ -46,7 +49,10 @@ import { loadLoanAdjustments } from "@/lib/loan-adjustments";
 import { interestByCard, withoutScheduledInterest } from "@/lib/card-balances";
 import { loadFinancingBoard } from "@/lib/financing-board";
 import { loadSharedBoard } from "@/lib/shared-board";
-import { ensureExchangeRateToday, ensurePlansUpToDate } from "@/lib/sync-plans";
+import { ensureDailySync } from "@/lib/sync-plans";
+import { getPreferences } from "@/lib/preferences";
+import { getFeatureState } from "@/lib/features";
+import { FirstStepsCard, SuggestionCard } from "./focus-cards";
 import { categoryOptions, iconsByName } from "@/lib/categories";
 import { EXPENSE_CATEGORIES } from "@/lib/schema";
 import type {
@@ -129,8 +135,8 @@ type Installment = Pick<
 const rise = (i: number) => ({ "--rise-i": i }) as CSSProperties;
 
 export default async function DashboardPage() {
-  await requireUser();
-  await Promise.all([ensurePlansUpToDate(), ensureExchangeRateToday()]);
+  // 3.2.0: sesión y sincronización del día en paralelo (solo la primera visita del día espera).
+  await Promise.all([requireUser(), ensureDailySync()]);
 
   const today = crToday();
   const todayISO = toISODate(today);
@@ -140,84 +146,97 @@ export default async function DashboardPage() {
   const expensesFrom = sinceISO < yearStartISO ? sinceISO : yearStartISO;
 
   const supabase = await createClient();
+  // 3.2.0 · Fase 1.2: todas las lecturas salen juntas en una sola tanda (antes
+  // eran cuatro seguidas: datos → tableros → preferencias → ajustes de préstamos).
   const [
-    { data: accountsData },
-    { data: cardsData },
-    { data: cardTxData },
-    { data: expenseData },
-    { data: financingData },
-    { data: installmentData },
-    { data: loanData },
-    { data: loanPayData },
-    { data: categoryData },
-    { data: rateData },
+    [
+      { data: accountsData },
+      { data: cardsData },
+      { data: cardTxData },
+      { data: expenseData },
+      { data: financingData },
+      { data: installmentData },
+      { data: loanData },
+      { data: loanPayData },
+      { data: categoryData },
+      { data: rateData },
+    ],
+    [board, sharedBoard, plansBoard, { data: goalData }, estimated, { data: minimumData }],
+    basePrefs,
+    loanAdjustments,
+    featureState,
   ] = await Promise.all([
-    supabase.from("accounts").select("*").eq("archived", false),
-    supabase.from("credit_cards").select("*").eq("archived", false),
-    // Todas las filas (paginado): con muchas cuotas se pasa del tope de ~1000.
-    allRows<CardTxn>((from, to) =>
+    Promise.all([
+      supabase.from("accounts").select("*").eq("archived", false),
+      supabase.from("credit_cards").select("*").eq("archived", false),
+      // Todas las filas (paginado): con muchas cuotas se pasa del tope de ~1000.
+      allRows<CardTxn>((from, to) =>
+        supabase
+          .from("transactions")
+          .select("card_id, type, amount, occurred_on, financing_id, currency, interest_amount")
+          .eq("archived", false)
+          .not("card_id", "is", null)
+          .order("id")
+          .range(from, to),
+      ).then((data) => ({ data })),
+      // G10 (3.1.0): desde el inicio del año pasado, para comparar períodos (todas las filas).
+      allRows<Pick<Transaction, "amount" | "occurred_on" | "category" | "currency">>((from, to) =>
+        supabase
+          .from("transactions")
+          .select("id, amount, occurred_on, category, currency")
+          .eq("type", "expense")
+          .eq("archived", false)
+          .gte("occurred_on", spendingFrom(todayISO) < expensesFrom ? spendingFrom(todayISO) : expensesFrom)
+          .lte("occurred_on", todayISO)
+          .order("id")
+          .range(from, to),
+      ).then((data) => ({ data })),
+      supabase.from("financings").select("*").eq("archived", false).is("cancelled_on", null),
       supabase
         .from("transactions")
-        .select("card_id, type, amount, occurred_on, financing_id, currency, interest_amount")
+        .select("financing_id, installment_no, occurred_on, amount, interest_amount")
         .eq("archived", false)
-        .not("card_id", "is", null)
-        .order("id")
-        .range(from, to),
-    ).then((data) => ({ data })),
-    // G10 (3.1.0): desde el inicio del año pasado, para comparar períodos (todas las filas).
-    allRows<Pick<Transaction, "amount" | "occurred_on" | "category" | "currency">>((from, to) =>
+        .not("financing_id", "is", null)
+        .not("installment_no", "is", null),
+      supabase.from("loans").select("*").eq("archived", false),
       supabase
         .from("transactions")
-        .select("id, amount, occurred_on, category, currency")
-        .eq("type", "expense")
+        .select("loan_id, installment_no")
+        .not("loan_id", "is", null)
+        .not("installment_no", "is", null)
+        .eq("archived", false),
+      supabase.from("categories").select("*").eq("kind", "expense").eq("archived", false),
+      supabase
+        .from("exchange_rates")
+        .select("rate_on, usd_crc")
         .eq("archived", false)
-        .gte("occurred_on", spendingFrom(todayISO) < expensesFrom ? spendingFrom(todayISO) : expensesFrom)
-        .lte("occurred_on", todayISO)
-        .order("id")
-        .range(from, to),
-    ).then((data) => ({ data })),
-    supabase.from("financings").select("*").eq("archived", false).is("cancelled_on", null),
-    supabase
-      .from("transactions")
-      .select("financing_id, installment_no, occurred_on, amount, interest_amount")
-      .eq("archived", false)
-      .not("financing_id", "is", null)
-      .not("installment_no", "is", null),
-    supabase.from("loans").select("*").eq("archived", false),
-    supabase
-      .from("transactions")
-      .select("loan_id, installment_no")
-      .not("loan_id", "is", null)
-      .not("installment_no", "is", null)
-      .eq("archived", false),
-    supabase.from("categories").select("*").eq("kind", "expense").eq("archived", false),
-    supabase
-      .from("exchange_rates")
-      .select("rate_on, usd_crc")
-      .eq("archived", false)
-      .order("rate_on", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
-
-  // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
-  // 2.7.0: planes (línea base y programados) y metas de ahorro.
-  // 3.1.0: también los gastos compartidos (X5).
-  const [board, sharedBoard, plansBoard, { data: goalData }, estimated, { data: minimumData }] = await Promise.all([
-    loadFinancingBoard(supabase, todayISO),
-    loadSharedBoard(supabase, todayISO),
-    repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
-    supabase
-      .from("savings_goals")
-      .select("*")
-      .eq("archived", false),
-    // P8 (3.1.0): montos por confirmar (P7) y pagos mínimos digitados (T8).
-    repositories().then((repos) => repos.plans.estimatedOccurrences()),
-    supabase.from("card_minimum_payments").select("card_id, cutoff_on, currency, amount"),
+        .order("rate_on", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]),
+    // F8: avisos de cuota por enviar y lo que los miembros deben de cuotas cobradas.
+    // 2.7.0: planes (línea base y programados) y metas de ahorro.
+    // 3.1.0: también los gastos compartidos (X5).
+    Promise.all([
+      loadFinancingBoard(supabase, todayISO),
+      loadSharedBoard(supabase, todayISO),
+      repositories().then((repos) => loadPlansBoard(supabase, repos, todayISO, { upcomingDays: 15 })),
+      supabase
+        .from("savings_goals")
+        .select("*")
+        .eq("archived", false),
+      // P8 (3.1.0): montos por confirmar (P7) y pagos mínimos digitados (T8).
+      repositories().then((repos) => repos.plans.estimatedOccurrences()),
+      supabase.from("card_minimum_payments").select("card_id, cutoff_on, currency, amount"),
+    ]),
+    // U9 (3.1.0): moneda base para mostrar el patrimonio también en dólares.
+    getPreferences(),
+    // L7/L8 (3.1.0): abonos y cambios de tasa de los préstamos.
+    loadLoanAdjustments(supabase),
+    // 3.2.0 (E1–E5): funciones activas, primeros pasos y sugerencias.
+    getFeatureState(),
   ]);
   const goals = (goalData ?? []) as Goal[];
-  // U9 (3.1.0): moneda base para mostrar el patrimonio también en dólares.
-  const basePrefs = readPreferences((await (await repositories()).profiles.get().catch(() => null))?.preferences);
   const noticesToSend =
     board.groups.filter((g) => g.needsNotice).length + sharedBoard.groups.filter((g) => g.needsNotice).length;
   const receivableCrc = [...board.receivables, ...sharedBoard.receivables]
@@ -258,7 +277,6 @@ export default async function DashboardPage() {
   for (const p of (loanPayData ?? []) as { loan_id: string; installment_no: number }[]) {
     paidByLoan.set(p.loan_id, [...(paidByLoan.get(p.loan_id) ?? []), Number(p.installment_no)]);
   }
-  const loanAdjustments = await loadLoanAdjustments(supabase);
   const loanEntries: CoverageLoan<Loan>[] = loans.map((loan) => {
     const currency = loan.currency === "USD" ? "USD" : "CRC";
     const progress = loanProgress(
@@ -412,6 +430,19 @@ export default async function DashboardPage() {
     })
     .sort((a, b) => a.days - b.days);
 
+  // 3.2.0 · Fase 2: lo que el usuario ya hizo (primeros pasos y logros, E4/E5).
+  const usage = {
+    cards: cards.length,
+    bankAccounts: accounts.filter((a) => a.type === "checking" || a.type === "savings").length,
+    cardExpenses: cardTxns.filter((t) => t.type === "expense" && !t.financing_id).length,
+    cardPayments: cardTxns.filter((t) => t.type === "card_payment").length,
+    expenses: expenseRows.length,
+    financings: ((financingData ?? []) as Financing[]).length,
+  };
+  const on = (key: Parameters<typeof isFeatureEnabled>[1]) => isFeatureEnabled(featureState, key);
+  const stepsVisible = showFirstSteps(featureState);
+  const suggestion = stepsVisible ? null : nextSuggestion(featureState, usage);
+
   const upcoming = payments.filter((p) => !p.overdue);
   const overdueCards = overdue.filter((p) => p.kind === "card").length;
   const overdueLoans = overdue.filter((p) => p.kind === "loan").length;
@@ -458,6 +489,17 @@ export default async function DashboardPage() {
             </p>
           </div>
         </div>
+      ) : null}
+
+      {/* 3.2.0 · Fase 2: primeros pasos y, cuando ya no están, una sugerencia a la vez. */}
+      {stepsVisible ? (
+        <FirstStepsCard
+          steps={firstSteps(usage)}
+          payHref={cards.length === 1 ? `/procesos/tarjetas/${cards[0].id}?pago=1` : undefined}
+          style={rise(1)}
+        />
+      ) : suggestion ? (
+        <SuggestionCard suggestion={suggestion} style={rise(1)} />
       ) : null}
 
       {/* 2.5.0: grilla del Resumen. Cada card abre su detalle en un modal. */}
@@ -553,13 +595,15 @@ export default async function DashboardPage() {
           />
         </div>
 
-        {/* Filas 3 y 4 · Gastos por período y gráfico por categoría */}
-        <ExpenseOverview
-          points={expensePoints}
-          todayISO={todayISO}
-          icons={categoryIcons}
-          unconverted={spending.unconverted}
-        />
+        {/* Filas 3 y 4 · Gastos por período y gráfico por categoría (3.2.0: función "Análisis") */}
+        {on("analisis") ? (
+          <ExpenseOverview
+            points={expensePoints}
+            todayISO={todayISO}
+            icons={categoryIcons}
+            unconverted={spending.unconverted}
+          />
+        ) : null}
 
         {/* Fila 5 · Disponible en crédito · Cobros a miembros · Financiamientos */}
         <StatDialog
@@ -627,64 +671,70 @@ export default async function DashboardPage() {
           )}
         </StatDialog>
 
-        <Link
-          href="/procesos/cobros"
-          className={cn("surface rise flex flex-col gap-2 p-4 sm:p-5", PRESSABLE_SURFACE, FOCUS_OUTLINE)}
-          style={rise(12)}
-        >
-          <StatBody
-            title="Cobros a miembros"
-            icon={<BellRing className="size-4" />}
-            value={formatCurrency(receivableCrc)}
-            hint={
-              noticesToSend > 0
-                ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} por enviar`
-                : receivableCrc > 0
-                  ? "De cuotas cobradas y gastos compartidos"
-                  : "Nadie te debe nada"
-            }
-            trailing={<LinkChevron />}
-          />
-        </Link>
+        {/* 3.2.0: función "Cobros a miembros" */}
+        {on("cobros") ? (
+          <Link
+            href="/procesos/cobros"
+            className={cn("surface rise flex flex-col gap-2 p-4 sm:p-5", PRESSABLE_SURFACE, FOCUS_OUTLINE)}
+            style={rise(12)}
+          >
+            <StatBody
+              title="Cobros a miembros"
+              icon={<BellRing className="size-4" />}
+              value={formatCurrency(receivableCrc)}
+              hint={
+                noticesToSend > 0
+                  ? `${noticesToSend} aviso${noticesToSend === 1 ? "" : "s"} por enviar`
+                  : receivableCrc > 0
+                    ? "De cuotas cobradas y gastos compartidos"
+                    : "Nadie te debe nada"
+              }
+              trailing={<LinkChevron />}
+            />
+          </Link>
+        ) : null}
 
-        <StatDialog
-          title="Financiamientos"
-          description="Planes de cuotas con cuotas por cobrar. Toca uno para ver su detalle."
-          icon={<Layers className="size-4" />}
-          value={`${financings.length} activo${financings.length === 1 ? "" : "s"}`}
-          hint={
-            financingPending > 0
-              ? `${formatCurrency(financingPending)} de capital por cobrar`
-              : "Sin capital por cobrar"
-          }
-          className="rise"
-          style={rise(13)}
-        >
-          {financings.length === 0 ? (
-            <EmptyDetail>No tienes financiamientos activos.</EmptyDetail>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <DetailList
-                rows={financings.map(({ f, p }) => ({
-                  key: f.id,
-                  href: `/procesos/tarjetas/${f.card_id}/financiamientos/${f.id}`,
-                  title: f.description,
-                  subtitle: [cardName.get(f.card_id), `${p.scheduled.length} cuota${p.scheduled.length === 1 ? "" : "s"} por cobrar`]
-                    .filter(Boolean)
-                    .join(" · "),
-                  amount: formatCurrency(p.next!.amount, f.currency),
-                  amountHint: formatDate(p.next!.occurred_on),
-                }))}
-              />
-              <Link
-                href="/procesos/financiamientos"
-                className="self-end text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-              >
-                Ver todos los financiamientos
-              </Link>
-            </div>
-          )}
-        </StatDialog>
+        {/* 3.2.0: función "Financiamientos" */}
+        {on("financiamientos") ? (
+          <StatDialog
+            title="Financiamientos"
+            description="Planes de cuotas con cuotas por cobrar. Toca uno para ver su detalle."
+            icon={<Layers className="size-4" />}
+            value={`${financings.length} activo${financings.length === 1 ? "" : "s"}`}
+            hint={
+              financingPending > 0
+                ? `${formatCurrency(financingPending)} de capital por cobrar`
+                : "Sin capital por cobrar"
+            }
+            className="rise"
+            style={rise(13)}
+          >
+            {financings.length === 0 ? (
+              <EmptyDetail>No tienes financiamientos activos.</EmptyDetail>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <DetailList
+                  rows={financings.map(({ f, p }) => ({
+                    key: f.id,
+                    href: `/procesos/tarjetas/${f.card_id}/financiamientos/${f.id}`,
+                    title: f.description,
+                    subtitle: [cardName.get(f.card_id), `${p.scheduled.length} cuota${p.scheduled.length === 1 ? "" : "s"} por cobrar`]
+                      .filter(Boolean)
+                      .join(" · "),
+                    amount: formatCurrency(p.next!.amount, f.currency),
+                    amountHint: formatDate(p.next!.occurred_on),
+                  }))}
+                />
+                <Link
+                  href="/procesos/financiamientos"
+                  className="self-end text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Ver todos los financiamientos
+                </Link>
+              </div>
+            )}
+          </StatDialog>
+        ) : null}
 
         {/* P8 (3.1.0): recordatorios, como una card más (no un banner). */}
         <Reminders
@@ -717,12 +767,15 @@ export default async function DashboardPage() {
         />
 
         {/* Fila 6 · Línea base y metas (2.7.0) */}
-        <PlansAndGoals
-          board={plansBoard}
-          goals={goals}
-          balances={Object.fromEntries(accounts.map((a) => [a.id, Number(a.current_balance)]))}
-          todayISO={todayISO}
-        />
+        {/* 3.2.0: funciones "Planes" y "Ahorros y metas" */}
+        {on("planes") || on("ahorros") ? (
+          <PlansAndGoals
+            board={plansBoard}
+            goals={goals}
+            balances={Object.fromEntries(accounts.map((a) => [a.id, Number(a.current_balance)]))}
+            todayISO={todayISO}
+          />
+        ) : null}
       </div>
 
       <p className="-mt-4 text-xs text-muted-foreground">
@@ -741,7 +794,7 @@ export default async function DashboardPage() {
           {cards.length === 0 && loans.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No hay tarjetas ni préstamos registrados.{" "}
-              <Link href="/procesos/tarjetas" className="underline">
+              <Link href="/procesos/tarjetas?nueva=1" className="underline">
                 Agrega una tarjeta
               </Link>
               .
@@ -790,6 +843,14 @@ export default async function DashboardPage() {
           </section>
         ) : null}
       </div>
+
+      {/* 3.2.0 · Fase 3: el buzón, sin interrumpir (un enlace al pie, no un aviso). */}
+      <p className="text-center text-sm text-muted-foreground">
+        ¿Algo que contarnos?{" "}
+        <Link href="/comentarios" className="font-medium text-foreground underline-offset-2 hover:underline">
+          Escríbenos
+        </Link>
+      </p>
     </div>
   );
 }

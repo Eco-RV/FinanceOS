@@ -1,5 +1,92 @@
 # Changelog
 
+## 3.2.0 — 2026-10-21
+
+Salida a producción para los primeros usuarios (early birds): una promesa
+("no vuelvas a pagar intereses en tus tarjetas") con funciones que llegan por
+logros, buzón de comentarios, más velocidad, seguridad multiusuario y pulido.
+Plan y avance en `docs/produccion/plan-3.2.0.md`; guion de prueba en
+`docs/produccion/guion-prueba-early-bird.md`. Los pendientes de la
+Constelación pasan a la 4.0.0.
+
+### Multiusuario (Fase 0)
+- El formato de fecha ya no se comparte entre usuarios en el servidor: va por
+  request (cookie `fo-date` + contexto en el navegador).
+- Auditoría de RLS de solo lectura: `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql`.
+
+### Velocidad (Fase 1)
+- Esqueleto de carga con la forma de cada sección: el toque cambia de pantalla
+  en ~20 ms (antes ~1 s congelado dentro de Procesos).
+- La sesión se valida en local (`getClaims`): el proxy baja de ~170 ms a
+  1–27 ms por navegación.
+- Planes y tipo de cambio se sincronizan una vez al día, no en cada página.
+- El Resumen lee todo en una tanda (6 → 2).
+- Animaciones de entrada más cortas y formularios del botón flotante bajo demanda.
+- Medición: `PERF_LOG` / `NEXT_PUBLIC_PERF_LOG` (ver `docs/CONTEXT.md`).
+
+### Enfoque y funciones (Fase 2)
+- Promesa única: **no pagar intereses en las tarjetas**. Una cuenta nueva ve
+  solo el núcleo, con **Primeros pasos** en el Resumen.
+- **Más funciones** (`/procesos/funciones`): activar o apagar Ingresos,
+  Planes, Análisis, Financiamientos, Préstamos, Ahorros, Compartidos, Cobros,
+  Gmail (beta) y Herramientas. Las cuentas de antes siguen con todo encendido.
+- Sugerencias por logro en el Resumen, una a la vez (E4).
+- Página de inicio pública en `/`; bienvenida solo la primera vez.
+- Constelación oculta salvo con `NEXT_PUBLIC_FEATURE_CONSTELLATION=1`.
+- Estados vacíos con el paso que sigue y enlaces que abren el diálogo directo
+  (`?nueva=1`, `?nuevo=1`, `?pago=1`), también desde los primeros pasos.
+- Sin "Compartir" ni "Financiar" cuando esas funciones están apagadas.
+- La lista de movimientos respeta el formato de fecha del usuario también
+  dentro de los filtros de Gastos y de los detalles.
+
+### Buzón de comentarios (Fase 3)
+- **Comentarios** (`/comentarios`): el usuario cuenta su experiencia, pregunta o
+  pide mejoras (con captura opcional) y conversa con el equipo. Es privado y
+  va con su nombre (B1–B6).
+- Estados Recibido, En revisión, En planes, Hecho y No por ahora (con motivo);
+  Hecho y No por ahora cierran la conversación.
+- **Bandeja** (`/comentarios/bandeja`) solo para el admin: sin leer, abiertas,
+  cerradas y por tipo; responder y cambiar el estado.
+- Sin interrumpir: menú del usuario (con un punto si hay respuestas sin leer),
+  Ajustes → Comentarios y un enlace al pie del Resumen.
+
+### Producción y seguridad (Fase 4)
+- Pantallas propias de error (con reintentar) y de página no encontrada.
+- Sentry opcional (`NEXT_PUBLIC_SENTRY_DSN`), sin datos del usuario.
+- Cabeceras de seguridad (sin iframes, nosniff, HSTS, permisos del navegador).
+- **Términos de uso** (`/terminos`) y **Política de privacidad** reescrita para
+  varios usuarios; el registro las enlaza. Pendientes de revisión.
+- Guía de producción: `docs/produccion/guia-produccion.md`.
+
+### Pulido (Fase 5)
+- Los formularios ya no borran lo escrito cuando hay un error (32 diálogos).
+- Todo el texto en "tú" (había voseo mezclado).
+- Botones más grandes en pantallas táctiles (40 px) y mejor contraste del verde y el rojo en modo claro.
+
+### Base de datos (correr a mano, en orden, DESPUÉS de todo 3.1.0 y ANTES de desplegar)
+1. `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql`: solo lectura, para revisar.
+2. `01_feedback.sql`: buzón (tablas, RLS, triggers, RPC y bucket `feedback`).
+3. `02_feedback_admin.sql`: cambiar el correo por el de la cuenta admin. Después,
+   cerrar sesión y volver a entrar.
+
+### Configuración
+- `NEXT_PUBLIC_SENTRY_DSN` (opcional): errores en Sentry.
+- `NEXT_PUBLIC_FEATURE_CONSTELLATION`: **no** ponerla en producción (la
+  Constelación queda apagada hasta la 4.0.0). En local, `1` para verla.
+- `PERF_LOG` / `NEXT_PUBLIC_PERF_LOG` (opcionales): solo para medir.
+- Fuera del código (Supabase Auth, plantillas en español, SMTP, región,
+  respaldos): `docs/produccion/guia-produccion.md`.
+
+### Probado
+- Velocidad final (build de producción en local contra la base real, desde
+  Costa Rica): el toque cambia de pantalla en 10–27 ms en todas las rutas;
+  contenido en 0,3–0,7 s (antes 0,37–1,6 s).
+- Buzón de punta a punta con dos cuentas, modo enfocado simulando una cuenta
+  nueva, diálogos que abren desde enlaces, formularios que conservan lo escrito
+  y auditoría a 375 px.
+- Pendiente antes de anunciar: el guion completo con una cuenta nueva real en el
+  preview de Vercel.
+
 ## 3.1.0 — 2026-10-20
 
 Versión oficial después de la 3.0.0 (la 3.0.1 de desarrollo quedó dentro de

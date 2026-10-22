@@ -21,7 +21,10 @@ Estados corregidos en 3.1.0: G2 y M7 pasan a "Implementado". K3–K7 pasan a
 "Implementado 3.0.0". Las reglas de ahorro **S1–S3 pasan a A1–A3**, porque
 S1 ya era la regla de SINPE.
 
-## 2. Fases abiertas de la Constelación (3.1.0)
+## 2. Fases abiertas de la Constelación (4.0.0)
+
+Se movieron de la 3.1.0 a la **4.0.0** (2026-10-21); la 3.2.0 se dedica a
+UI/UX y a la salida a producción.
 
 - **Fase 6 · Apoyos** (Trustless Work): falta el puerto `EscrowService`, el
   dominio `escrow.ts` y la ruta `/api/trustless`. No hay nada de esto en el
@@ -56,7 +59,7 @@ recordatorios en la app (P8) y varias metas por cuenta (A4).
 | Cuenta | El tema sigue siendo por dispositivo. |
 | Planes | (Hecho en 3.1.0, P4) Línea base con dólares. |
 | Ahorros | Aportes automáticos (metas en USD en el total: hecho en 3.1.0, A5). |
-| Gastos compartidos (3.1.0) | Cobro en USDC (Fase 7). Por porcentaje: hecho en 3.1.0 (X7). |
+| Gastos compartidos (3.1.0) | Cobro en USDC (Fase 7, 4.0.0). Por porcentaje: hecho en 3.1.0 (X7). |
 
 ## 4. Documentación corregida en 3.1.0
 
@@ -84,3 +87,5 @@ recordatorios en la app (P8) y varias metas por cuenta (A4).
   Constelación 3.1.0.
 - **2026-10-20 (v3.1.0, en desarrollo)** — Se cierran las mejoras chicas: G9,
   G10, P4 con dólares, A5 y X7.
+- **2026-10-21 (v3.2.0, en desarrollo)** — Los pendientes de la Constelación
+  (Fases 6–8, Academia, letra grande y D13) pasan a la 4.0.0.

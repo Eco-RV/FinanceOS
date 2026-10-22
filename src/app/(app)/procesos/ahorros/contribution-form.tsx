@@ -18,6 +18,7 @@ import { crToday, toISODate } from "@/domain";
 import { formatCurrency } from "@/lib/format";
 import type { Account } from "@/lib/types";
 import { saveTransfer } from "../_transactions/actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /**
  * Aporte a una meta (2.7.0): una transferencia desde otra cuenta propia de la
@@ -54,7 +55,7 @@ export function ContributionForm({
             Transferencia a {account.name}. No cuenta como gasto.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="to_account_id" value={account.id} />
           <input type="hidden" name="note" value={`Aporte a ${goalName}`.slice(0, 200)} />
           <FormField label="Desde" htmlFor="from_account_id" error={errors?.from_account_id}>

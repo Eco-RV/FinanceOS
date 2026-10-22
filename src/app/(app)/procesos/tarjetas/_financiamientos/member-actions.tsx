@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input";
 import { FormField, Select } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
+import { useFormatDate } from "@/components/date-format";
 import { REIMBURSEMENT_CHANNEL_LABELS } from "@/lib/schema";
 import type { FormResult } from "@/lib/forms";
 import {
@@ -28,6 +29,7 @@ import {
   sendEmailNotice,
   undoReimbursement,
 } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 type MemberOption = { id: string; name: string };
 
@@ -68,10 +70,10 @@ export function SharesDialog({
         </DialogHeader>
         {members.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Primero agregá miembros en Ajustes → Miembros.
+            Primero agrega miembros en Ajustes → Miembros.
           </p>
         ) : (
-          <form action={submit} className="flex flex-col gap-4">
+          <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
             <input type="hidden" name="financing_id" value={financingId} />
             {members.map((m) => (
               <FormField
@@ -128,7 +130,7 @@ export function ReimburseDialog({
   );
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="outline" className="h-7 px-2 text-xs" />}>
+      <DialogTrigger render={<Button size="sm" variant="outline" className="h-9 px-2 text-xs sm:h-7" />}>
         Pagó
       </DialogTrigger>
       <DialogContent>
@@ -141,7 +143,7 @@ export function ReimburseDialog({
             un control interno: no cambia la tarjeta ni tus cuentas.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="financing_id" value={financingId} />
           <input type="hidden" name="member_id" value={memberId} />
           <input type="hidden" name="installment_no" value={installmentNo} />
@@ -197,6 +199,7 @@ function useFormAction(action: (formData: FormData) => Promise<FormResult>) {
 }
 
 export function ReimbursedBadge({ id, paidOn }: { id: string; paidOn: string }) {
+  const formatDate = useFormatDate();
   const { pending, run } = useFormAction(undoReimbursement);
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/brand-logo";
+import { WELCOME_STORAGE_KEY } from "@/lib/theme-script";
 import { cn } from "@/lib/utils";
 
 /** Saludo según la hora de Costa Rica (UTC-6, sin horario de verano). */
@@ -23,13 +24,24 @@ function greeting(): string {
  * iniciada) cubre la pantalla con el logo animado, el saludo y una barra de
  * carga; luego se desvanece. Al navegar dentro de la app no vuelve a salir
  * porque el layout se conserva. Tocarla la cierra.
+ *
+ * 3.2.0: solo la primera vez en cada dispositivo. Después no tapa la app al
+ * abrirla (el script del <head> marca `data-welcomed` y el CSS la oculta
+ * antes de pintar).
  */
 export function WelcomeSplash({ name = null }: { name?: string | null }) {
   const [phase, setPhase] = useState<"in" | "out" | "gone">("in");
 
   useEffect(() => {
+    let seen = false;
+    try {
+      seen = window.localStorage.getItem(WELCOME_STORAGE_KEY) === "1";
+      window.localStorage.setItem(WELCOME_STORAGE_KEY, "1");
+    } catch {
+      // Sin almacenamiento: se muestra como la primera vez.
+    }
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const hold = reduce ? 500 : 1500;
+    const hold = seen ? 0 : reduce ? 500 : 1500;
     const t1 = window.setTimeout(() => setPhase("out"), hold);
     const t2 = window.setTimeout(() => setPhase("gone"), hold + 450);
     return () => {
@@ -43,6 +55,7 @@ export function WelcomeSplash({ name = null }: { name?: string | null }) {
   return (
     <div
       role="presentation"
+      data-welcome-splash
       onClick={() => setPhase("gone")}
       className={cn(
         "fixed inset-0 z-[70] grid place-items-center bg-background transition-[opacity,filter] duration-450 ease-fluid",

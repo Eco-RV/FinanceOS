@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { NavCard, NavCardDisabled } from "@/components/nav-card";
 import { ThemeChoicePicker } from "./theme-choice";
 import { AppPreferencesForm } from "./app-preferences";
-import { repositories } from "@/infrastructure/container";
-import { readPreferences } from "@/domain";
+import { getPreferences, getProfile } from "@/lib/preferences";
 
 type IconType = ComponentType<{ className?: string }>;
 
@@ -25,8 +24,7 @@ const COMING: { label: string; description: string; icon: IconType }[] = [];
 export default async function PreferenciasPage() {
   await requireUser();
   // U9 (3.1.0): moneda base y formato de fecha guardados en el perfil.
-  const profile = await (await repositories()).profiles.get().catch(() => null);
-  const prefs = readPreferences(profile?.preferences);
+  const [profile, prefs] = await Promise.all([getProfile(), getPreferences()]);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">

@@ -53,7 +53,7 @@ export default async function MiembrosPage() {
 
       {members.length === 0 ? (
         <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-          Todavía no tenés miembros. Agregá uno y después repartí las cuotas
+          Todavía no tienes miembros. Agrega uno y después reparte las cuotas
           desde el detalle de un financiamiento.
         </p>
       ) : (

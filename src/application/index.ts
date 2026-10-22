@@ -23,3 +23,4 @@ export * from "./shared-expenses.ts";
 export * from "./minimum-payments.ts";
 export * from "./merchant-rules.ts";
 export * from "./receipts.ts";
+export * from "./feedback.ts";

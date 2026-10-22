@@ -28,7 +28,7 @@ function message(fn: () => unknown): string {
 test("M8: la confirmación escrita es obligatoria", () => {
   assert.equal(isFreshStartConfirmed(" arrancar "), true);
   assert.equal(isFreshStartConfirmed("si"), false);
-  assert.match(message(() => planFreshStart({ confirmation: "", products, openings })), /Escribí ARRANCAR/);
+  assert.match(message(() => planFreshStart({ confirmation: "", products, openings })), /Escribe ARRANCAR/);
 });
 
 test("M8: devuelve solo los saldos distintos de 0", () => {

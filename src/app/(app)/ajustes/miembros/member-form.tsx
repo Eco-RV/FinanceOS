@@ -16,6 +16,7 @@ import { FormField } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import type { Member } from "@/lib/types";
 import { saveMember } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 export function MemberFormDialog({ member }: { member?: Member }) {
   const editing = Boolean(member);
@@ -53,7 +54,7 @@ export function MemberFormDialog({ member }: { member?: Member }) {
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           {member ? <input type="hidden" name="id" value={member.id} /> : null}
 
           <FormField label="Nombre" htmlFor="name" error={errors?.name}>

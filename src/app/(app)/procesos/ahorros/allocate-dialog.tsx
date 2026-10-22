@@ -16,6 +16,7 @@ import { FormField } from "@/components/form-field";
 import { useDialogForm } from "@/lib/use-dialog-form";
 import { formatCurrency } from "@/lib/format";
 import { allocateGoalAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** A4: cuánto del saldo de la cuenta se aparta para esta meta. */
 export function AllocateDialog({
@@ -46,7 +47,7 @@ export function AllocateDialog({
             {formatCurrency(available, currency)}.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="goal_id" value={goalId} />
           <FormField label={`Apartado (${currency})`} htmlFor="allocated" error={errors?.allocated}>
             <Input
