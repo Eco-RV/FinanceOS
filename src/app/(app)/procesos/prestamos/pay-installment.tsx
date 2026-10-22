@@ -22,6 +22,7 @@ import { formatCurrency } from "@/lib/format";
 import { useFormatDate } from "@/components/date-format";
 import type { Account } from "@/lib/types";
 import { payLoanInstallment, undoLoanInstallment } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** L2: paga la próxima cuota (la única que se puede pagar). */
 export function PayInstallmentDialog({
@@ -79,7 +80,7 @@ export function PayInstallmentDialog({
           </div>
         </dl>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="loan_id" value={loanId} />
           <FormField label="Desde la cuenta" htmlFor="account_id" error={errors?.account_id}>
             <Select id="account_id" name="account_id" defaultValue={preselected} required>

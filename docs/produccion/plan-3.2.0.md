@@ -223,6 +223,7 @@ Un lugar **propio y tranquilo** para que cada usuario cuente su experiencia, pre
 - Textos: sin jerga interna (G5, M8, "Arranque de 0"…) en la UI; los errores dicen qué hacer.
 - Accesibilidad básica: contraste, foco visible, `aria-label` en botones de ícono, objetivos táctiles ≥ 44 px.
 - **Hallazgo (Fase 3)**: 29 formularios usan `<form action={submit}>`. Con `action`, React 19 vacía los campos al terminar, aunque haya un error de validación: el usuario pierde lo que escribió. Hay que pasarlos a `onSubmit` (como el del buzón) o hacerlos controlados.
+  - ✅ **Corregido (2026-10-21)**: `keepOnError` (`src/lib/keep-on-error.ts`) envía con `onSubmit` (incluye el botón que envió) y los 32 formularios de diálogo lo usan. Probado: una categoría repetida muestra "Ya existe esa categoría" y el campo conserva lo escrito. Los de acceso (login, registro, restablecer) quedan con `action`: las contraseñas del registro y el correo son controlados; que una contraseña se borre tras un error es lo habitual.
 
 ## Fase 6 · Release
 

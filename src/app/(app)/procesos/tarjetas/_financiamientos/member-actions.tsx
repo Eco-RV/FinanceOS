@@ -29,6 +29,7 @@ import {
   sendEmailNotice,
   undoReimbursement,
 } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 type MemberOption = { id: string; name: string };
 
@@ -72,7 +73,7 @@ export function SharesDialog({
             Primero agregá miembros en Ajustes → Miembros.
           </p>
         ) : (
-          <form action={submit} className="flex flex-col gap-4">
+          <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
             <input type="hidden" name="financing_id" value={financingId} />
             {members.map((m) => (
               <FormField
@@ -142,7 +143,7 @@ export function ReimburseDialog({
             un control interno: no cambia la tarjeta ni tus cuentas.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="financing_id" value={financingId} />
           <input type="hidden" name="member_id" value={memberId} />
           <input type="hidden" name="installment_no" value={installmentNo} />

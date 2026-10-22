@@ -18,6 +18,7 @@ import { useDialogForm } from "@/lib/use-dialog-form";
 import type { Bank, CreditCard, OpeningBalance } from "@/lib/types";
 import { crToday, toISODate } from "@/domain";
 import { saveCard } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 export function CardFormDialog({
   card,
@@ -66,7 +67,7 @@ export function CardFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           {card ? <input type="hidden" name="id" value={card.id} /> : null}
 
           <FormField label="Nombre" htmlFor="name" error={errors?.name}>

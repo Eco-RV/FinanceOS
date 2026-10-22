@@ -55,6 +55,9 @@ Salida a producción para los primeros usuarios (early birds). Plan y avance en
   varios usuarios; el registro las enlaza. Pendientes de revisión.
 - Guía de producción: `docs/produccion/guia-produccion.md`.
 
+### Pulido (Fase 5)
+- Los formularios ya no borran lo escrito cuando hay un error (32 diálogos).
+
 ### Base de datos
 Correr en orden en el SQL Editor de Supabase:
 1. `supabase/Versionamiento/3.2.0/00_auditoria_rls.sql`: solo lectura, para revisar.

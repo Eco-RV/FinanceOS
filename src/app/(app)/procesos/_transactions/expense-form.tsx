@@ -34,6 +34,7 @@ import { readLastUsed, rememberLastUsed } from "@/lib/last-used";
 import { saveTransaction } from "./actions";
 import { CategoryPicker } from "./category-picker";
 import { WalletCarousel } from "./wallet-carousel";
+import { keepOnError } from "@/lib/keep-on-error";
 
 type Currency = "CRC" | "USD";
 /** Crédito · débito (2.8.0) · SINPE (2.8.0) · efectivo. */
@@ -280,7 +281,7 @@ export function ExpenseForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={handleSubmit} className="flex min-w-0 flex-col gap-5">
+        <form onSubmit={keepOnError(handleSubmit)} className="flex min-w-0 flex-col gap-5">
           <input type="hidden" name="type" value="expense" />
           {transaction ? <input type="hidden" name="id" value={transaction.id} /> : null}
           <input type="hidden" name="origin" value={origin} />

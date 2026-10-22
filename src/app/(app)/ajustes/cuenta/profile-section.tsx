@@ -11,6 +11,7 @@ import { COUNTRIES, flagOf } from "@/lib/countries";
 import { useFormAction } from "@/lib/use-form-action";
 import { confirmAction } from "@/lib/confirm";
 import { removeAvatarAction, saveProfileAction, uploadAvatarAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 const AVATAR_SIZE = 512;
 
@@ -148,7 +149,7 @@ export function ProfileSection({
         </div>
       </div>
 
-      <form action={submit} className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={keepOnError(submit)} className="grid gap-4 sm:grid-cols-2">
         <FormField label="Nombre" htmlFor="full_name" error={errors?.full_name} hint="Como quieres que te salude la app.">
           <Input
             id="full_name"

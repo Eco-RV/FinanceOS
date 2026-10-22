@@ -17,6 +17,7 @@ import { useDialogForm } from "@/lib/use-dialog-form";
 import { formatCurrency } from "@/lib/format";
 import { useFormatDate } from "@/components/date-format";
 import { saveMinimumPayment } from "../actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** T8: digitar el pago mínimo que trae el estado de cuenta del corte vigente. */
 export function MinimumPaymentDialog({
@@ -51,7 +52,7 @@ export function MinimumPaymentDialog({
             {formatCurrency(statementBalance, currency)}. Déjalo en blanco para quitarlo.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="card_id" value={cardId} />
           <input type="hidden" name="cutoff_on" value={cutoffOn} />
           <input type="hidden" name="currency" value={currency} />

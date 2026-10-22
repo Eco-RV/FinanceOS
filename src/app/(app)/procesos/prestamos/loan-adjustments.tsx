@@ -21,6 +21,7 @@ import { crToday, toISODate } from "@/domain";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { changeRateAction, prepayAction, undoAdjustmentAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /**
  * Elegir si un abono baja el plazo o la cuota (L7/F11). Se usa también en
@@ -83,7 +84,7 @@ export function PrepayLoanDialog({
             un gasto en “Préstamos” y el calendario se recalcula.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="loan_id" value={loanId} />
           <input type="hidden" name="mode" value={mode} />
           <div className="grid grid-cols-2 gap-3">
@@ -146,7 +147,7 @@ export function ChangeRateDialog({
             que queda se mantiene y la cuota se recalcula.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="loan_id" value={loanId} />
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Nueva tasa anual (%)" htmlFor="rate" error={errors?.annual_rate}>

@@ -19,6 +19,7 @@ import { RELATIONSHIPS } from "@/domain";
 import type { StarLabel } from "@/application";
 import { shortAddress } from "@/lib/stellar/format";
 import { saveStarAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** Apodo, emoji y parentesco de una dirección en MI agenda (K2: nunca en la cadena). */
 export function StarLabelDialog({
@@ -62,7 +63,7 @@ export function StarLabelDialog({
             Solo tú ves este apodo. En la blockchain solo está la dirección {shortAddress(address)}.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-3">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-3">
           <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3">
             <FormField label="Emoji" htmlFor="star-emoji">
               <Input id="star-emoji" name="emoji" maxLength={8} defaultValue={label?.emoji ?? ""} placeholder="🌟" className="text-center text-lg" />

@@ -27,6 +27,7 @@ import { formatCurrency } from "@/lib/format";
 import type { Financing } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { createFinancing, updateFinancing } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 type Props = {
   cardId: string;
@@ -108,7 +109,7 @@ export function FinancingForm({ cardId, currency: limitCurrency, categories = []
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="card_id" value={cardId} />
           <input type="hidden" name="currency" value={currency} />
 
@@ -258,7 +259,7 @@ export function FinancingEditDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="id" value={financing.id} />
           <FormField label="Descripción" htmlFor="description" error={errors?.description}>
             <Input

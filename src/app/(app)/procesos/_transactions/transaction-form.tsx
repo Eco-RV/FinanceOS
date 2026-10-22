@@ -26,6 +26,7 @@ import type { Account, CreditCard, DebitCard, Transaction, TransactionType } fro
 import { saveTransaction } from "./actions";
 import { CategoryPicker } from "./category-picker";
 import { ExpenseForm } from "./expense-form";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /**
  * Tipos que se registran con este formulario. El saldo inicial va en el de
@@ -261,7 +262,7 @@ function MovementForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(handleSubmit)} className="flex flex-col gap-4">
           <input type="hidden" name="type" value={type} />
           {transaction ? (
             <input type="hidden" name="id" value={transaction.id} />

@@ -26,6 +26,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import type { Account, Loan } from "@/lib/types";
 import { createLoan, renameLoan } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 type AccountOption = Pick<Account, "id" | "name" | "currency">;
 
@@ -74,7 +75,7 @@ export function LoanFormDialog({ accounts }: { accounts: AccountOption[] }) {
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Nombre" htmlFor="name" error={errors?.name}>
               <Input id="name" name="name" placeholder="Carro, vivienda…" required />
@@ -264,7 +265,7 @@ export function LoanRenameDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="id" value={loan.id} />
           <FormField label="Nombre" htmlFor="name" error={errors?.name}>
             <Input id="name" name="name" defaultValue={loan.name} required />

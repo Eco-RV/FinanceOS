@@ -24,6 +24,7 @@ import { useFormatDate } from "@/components/date-format";
 import { REIMBURSEMENT_CHANNEL_LABELS } from "@/lib/schema";
 import type { FormResult } from "@/lib/forms";
 import { deleteSharedExpense, recordSharedPayment, undoSharedPayment } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 type AccountOption = { id: string; name: string };
 
@@ -74,7 +75,7 @@ export function SharedPaymentDialog({
             solo para llevar el control.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="id" value={id} />
           <input type="hidden" name="member_id" value={memberId} />
           <div className="grid grid-cols-2 gap-3">

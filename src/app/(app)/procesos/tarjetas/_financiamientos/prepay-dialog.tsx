@@ -22,6 +22,7 @@ import { formatCurrency } from "@/lib/format";
 import { useFormatDate } from "@/components/date-format";
 import { PrepaymentModePicker } from "../../prestamos/loan-adjustments";
 import { prepayFinancingAction, undoFinancingPrepaymentAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** F11: abono extraordinario al capital; las cuotas programadas se recalculan. */
 export function PrepayFinancingDialog({
@@ -50,7 +51,7 @@ export function PrepayFinancingDialog({
             y las cuotas que faltan se recalculan con menos capital.
           </DialogDescription>
         </DialogHeader>
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           <input type="hidden" name="financing_id" value={financingId} />
           <input type="hidden" name="mode" value={mode} />
           <div className="grid grid-cols-2 gap-3">

@@ -17,6 +17,7 @@ import { useDialogForm } from "@/lib/use-dialog-form";
 import { crToday, toISODate } from "@/domain";
 import type { Account, Transaction } from "@/lib/types";
 import { saveTransfer } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** Transferencia entre cuentas propias de la misma moneda (M2). No es gasto. */
 export function TransferForm({
@@ -66,7 +67,7 @@ export function TransferForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           {transaction ? <input type="hidden" name="id" value={transaction.id} /> : null}
 
           <div className="grid grid-cols-2 gap-3">

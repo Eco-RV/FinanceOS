@@ -18,6 +18,7 @@ import { useDialogForm } from "@/lib/use-dialog-form";
 import type { Account, OpeningBalance } from "@/lib/types";
 import { OpeningBalanceFields } from "@/components/opening-balance-fields";
 import { saveAccount } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 const TYPE_LABELS: Record<(typeof ACCOUNT_TYPES)[number], string> = {
   checking: "Débito",
@@ -68,7 +69,7 @@ export function AccountFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form action={submit} className="flex flex-col gap-4">
+        <form onSubmit={keepOnError(submit)} className="flex flex-col gap-4">
           {account ? (
             <input type="hidden" name="id" value={account.id} />
           ) : null}

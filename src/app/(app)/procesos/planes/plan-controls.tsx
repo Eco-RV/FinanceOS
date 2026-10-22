@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { confirmAction } from "@/lib/confirm";
 import { useFormAction } from "@/lib/use-form-action";
 import { setBaselineCapAction, setPlanActiveAction } from "./actions";
+import { keepOnError } from "@/lib/keep-on-error";
 
 /** Pausar (deja de registrar) o reanudar (registra desde hoy). */
 export function PlanPauseButton({ id, paused, name }: { id: string; paused: boolean; name: string }) {
@@ -59,7 +60,7 @@ export function BaselineCapForm({ cap }: { cap: number }) {
   const [value, setValue] = useState(String(cap));
   const { submit, pending, errors } = useFormAction(setBaselineCapAction, "Tope guardado");
   return (
-    <form action={submit} className="flex flex-col gap-1">
+    <form onSubmit={keepOnError(submit)} className="flex flex-col gap-1">
       <label htmlFor="cap" className="text-xs text-muted-foreground">
         Tope de gastos fijos
       </label>
