@@ -142,6 +142,7 @@ Hasta 3.0.0 se llamaban S1–S3 (chocaban con S1 = SINPE); desde 3.1.0 son A1–
 | U8 | **Borrar la cuenta** pide escribir `ELIMINAR` y la contraseña actual. Borra el usuario y todos sus datos (movimientos, planes, metas, compartidos, fotos, comprobantes); no se deshace. Lo que está en Stellar no se toca. | Rechaza (sin confirmación o contraseña) | Decidido 2026-10-19 · Implementado 3.1.0 |
 | U9 | **Preferencias de la cuenta**: moneda base (CRC o USD: con la que abre el gasto rápido y en la que el Resumen muestra también el patrimonio) y formato de fecha (corto, numérico o largo, en toda la app). Se guardan en el perfil. | — | Decidido 2026-10-19 · Implementado 3.1.0 |
 | U10 | Se puede **entrar o registrarse con Google** (OAuth del proveedor de identidad); vuelve por el mismo enlace de confirmación (PKCE). | — | Decidido 2026-10-19 · Implementado 3.1.0 (requiere activar Google en Supabase) |
+| U11 | **Favoritos del Resumen**: cada usuario elige entre 1 y 5 accesos (Gastos, Ingresos, Cuentas, Tarjetas, Transferencias, Cobros, Pendientes), sin repetir, en el orden que quiera. Se guardan en el perfil; sin elección, Gastos, Ingresos, Cuentas, Tarjetas y Transferencias. Los de una función apagada (E2) no se muestran. | Rechaza | Decidido 2026-10-24 · Implementado 3.2.1 |
 | U7 | Una cuenta nueva se confirma por correo antes de poder entrar. Los enlaces del correo vuelven a la misma app desde donde se pidió (producción o local). | — | Decidido · Implementado 2.6.0 |
 
 ## Enfoque y funciones (3.2.0)

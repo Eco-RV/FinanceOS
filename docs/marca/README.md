@@ -72,7 +72,9 @@ Hex del ícono exportado: tile `#0a0a0a`, bloques `#fafafa`.
 
 ## 6. Tipografía
 
-- **Geist** (sans) para todo; **Geist Mono** para números de tarjeta.
+- **Oswald** (desde 3.2.1) para títulos (`h1`–`h4`, `font-heading`), cifras
+  (`tabular-nums`) y botones; **Geist** (sans) para el texto corrido;
+  **Geist Mono** para números de tarjeta.
 - Logotipo: "Finance" en peso 600 con tracking `-0.02em`; " OS" en el mismo
   peso con color atenuado (`text-muted-foreground`).
 - Montos siempre con `tabular-nums`. Títulos de página `text-2xl font-semibold

@@ -18,7 +18,10 @@ export function PlansAndGoals({
   goals,
   balances,
   todayISO,
+  className,
 }: {
+  /** 3.2.1: dónde va en la grilla de quien la usa. */
+  className?: string;
   board: PlansBoard;
   goals: Goal[];
   /** Saldo de cada cuenta (para lo ahorrado de cada meta). */
@@ -32,7 +35,7 @@ export function PlansAndGoals({
   const pct = b.ratio === null ? null : Math.round(b.ratio * 1000) / 10;
 
   return (
-    <div className="grid gap-3 sm:gap-4 lg:col-span-3 lg:grid-cols-2">
+    <div className={cn("grid gap-3 sm:gap-4 lg:grid-cols-2", className)}>
       <Link href="/procesos/planes" className={CARD} style={{ ["--rise-i" as string]: 14 }}>
         <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
           <Gauge className="size-4" />
