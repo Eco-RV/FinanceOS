@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.2.1 — 2026-10-24
+
+Pulido del Resumen y tipografía.
+
+### Tipografía y Resumen
+
+- **Oswald** en títulos, cifras y botones de toda la app; el texto corrido
+  sigue en Geist.
+- **Favoritos** en el medio del Resumen (U11): accesos a Gastos, Ingresos,
+  Cuentas, Tarjetas, Transferencias, Cobros o Pendientes. Cada usuario elige
+  hasta 5 y su orden con **Editar**; se guardan en el perfil. En el celular
+  caben 4 y el quinto se desliza.
+- Resumen más ordenado: saludo con la fecha de hoy; Liquidez, A pagar y
+  Faltante en la primera fila; pagos próximos y cortes antes del análisis
+  (los primeros 3 y "Ver más"); gastos con el período como selector dentro
+  de una sola card; "Más detalle" para lo secundario; patrimonio neto como
+  fila propia.
+- Esqueleto de carga del Resumen con la nueva forma.
+
+### Base de datos
+- Nada que correr: los favoritos se guardan en `profiles.preferences` (SQL 2.6.0).
+
+### Configuración
+- Para que funcione **Continuar con Google** (U10): encender el proveedor
+  Google en Supabase → Authentication → Sign In / Providers con el Client ID y
+  Secret de un cliente OAuth Web de Google Cloud (pantalla de consentimiento
+  publicada, scopes `openid`, `email`, `profile`; URI de redirección
+  `https://<ref>.supabase.co/auth/v1/callback`). Sin esto Supabase responde
+  `Unsupported provider: provider is not enabled`.
+
 ## 3.2.0 — 2026-10-21
 
 Salida a producción para los primeros usuarios (early birds): una promesa

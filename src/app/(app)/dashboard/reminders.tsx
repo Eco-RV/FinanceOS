@@ -10,9 +10,17 @@ import { cn } from "@/lib/utils";
  * grilla del Resumen (ley 03: nada con forma de banner) y cada fila lleva a
  * donde se resuelve.
  */
-export function Reminders({ items, style }: { items: Reminder[]; style?: React.CSSProperties }) {
+export function Reminders({
+  items,
+  style,
+  className,
+}: {
+  items: Reminder[];
+  style?: React.CSSProperties;
+  className?: string;
+}) {
   return (
-    <section className="surface rise flex flex-col gap-2 p-4 sm:p-5" style={style} aria-label="Recordatorios">
+    <section className={cn("surface rise flex flex-col gap-2 p-4 sm:p-5", className)} style={style} aria-label="Recordatorios">
       <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <AlarmClock className="size-4" /> Recordatorios
       </p>
