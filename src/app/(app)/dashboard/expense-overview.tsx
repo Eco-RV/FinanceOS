@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { CalendarDays, CalendarRange, ChevronRight, Receipt, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { CategoryBadge } from "@/components/category-icon";
 import { formatCurrency } from "@/lib/format";
 import { defaultIconFor, type CategoryIconKey } from "@/lib/category-icon-keys";
@@ -41,10 +41,10 @@ function Change({ c, compact }: { c: SpendingComparison; compact?: boolean }) {
 
 type Period = "week" | "month" | "year";
 
-const PERIODS: { key: Period; label: string; short: string; long: string; icon: typeof Receipt }[] = [
-  { key: "week", label: "Últimos 7 días", short: "7 días", long: "los últimos 7 días", icon: CalendarDays },
-  { key: "month", label: "Este mes", short: "Mes", long: "este mes", icon: Receipt },
-  { key: "year", label: "Este año", short: "Año", long: "este año", icon: CalendarRange },
+const PERIODS: { key: Period; label: string; short: string; long: string }[] = [
+  { key: "week", label: "Últimos 7 días", short: "7 días", long: "los últimos 7 días" },
+  { key: "month", label: "Este mes", short: "Mes", long: "este mes" },
+  { key: "year", label: "Este año", short: "Año", long: "este año" },
 ];
 
 const BAR_COLORS = [
@@ -66,8 +66,8 @@ function gastosHref(from: string, to: string, category?: string): string {
 }
 
 /**
- * Gastos del Resumen (2.5.0). Fila de tres cards (7 días, mes, año) que
- * eligen la vista, y debajo una card grande con el total y las barras por
+ * Gastos del Resumen (2.5.0). Una card con el selector de período (7 días,
+ * mes, año; 3.2.1: antes eran tres cards aparte), el total y las barras por
  * categoría, de la más usada a la menos (las de más allá de la sexta van en
  * "Otras"). Todo en colones: desde 3.1.0 los gastos en dólares suman
  * convertidos (G9) y cada período se compara con el anterior (G10).
@@ -145,42 +145,9 @@ export function ExpenseOverview({
   const current = PERIODS.find((p) => p.key === period)!;
 
   return (
-    <>
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:col-span-3">
-      {PERIODS.map((p, i) => {
-        const selected = p.key === period;
-        const Icon = p.icon;
-        return (
-          <button
-            key={p.key}
-            type="button"
-            aria-pressed={selected}
-            onClick={() => setPeriod(p.key)}
-            className={cn(
-              "surface rise flex min-w-0 flex-col gap-1 p-3 text-left transition-[box-shadow,background-color,translate,scale] duration-200 ease-fluid motion-safe:active:scale-[0.985] sm:gap-2 sm:p-5",
-              selected
-                ? "ring-2 ring-foreground/80 dark:ring-foreground/70"
-                : "hover:shadow-card-hover motion-safe:hover:-translate-y-px",
-            )}
-            style={{ "--rise-i": 7 + i } as CSSProperties}
-          >
-            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:text-sm">
-              <Icon className="hidden size-4 sm:block" />
-              <span className="sm:hidden">{p.short}</span>
-              <span className="hidden sm:inline">Gastos · {p.label}</span>
-            </span>
-            <span className="truncate text-base font-semibold tracking-tight tabular-nums sm:text-2xl">
-              {formatCurrency(totals[p.key])}
-            </span>
-            <Change c={comparisons[p.key]} compact />
-          </button>
-        );
-      })}
-      </div>
-
       <section
-        className="surface rise group/chart relative flex flex-col gap-5 p-4 transition-[box-shadow,translate] duration-200 ease-fluid hover:shadow-card-hover sm:p-6 lg:col-span-3"
-        style={{ "--rise-i": 10 } as CSSProperties}
+        className="surface rise group/chart relative flex flex-col gap-5 p-4 transition-[box-shadow,translate] duration-200 ease-fluid hover:shadow-card-hover sm:p-6"
+        style={{ "--rise-i": 6 } as CSSProperties}
         aria-label="Gastos por categoría"
       >
         {/* 2.5.0: toda la card abre Gastos con el período ya filtrado. */}
@@ -189,6 +156,40 @@ export function ExpenseOverview({
           aria-label={`Ver los gastos de ${current.long}`}
           className={cn("absolute inset-0 rounded-xl", FOCUS_OUTLINE)}
         />
+        {/* 3.2.1: el período es un selector dentro de la card (antes, tres cards aparte). */}
+        <div
+          role="group"
+          aria-label="Período"
+          className="relative z-10 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1"
+        >
+          {PERIODS.map((p) => {
+            const selected = p.key === period;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setPeriod(p.key)}
+                className={cn(
+                  "flex min-w-0 flex-col items-start gap-0.5 rounded-lg px-2.5 py-2 text-left transition-[background-color,box-shadow,color] duration-150 ease-fluid sm:px-3",
+                  selected
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                  FOCUS_OUTLINE,
+                )}
+              >
+                <span className="text-xs font-medium">
+                  <span className="sm:hidden">{p.short}</span>
+                  <span className="hidden sm:inline">{p.label}</span>
+                </span>
+                <span className="w-full truncate text-sm font-semibold tabular-nums sm:text-base">
+                  {formatCurrency(totals[p.key])}
+                </span>
+                <Change c={comparisons[p.key]} compact />
+              </button>
+            );
+          })}
+        </div>
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <p className="text-sm text-muted-foreground">Gastos por categoría · {current.long}</p>
@@ -272,6 +273,5 @@ export function ExpenseOverview({
           </ul>
         )}
       </section>
-    </>
   );
 }

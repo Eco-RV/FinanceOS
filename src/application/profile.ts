@@ -8,6 +8,7 @@ import {
   assertValidAvatar,
   assertValidPassword,
   normalizeNewEmail,
+  validateFavorites,
   validateProfile,
   type ProfileFields,
 } from "../domain/index.ts";
@@ -57,6 +58,14 @@ export function savePreferences(
 ): Promise<UseCaseResult> {
   return run(async () => {
     await profiles.savePreferences(preferences);
+    return ok();
+  });
+}
+
+/** U11 (3.2.1): guarda la cinta de favoritos del Resumen, en el orden elegido. */
+export function saveFavorites(profiles: ProfileRepository, keys: readonly string[]): Promise<UseCaseResult> {
+  return run(async () => {
+    await profiles.savePreferences({ favorites: validateFavorites(keys) });
     return ok();
   });
 }

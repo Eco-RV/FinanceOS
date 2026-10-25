@@ -13,6 +13,7 @@ import {
   changePassword,
   deleteAccount,
   removeAvatar,
+  saveFavorites,
   savePreferences,
   saveProfile,
   updateAvatar,
@@ -135,6 +136,17 @@ test("preferencias se mezclan con las guardadas", async () => {
   await savePreferences(f.profiles, { welcome: false });
   await savePreferences(f.profiles, { compact: true });
   assert.deepEqual(f.current()?.preferences, { welcome: false, compact: true });
+});
+
+test("favoritos (U11): se guardan validados y sin pisar las demás preferencias", async () => {
+  const f = fakes();
+  await savePreferences(f.profiles, { dateFormat: "largo" });
+  assert.ok((await saveFavorites(f.profiles, ["tarjetas", "gastos"])).ok);
+  assert.deepEqual(f.current()?.preferences, { dateFormat: "largo", favorites: ["tarjetas", "gastos"] });
+
+  const r = await saveFavorites(f.profiles, ["gastos", "gastos"]);
+  assert.equal(r.ok, false);
+  assert.deepEqual(f.current()?.preferences.favorites, ["tarjetas", "gastos"]);
 });
 
 test("sin la contraseña actual solo se cambia con una sesión de recuperación", async () => {

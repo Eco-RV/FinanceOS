@@ -18,8 +18,9 @@ Como usuario quiero ver cuánto dinero tengo disponible en mis cuentas de
 débito, para saber con qué cuento para pagar.
 
 **Criterios de aceptación**
-- Card **Liquidez** (antes "Disponible en débito"), a lo ancho, primera fila:
-  suma de las cuentas de débito en colones. No cuenta efectivo ni ahorros.
+- Card **Liquidez** (antes "Disponible en débito"), primera fila (desde
+  3.2.1, junto a A pagar de contado y Faltante): suma de las cuentas de débito
+  en colones. No cuenta efectivo ni ahorros.
 - Al tocarla, un modal lista las cuentas que la forman (saldo mayor que 0),
   con su parte del total.
 
@@ -77,8 +78,10 @@ débito alcanza para pagar de contado.
 
 ### 5. Ver los pagos próximos y los cortes
 **Criterios de aceptación**
-- Debajo de la grilla siguen "Pagos próximos" (Atrasadas / Por vencer) y
-  "Próximos cortes"; en pantallas anchas van lado a lado.
+- Desde 3.2.1, "Pagos próximos" (Atrasadas / Por vencer) y "Próximos
+  cortes" van justo debajo de los favoritos, antes del análisis; en pantallas
+  anchas van lado a lado. De "Por vencer" se ven los primeros 3 y el resto con
+  **Ver N más**; las atrasadas se ven todas.
 - El aviso de atraso (tarjetas o préstamos) sigue arriba de todo.
 
 ### 6. Gastos en dólares y comparar períodos (3.1.0)
@@ -86,7 +89,8 @@ Como usuario quiero ver todos mis gastos (también los de dólares) y saber si
 estoy gastando más o menos que antes.
 
 **Criterios de aceptación**
-- Las cards 7 días / Mes / Año y el gráfico por categoría suman los gastos en
+- El selector 7 días / Mes / Año (desde 3.2.1, dentro de la card del gráfico;
+  antes eran tres cards) y el gráfico por categoría suman los gastos en
   dólares convertidos a colones con el último tipo de cambio (G9). Sin tipo de
   cambio, quedan fuera y la card dice cuántos.
 - Cada card muestra la variación contra el período anterior equivalente (G10):
@@ -96,8 +100,39 @@ estoy gastando más o menos que antes.
 - El gráfico muestra debajo del total "vs. ₡X en el mes pasado a esta fecha" y,
   en cada categoría, su variación.
 
+### 7. Mis accesos favoritos (3.2.1)
+Como usuario quiero tener a mano, en el Resumen, los procesos que más uso, y
+elegir cuáles son.
+
+**Criterios de aceptación**
+- En el medio del Resumen (debajo de Liquidez, A pagar y Faltante) va la
+  cinta **Favoritos**: un botón por acceso, con su ícono, que abre esa
+  pantalla. En el celular caben 4 a lo ancho y el quinto se desliza; desde
+  tablet se ven todos en una fila.
+- Se puede elegir entre Gastos, Ingresos, Cuentas, Tarjetas, Transferencias,
+  Cobros y Pendientes (antes "Por confirmar"). La primera vez se ven Gastos,
+  Ingresos, Cuentas, Tarjetas y Transferencias.
+- **Editar** abre la lista: se marcan hasta 5 (U11), se muestran en el orden
+  en que se marcan y hay que dejar al menos uno. Se guardan en el perfil, así
+  que salen igual en cualquier dispositivo.
+- Los accesos de una función apagada (E2) no aparecen ni en la cinta ni al
+  editar. Cobros muestra cuántos avisos hay por enviar.
+
+### 8. Un Resumen más ordenado (3.2.1)
+**Criterios de aceptación**
+- Arriba, "Resumen" con un saludo y la fecha de hoy (hora de Costa Rica).
+- Orden: avisos de atraso → primeros pasos o sugerencia → Liquidez, A pagar
+  y Faltante → Favoritos → Pagos próximos y cortes → gastos por categoría →
+  **Más detalle** (Consumo sin cortar, Disponible en crédito, Cobros,
+  Financiamientos) → Recordatorios, línea base y metas → Patrimonio neto.
+- El patrimonio neto es una fila propia (antes, una nota al pie), con el tipo
+  de cambio y el capital de los préstamos debajo.
+- Títulos, cifras y botones en **Oswald**; el texto corrido sigue en Geist.
+
 ## Reglas de negocio
 
+- Favoritos (U11): `readFavorites`, `validateFavorites` y `visibleShortcuts`
+  (`src/domain/account/favorites.ts`); se guardan con `saveFavorites`.
 - Cobertura y faltante: `computeCoverage` y `coverageShortfall`
   (`src/domain/coverage/coverage.ts`).
 - Semáforo del disponible: `availabilityLevel`
@@ -143,3 +178,7 @@ después me proponga lo que me puede servir.
   logro y secciones según las funciones activas (E1–E5). El tipo de cambio y
   los planes se sincronizan una vez al día en la primera página que se abre,
   no solo en el Resumen.
+- **2026-10-25 (v3.2.1, en desarrollo)** — Cinta de favoritos editable (U11),
+  saludo con la fecha, pagos próximos más arriba, gastos con selector de
+  período en una sola card, sección "Más detalle", patrimonio como fila y
+  fuente Oswald en títulos y cifras.

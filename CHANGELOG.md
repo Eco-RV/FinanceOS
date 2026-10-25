@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.2.1 — sin publicar
+
+Pulido del Resumen y tipografía. Sin SQL nuevo.
+
+- **Oswald** en títulos, cifras y botones de toda la app; el texto corrido
+  sigue en Geist.
+- **Favoritos** en el medio del Resumen (U11): accesos a Gastos, Ingresos,
+  Cuentas, Tarjetas, Transferencias, Cobros o Pendientes. Cada usuario elige
+  hasta 5 y su orden con **Editar**; se guardan en el perfil. En el celular
+  caben 4 y el quinto se desliza.
+- Resumen más ordenado: saludo con la fecha de hoy; Liquidez, A pagar y
+  Faltante en la primera fila; pagos próximos y cortes antes del análisis
+  (los primeros 3 y "Ver más"); gastos con el período como selector dentro
+  de una sola card; "Más detalle" para lo secundario; patrimonio neto como
+  fila propia.
+- Esqueleto de carga del Resumen con la nueva forma.
+
 ## 3.2.0 — 2026-10-21
 
 Salida a producción para los primeros usuarios (early birds): una promesa

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * - `list`: encabezado + filas (Tarjetas, Cuentas, Gastos…).
  * - `detail`: encabezado + tarjeta grande + filas (detalle de tarjeta, cuenta…).
  * - `index`: encabezado + grilla de accesos (Procesos, Ajustes).
- * - `dashboard`: cifras + gráfico + filas (Resumen).
+ * - `dashboard`: cifras + favoritos + filas + gráfico (Resumen, 3.2.1).
  */
 type Variant = "list" | "detail" | "index" | "dashboard";
 
@@ -68,7 +68,17 @@ export function PageSkeleton({
         </div>
       ) : null}
 
-      {variant === "dashboard" ? <Skeleton className="h-56 w-full rounded-2xl" /> : null}
+      {/* 3.2.1: en el Resumen, la cinta de favoritos va en el medio. */}
+      {variant === "dashboard" ? (
+        <div className="flex gap-2 overflow-hidden sm:grid sm:grid-cols-5 sm:gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="surface flex w-[calc((100%-1.5rem)/4)] shrink-0 flex-col items-center gap-2 py-3 sm:w-auto">
+              <Skeleton className="size-10 rounded-lg" />
+              <Skeleton className="h-3.5 w-14" />
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {variant === "index" ? (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -95,6 +105,8 @@ export function PageSkeleton({
           ))}
         </div>
       )}
+
+      {variant === "dashboard" ? <Skeleton className="h-56 w-full rounded-2xl" /> : null}
     </div>
   );
 }
