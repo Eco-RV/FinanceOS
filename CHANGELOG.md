@@ -1,8 +1,10 @@
 # Changelog
 
-## 3.2.1 — sin publicar
+## 3.2.1 — 2026-10-24
 
-Pulido del Resumen y tipografía. Sin SQL nuevo.
+Pulido del Resumen y tipografía.
+
+### Tipografía y Resumen
 
 - **Oswald** en títulos, cifras y botones de toda la app; el texto corrido
   sigue en Geist.
@@ -16,6 +18,17 @@ Pulido del Resumen y tipografía. Sin SQL nuevo.
   de una sola card; "Más detalle" para lo secundario; patrimonio neto como
   fila propia.
 - Esqueleto de carga del Resumen con la nueva forma.
+
+### Base de datos
+- Nada que correr: los favoritos se guardan en `profiles.preferences` (SQL 2.6.0).
+
+### Configuración
+- Para que funcione **Continuar con Google** (U10): encender el proveedor
+  Google en Supabase → Authentication → Sign In / Providers con el Client ID y
+  Secret de un cliente OAuth Web de Google Cloud (pantalla de consentimiento
+  publicada, scopes `openid`, `email`, `profile`; URI de redirección
+  `https://<ref>.supabase.co/auth/v1/callback`). Sin esto Supabase responde
+  `Unsupported provider: provider is not enabled`.
 
 ## 3.2.0 — 2026-10-21
 

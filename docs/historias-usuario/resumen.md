@@ -178,7 +178,7 @@ después me proponga lo que me puede servir.
   logro y secciones según las funciones activas (E1–E5). El tipo de cambio y
   los planes se sincronizan una vez al día en la primera página que se abre,
   no solo en el Resumen.
-- **2026-10-25 (v3.2.1, en desarrollo)** — Cinta de favoritos editable (U11),
+- **2026-10-24 (v3.2.1)** — Cinta de favoritos editable (U11),
   saludo con la fecha, pagos próximos más arriba, gastos con selector de
   período en una sola card, sección "Más detalle", patrimonio como fila y
   fuente Oswald en títulos y cifras.
