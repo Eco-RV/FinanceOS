@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const supabase = createAdminClient();
   const { data: connections, error } = await supabase
     .from("mail_connections")
-    .select("user_id, refresh_token_enc, last_synced_at");
+    .select("user_id, provider, refresh_token_enc, last_synced_at");
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

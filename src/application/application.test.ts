@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { fakeStore } from "./fakes.test-helpers.ts";
 import { deleteMovement, saveMovement } from "./movements.ts";
 import { createFinancing, deleteFinancing } from "./financings.ts";
-import { approvePending, rejectPending } from "./pending.ts";
+import { approvePending, autoApprovePending, rejectPending } from "./pending.ts";
 import { saveAccount, saveCard } from "./products.ts";
 import { checkBalances, recomputeBalances } from "./balances.ts";
 import { setExchangeRate } from "./exchange-rates.ts";
@@ -289,4 +289,38 @@ test("SINPE: gasto desde cuenta con destinatario y teléfono normalizado", async
   assert.equal(saved.counterparty_name, "Doña Ana");
   assert.equal(saved.counterparty_phone, "88881234");
   assert.equal(s.balanceOf("account", "bac"), -7_500);
+});
+
+test("3.3.0: autoApprovePending acepta con la regla y, sin regla, con Otros sin aprenderla", async () => {
+  const s = fakeStore({
+    cards: { visa: "CRC" },
+    pending: [
+      { ...purchase, id: "p1", card_id: "visa", suggested_category: "Súper" },
+      { ...purchase, id: "p2", merchant: "TIENDA NUEVA 0001", card_id: "visa" },
+      { ...purchase, id: "p3", merchant: "SIN TARJETA" },
+    ],
+  });
+  const r = await autoApprovePending(s.deps);
+  assert.ok(r.ok);
+  assert.deepEqual(r.value, { approved: 2, left: 1 });
+  assert.equal(s.state.pending.get("p1")!.status, "approved");
+  assert.equal(s.state.pending.get("p2")!.status, "approved");
+  assert.equal(s.state.pending.get("p3")!.status, "pending");
+  const categories = [...s.state.movements.values()].map((m) => m.category).sort();
+  assert.deepEqual(categories, ["Otros", "Súper"]);
+  assert.equal(s.state.rules.get("walmart guadalupe"), "Súper");
+  assert.equal(s.state.rules.has("tienda nueva"), false);
+  assert.ok([...s.state.categoryRows.values()].some((c) => c.name === "Otros" && !c.archived));
+});
+
+test("3.3.0: con Otros desactivada, lo que no tiene regla queda por confirmar (G4)", async () => {
+  const s = fakeStore({
+    cards: { visa: "CRC" },
+    categories: { otros: { kind: "expense", name: "Otros", archived: true } },
+    pending: [{ ...purchase, card_id: "visa" }],
+  });
+  const r = await autoApprovePending(s.deps);
+  assert.ok(r.ok);
+  assert.deepEqual(r.value, { approved: 0, left: 1 });
+  assert.equal(s.state.movements.size, 0);
 });

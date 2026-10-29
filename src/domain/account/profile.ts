@@ -122,3 +122,11 @@ export function readPreferences(raw: Record<string, unknown> | null | undefined)
   const df = (DATE_FORMATS as readonly string[]).includes(String(raw?.dateFormat)) ? (raw!.dateFormat as DateFormat) : "corto";
   return { baseCurrency: base, dateFormat: df };
 }
+
+/**
+ * I7 (3.3.0): aceptar solas las compras del correo al sincronizar. Se guarda
+ * en `profiles.preferences.autoApprovePending`; apagado por defecto.
+ */
+export function readAutoApprove(raw: Record<string, unknown> | null | undefined): boolean {
+  return raw?.autoApprovePending === true;
+}

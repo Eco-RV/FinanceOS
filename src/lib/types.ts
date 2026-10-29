@@ -160,6 +160,9 @@ export type Bank = {
   enabled: boolean;
   archived: boolean;
   created_at: string;
+  /** 3.3.0: último aviso que el formato entendió / último que no entendió. */
+  last_parsed_at?: string | null;
+  last_ignored_at?: string | null;
 };
 
 export type PendingStatus = "pending" | "approved" | "rejected";
@@ -187,10 +190,14 @@ export type PendingTransaction = {
 export type MailConnection = {
   id: string;
   user_id: string;
-  provider: "gmail";
+  provider: "gmail" | "outlook";
   email: string;
   /** Permisos concedidos al conectar (2.3.0: incluye `gmail.send`). */
   scopes?: string | null;
   last_synced_at: string | null;
+  /** 3.3.0: resultado de la última lectura y último error (sin el SQL 3.3.0, ausentes). */
+  last_result?: { found: number; imported: number; ignored: number; alreadyKnown: number; autoApproved?: number } | null;
+  last_error?: string | null;
+  last_error_at?: string | null;
   created_at: string;
 };

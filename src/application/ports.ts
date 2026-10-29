@@ -388,9 +388,17 @@ export type PendingPurchase = {
   occurred_on: ISODate;
 };
 
+/** 3.3.0: lo que la aceptación automática necesita de un pendiente abierto. */
+export type OpenPending = PendingPurchase & {
+  card_id: string | null;
+  suggested_category: string | null;
+};
+
 export interface PendingRepository {
   /** Un pendiente que todavía está por confirmar, o `null`. */
   findOpen(pendingId: string): Promise<PendingPurchase | null>;
+  /** 3.3.0: todos los pendientes por confirmar, del más viejo al más nuevo. */
+  listOpen(): Promise<OpenPending[]>;
   markApproved(pendingId: string, movementId: string, cardId: string): Promise<void>;
   markRejected(pendingId: string): Promise<void>;
 }
