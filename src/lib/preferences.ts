@@ -21,6 +21,9 @@ export const getProfile = cache(async () => {
 /** U9 (3.1.0): preferencias guardadas en el perfil, una vez por request. */
 export const getPreferences = cache(async () => readPreferences((await getProfile())?.preferences));
 
+/** Preferencias tal cual se guardaron, para lectores propios de cada módulo (p. ej. I7). */
+export const getPreferencesRaw = cache(async () => (await getProfile())?.preferences ?? null);
+
 /**
  * U9 · 3.2.0: formato de fecha de este request para `formatDate` en server
  * components. Sale de la cookie `fo-date` (sin consulta a la base, para no

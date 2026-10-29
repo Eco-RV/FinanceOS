@@ -121,3 +121,11 @@ export function deleteAccount(
     return ok();
   });
 }
+
+/** I7 (3.3.0): enciende o apaga la aceptación automática de las compras del correo. */
+export function saveAutoApprove(profiles: ProfileRepository, on: boolean): Promise<UseCaseResult> {
+  return run(async () => {
+    await profiles.savePreferences({ autoApprovePending: on });
+    return ok();
+  });
+}

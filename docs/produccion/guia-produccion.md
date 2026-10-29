@@ -99,6 +99,25 @@ usuarios de prueba que se agregan a mano en Google Cloud → APIs & Services →
 OAuth consent screen → Test users. Por eso en "Más funciones" la función está
 marcada **beta**. A un early bird que la pida: agregarlo como usuario de prueba.
 
+### Outlook (3.3.0)
+
+Lectura de avisos desde Outlook **personal** (outlook.com, hotmail, live) por
+Microsoft Graph, solo lectura:
+
+1. Azure Portal → Microsoft Entra ID → App registrations → New registration,
+   tipo de cuenta **"Personal Microsoft accounts only"**.
+2. Redirect URI (Web): `https://financeos-ten-rust.vercel.app/api/outlook/callback`
+   y `http://localhost:3000/api/outlook/callback`.
+3. API permissions → Microsoft Graph → Delegated: `Mail.Read`, `User.Read`,
+   `offline_access`.
+4. Certificates & secrets → New client secret (anotar su vencimiento: al
+   vencer, las conexiones de Outlook fallan y la página pide reconectar).
+5. Variables `MICROSOFT_CLIENT_ID` (Application ID) y `MICROSOFT_CLIENT_SECRET`
+   en Vercel y `.env.local`.
+
+Cada usuario tiene **una** conexión de correo: conectar Outlook reemplaza a
+Gmail. Los avisos de cuota por correo (F8) siguen saliendo solo desde Gmail.
+
 ## 7. Respaldos
 
 - **Plan gratis de Supabase**: sin respaldos automáticos descargables. Hacer un

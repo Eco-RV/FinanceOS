@@ -32,6 +32,7 @@ export type ApprovePendingInput = {
 export function approvePending(
   deps: PendingDeps,
   input: ApprovePendingInput,
+  options: { learn?: boolean } = {},
 ): Promise<UseCaseResult<{ movementId: string }>> {
   return run(async () => {
     const pending = await deps.pending.findOpen(input.id);
@@ -61,7 +62,7 @@ export function approvePending(
     });
 
     await deps.pending.markApproved(input.id, movementId, input.card_id);
-    await deps.merchantRules.learn(merchantKey(pending.merchant), category);
+    if (options.learn ?? true) await deps.merchantRules.learn(merchantKey(pending.merchant), category);
 
     return ok({ movementId });
   });
@@ -75,5 +76,46 @@ export function rejectPending(
   return run(async () => {
     await deps.pending.markRejected(id);
     return ok();
+  });
+}
+
+/** 3.3.0: categoría para una compra aceptada sola cuando el comercio no tiene regla. */
+export const AUTO_APPROVE_FALLBACK = "Otros";
+
+export type AutoApproveResult = { approved: number; left: number };
+
+/**
+ * Acepta sola cada compra por confirmar que ya tiene tarjeta (3.3.0): con la
+ * categoría de la regla del comercio o, sin regla, con "Otros". "Otros" no se
+ * aprende como regla (no fija la categoría del comercio). Las que no tienen
+ * tarjeta, o fallan, quedan por confirmar.
+ */
+export function autoApprovePending(deps: PendingDeps): Promise<UseCaseResult<AutoApproveResult>> {
+  return run(async () => {
+    const open = await deps.pending.listOpen();
+    let fallbackReady: boolean | null = null;
+    const ensureFallback = async () => {
+      if (fallbackReady !== null) return fallbackReady;
+      const names = await deps.categories.names("expense");
+      const exists = names.some((n) => n.trim().toLowerCase() === AUTO_APPROVE_FALLBACK.toLowerCase());
+      if (!exists) await deps.categories.save(null, { kind: "expense", name: AUTO_APPROVE_FALLBACK });
+      // G4: si el usuario desactivó "Otros", no se usa; esas compras quedan pendientes.
+      fallbackReady = !(await deps.categories.isDeactivated("expense", AUTO_APPROVE_FALLBACK));
+      return fallbackReady;
+    };
+
+    let approved = 0;
+    for (const p of open) {
+      if (!p.card_id) continue;
+      const rule = p.suggested_category?.trim() || null;
+      if (!rule && !(await ensureFallback())) continue;
+      const r = await approvePending(
+        deps,
+        { id: p.id, card_id: p.card_id, category: rule ?? AUTO_APPROVE_FALLBACK },
+        { learn: rule !== null },
+      );
+      if (r.ok) approved++;
+    }
+    return ok({ approved, left: open.length - approved });
   });
 }

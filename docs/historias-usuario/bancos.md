@@ -6,7 +6,7 @@
 
 Importa las compras con tarjeta desde los avisos que envía el
 banco por correo. El usuario registra sus bancos (remitentes + formato del
-correo), conecta su Gmail en modo solo lectura y, al tocar "Sincronizar", la
+correo), conecta su Gmail u Outlook (desde 3.3.0) en modo solo lectura y, al tocar "Sincronizar", la
 app lee los avisos nuevos **sin IA ni tokens** (un parser determinístico por
 banco). Cada compra detectada llega a una bandeja "Por confirmar"; solo al
 aprobarla se crea el gasto y se ajusta el saldo de la tarjeta.
@@ -108,6 +108,54 @@ borrar la regla, para que las próximas compras lleguen bien clasificadas.
 - **Borrar** quita la regla: la próxima compra de ese comercio llega sin
   sugerencia y se vuelve a aprender al aprobarla (I6).
 
+### 8. Conectar Outlook (3.3.0)
+Como usuario que recibe los avisos del banco en Outlook quiero conectar mi
+cuenta de Outlook, para que la app los lea igual que con Gmail.
+
+**Criterios de aceptación**
+- Solo cuentas **personales** (outlook.com, hotmail, live), por Microsoft
+  Graph con `Mail.Read` (solo lectura). El token se guarda cifrado, igual que
+  el de Gmail.
+- **Una conexión por usuario** (I8): sin conexión, la página ofrece "Conectar
+  Gmail" y "Conectar Outlook"; con una, "Cambiar a …" reemplaza la actual
+  (bancos, pendientes y reglas no se tocan).
+- El formato del banco es el mismo para los dos buzones: el parser recibe el
+  correo ya descargado, sin saber de qué proveedor vino.
+- Con Outlook no se envían avisos de cuota por correo (F8); WhatsApp sigue.
+
+### 9. Saber cómo va la lectura (3.3.0)
+Como usuario quiero ver cómo salió la última lectura y enterarme si mi banco
+cambió el formato de sus avisos, para no perder compras en silencio.
+
+**Criterios de aceptación**
+- La card Correo muestra el proveedor, la fecha de la última lectura y su
+  resultado ("3 nuevas · 1 sin leer · 2 aceptadas solas").
+- Si la lectura falla se guarda el error y se muestra en rojo con
+  "Reconectar"; un permiso vencido o revocado se explica así, sin el error
+  técnico.
+- Cada banco muestra "Último aviso leído: hace N días". Si el último aviso de
+  sus remitentes que parecía una transacción **no** se pudo leer y es más
+  nuevo que el último leído, aparece una alerta: puede que haya cambiado la
+  plantilla.
+- **Probar formato** (ícono de matraz por banco): se pega un aviso (texto o
+  HTML) y se ve qué leyó el formato (comercio, monto, fecha, tarjeta,
+  autorización) o, si no lo entendió, las etiquetas que sí encontró. No guarda
+  nada.
+
+### 10. Aceptar solas las compras (3.3.0)
+Como usuario quiero que, al sincronizar, las compras se registren solas, para
+no confirmar una por una.
+
+**Criterios de aceptación**
+- Interruptor "Aceptar solas al sincronizar" arriba en Compras por confirmar,
+  apagado por defecto; se guarda en el perfil.
+- Encendido, después de cada "Sincronizar" se aprueban **todas** las compras
+  por confirmar que tienen tarjeta (I7): con la categoría de su regla de
+  comercio o, sin regla, con **Otros** (se crea si no existe). "Otros" no se
+  aprende como regla.
+- Sin tarjeta reconocida, o con "Otros" desactivada, la compra queda por
+  confirmar. El aviso dice cuántas se aceptaron y cuántas quedan.
+
 ## Reglas de negocio
 
 - Nada del correo afecta saldos hasta que el usuario lo aprueba.
@@ -118,12 +166,21 @@ borrar la regla, para que las próximas compras lleguen bien clasificadas.
 - El parser de BAC espera la tabla Etiqueta/Valor de "Notificación de
   transacción" (Comercio, Fecha, tarjeta enmascarada, Autorización, Referencia,
   Tipo de Transacción, Monto). Si BAC cambia la plantilla, los correos se ignoran
-  hasta ajustar el parser.
+  hasta ajustar el parser; desde 3.3.0 la página de Bancos lo avisa.
+- **Si cambia la plantilla**: (1) confirmarlo con "Probar formato" y un aviso
+  reciente; (2) guardar ese aviso real (HTML, "Mostrar original") como fixture
+  en `src/lib/mail/parsers/fixtures/`, sin datos sensibles; (3) ajustar
+  `bac.ts` para que entienda el formato nuevo **sin dejar de entender el
+  viejo**; (4) agregar el test en `bac.test.ts` y correr `npm test`;
+  (5) desplegar. Los avisos que no se leyeron se recuperan sincronizando de
+  nuevo solo si están dentro de la ventana de lectura (un día antes de la
+  última lectura).
 
 ## Pendiente / fuera de alcance
 
 - Lectura automática programada: descartada (I2); se sincroniza a mano.
-- Solo Gmail; IMAP queda como alternativa futura tras la misma interfaz.
+- Gmail y Outlook personal (3.3.0); Outlook de empresa (Microsoft 365) e IMAP
+  quedan como alternativa futura tras la misma interfaz (`MailProvider`).
 - Solo gastos con tarjeta de crédito: no importa débitos, transferencias ni
   reversos.
 - (Hecho en 3.1.0) Pantalla de reglas de comercio (I6).
@@ -146,3 +203,6 @@ borrar la regla, para que las próximas compras lleguen bien clasificadas.
   lectura es siempre manual (I2); la lectura programada de v1.3.1 se descartó.
 - **2026-10-19 (v3.1.0, en desarrollo)** — Pantalla de reglas de comercio (I6).
   Los parsers de otros bancos y de débitos esperan correos de ejemplo.
+- **2026-10-28 (v3.3.0)** — Outlook personal (I8, una conexión
+  por usuario), resultado y errores de la última lectura, alerta de plantilla
+  cambiada, "Probar formato" y aceptación automática al sincronizar (I7).

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { encryptToken } from "@/lib/mail/crypto";
+import { replaceConnection } from "@/lib/mail/connection";
 import { exchangeCode, getProfileEmail } from "@/lib/mail/gmail";
 
 export const dynamic = "force-dynamic";
@@ -25,19 +25,14 @@ export async function GET(request: NextRequest) {
     if (!tokens.refresh_token) return back("sin-token");
 
     const email = await getProfileEmail(tokens.access_token);
-    const supabase = await createClient();
-    const { error } = await supabase.from("mail_connections").upsert(
-      {
-        user_id: user.id,
-        provider: "gmail",
-        email,
-        refresh_token_enc: encryptToken(tokens.refresh_token),
-        scopes: tokens.scope ?? null,
-        last_synced_at: null,
-      },
-      { onConflict: "user_id,provider" },
-    );
-    if (error) return back("error");
+    // 3.3.0: una conexión por usuario; reemplaza la anterior (p. ej. Outlook).
+    const saved = await replaceConnection(await createClient(), user.id, {
+      provider: "gmail",
+      email,
+      refreshToken: tokens.refresh_token,
+      scopes: tokens.scope ?? null,
+    });
+    if (!saved) return back("error");
   } catch {
     return back("error");
   }

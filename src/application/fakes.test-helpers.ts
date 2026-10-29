@@ -35,6 +35,7 @@ import type {
   MovementRepository,
   NewFinancing,
   NewMovement,
+  OpenPending,
   PendingPurchase,
   PendingRepository,
   NewSharedNotice,
@@ -47,12 +48,17 @@ import { InfrastructureError } from "./ports.ts";
 type Product = { name: string; currency: Currency; archived: boolean; bank_id: string | null };
 type CategoryRow = CategoryFields & { archived: boolean };
 type BankRow = BankFields & { archived: boolean };
-type PendingRow = PendingPurchase & { status: string; bank_id?: string | null };
+type PendingSeed = PendingPurchase & {
+  bank_id?: string | null;
+  card_id?: string | null;
+  suggested_category?: string | null;
+};
+type PendingRow = PendingSeed & { status: string };
 
 export function fakeStore(seed: {
   accounts?: Record<string, Currency>;
   cards?: Record<string, Currency>;
-  pending?: (PendingPurchase & { bank_id?: string | null })[];
+  pending?: PendingSeed[];
   categories?: Record<string, CategoryRow>;
   banks?: Record<string, BankRow>;
   /** id → nombre. */
@@ -524,6 +530,16 @@ export function fakeStore(seed: {
       const p = pending.get(id);
       return p && p.status === "pending" ? p : null;
     },
+    listOpen: async () =>
+      [...pending.values()]
+        .filter((p) => p.status === "pending")
+        .map(
+          (p): OpenPending => ({
+            ...p,
+            card_id: p.card_id ?? null,
+            suggested_category: p.suggested_category ?? null,
+          }),
+        ),
     markApproved: async (id) => {
       const p = pending.get(id);
       if (p) p.status = "approved";

@@ -40,6 +40,7 @@ import {
   type FreshStartRepository,
   type MerchantRuleRepository,
   type MovementRepository,
+  type OpenPending,
   type PendingPurchase,
   type PendingRepository,
 } from "@/application";
@@ -802,6 +803,16 @@ export function supabaseRepositories(supabase: SupabaseClient) {
         .eq("status", "pending")
         .maybeSingle();
       return (data as PendingPurchase | null) ?? null;
+    },
+    async listOpen() {
+      const { data, error } = await supabase
+        .from("pending_transactions")
+        .select("id, merchant, amount, currency, occurred_on, card_id, suggested_category")
+        .eq("status", "pending")
+        .eq("archived", false)
+        .order("occurred_on", { ascending: true });
+      check(error, "No se pudieron leer las compras por confirmar");
+      return (data ?? []) as OpenPending[];
     },
     async markApproved(id, movementId, cardId) {
       const { error } = await supabase

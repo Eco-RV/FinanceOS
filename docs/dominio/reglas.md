@@ -128,6 +128,8 @@ Hasta 3.0.0 se llamaban S1–S3 (chocaban con S1 = SINPE); desde 3.1.0 son A1–
 | I4 | Un pendiente no toca saldos hasta aprobarse. | — | Decidido · Implementado 1.3.0 |
 | I6 | Las **reglas de comercio** (comercio → categoría) se aprenden al aprobar un pendiente; el usuario las cambia (a una categoría de gasto activa, G4) o las borra en Ajustes → Bancos → Reglas de comercio. Una regla borrada se vuelve a aprender. | Rechaza (categoría desactivada) | Decidido 2026-10-19 · Implementado 3.1.0 |
 | I5 | Un pendiente se aprueba contra cualquier tarjeta (bimoneda, T1) y va al saldo de su moneda; se rechaza una moneda no soportada. | Rechaza | Decidido · Implementado 1.3.0 · Cambiado 2.0.0 |
+| I7 | **Aceptación automática** (interruptor en Compras por confirmar, `profiles.preferences.autoApprovePending`): al sincronizar, cada compra por confirmar con tarjeta se aprueba sola con la categoría de su regla de comercio o, sin regla, con "Otros" (que no se aprende como regla). Sin tarjeta reconocida, o con "Otros" desactivada, queda por confirmar. | — | Decidido 2026-10-27 · Implementado 3.3.0 |
+| I8 | **Una conexión de correo por usuario**, Gmail u Outlook personal; conectar uno reemplaza al otro. El mismo formato de banco sirve para los dos buzones. | — | Decidido 2026-10-27 · Implementado 3.3.0 |
 
 ## Cuenta del usuario (2.6.0)
 
