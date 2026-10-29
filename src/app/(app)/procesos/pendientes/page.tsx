@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/form-field";
 import { BackLink } from "@/components/back-link";
 import { approvePending, rejectPending } from "./actions";
-import { SyncButton } from "./sync-button";
+import { AutoApproveToggle, SyncButton } from "./sync-button";
+import { getPreferencesRaw } from "@/lib/preferences";
+import { readAutoApprove } from "@/domain";
 
 export default async function PendientesPage() {
   await requireUser();
@@ -21,6 +23,7 @@ export default async function PendientesPage() {
     { data: catData },
     { data: bankData },
     { data: connData },
+    rawPrefs,
   ] = await Promise.all([
     supabase
       .from("pending_transactions")
@@ -41,6 +44,7 @@ export default async function PendientesPage() {
       .order("name", { ascending: true }),
     supabase.from("banks").select("id, name"),
     supabase.from("mail_connections").select("email, last_synced_at").maybeSingle(),
+    getPreferencesRaw(),
   ]);
 
   const pending = (pendingData ?? []) as PendingTransaction[];
@@ -59,7 +63,12 @@ export default async function PendientesPage() {
             categoría para registrarlas como gasto.
           </p>
         </div>
-        {connData ? <SyncButton /> : null}
+        {connData ? (
+          <div className="flex flex-col items-end gap-2">
+            <SyncButton />
+            <AutoApproveToggle on={readAutoApprove(rawPrefs)} />
+          </div>
+        ) : null}
       </div>
 
       {!connData ? (

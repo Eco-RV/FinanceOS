@@ -10,6 +10,7 @@ import {
   validateProfile,
   assertDeleteConfirmation,
   readPreferences,
+  readAutoApprove,
 } from "./profile.ts";
 
 const rule = (id: string) => (e: unknown) => e instanceof DomainError && e.rule === id;
@@ -74,4 +75,10 @@ test("U9: preferencias con valores por defecto", () => {
   assert.deepEqual(readPreferences(null), { baseCurrency: "CRC", dateFormat: "corto" });
   assert.deepEqual(readPreferences({ baseCurrency: "USD", dateFormat: "largo" }), { baseCurrency: "USD", dateFormat: "largo" });
   assert.deepEqual(readPreferences({ baseCurrency: "EUR", dateFormat: "x" }), { baseCurrency: "CRC", dateFormat: "corto" });
+});
+
+test("I7: la aceptación automática está apagada salvo que se haya encendido", () => {
+  assert.equal(readAutoApprove(null), false);
+  assert.equal(readAutoApprove({ autoApprovePending: "true" }), false);
+  assert.equal(readAutoApprove({ autoApprovePending: true }), true);
 });

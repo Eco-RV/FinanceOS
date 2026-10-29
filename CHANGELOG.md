@@ -1,5 +1,39 @@
 # Changelog
 
+## 3.3.0 — 2026-10-28
+
+Correo: Outlook, mantenimiento de Bancos y aceptación automática.
+
+### Bancos y correo
+
+- **Outlook personal** (outlook.com, hotmail, live) como buzón para leer los
+  avisos, por Microsoft Graph y solo lectura. Una conexión de correo por
+  usuario: conectar Outlook reemplaza a Gmail y al revés (I8). El formato del
+  BAC es el mismo para los dos.
+- La card **Correo** muestra el proveedor, el resultado de la última lectura
+  ("3 nuevas · 1 sin leer") y, si falló, el error con "Reconectar".
+- Por banco: "Último aviso leído" y una **alerta si la plantilla pudo
+  cambiar** (llegaron avisos que el formato no entendió).
+- **Probar formato**: pegar un aviso y ver qué lee el formato, o qué etiquetas
+  encontró si no lo entiende.
+
+### Compras por confirmar
+
+- Interruptor **Aceptar solas al sincronizar** (I7): cada compra con tarjeta
+  se aprueba sola con la categoría de su regla o con "Otros" (que no se
+  aprende como regla). Sin tarjeta reconocida queda por confirmar.
+
+### Base de datos (correr a mano, DESPUÉS de todo 3.2.0)
+- Correr `supabase/Versionamiento/3.3.0/00_mail_providers.sql`
+  (`provider` acepta `outlook`, una conexión por usuario, resultado y error
+  de la lectura, marcas por banco). Sin este SQL Gmail sigue funcionando, pero
+  Outlook y el resultado de la lectura no.
+
+### Configuración
+- Registrar la app en Azure y poner `MICROSOFT_CLIENT_ID` /
+  `MICROSOFT_CLIENT_SECRET` (ver `docs/produccion/guia-produccion.md`, sección
+  Outlook).
+
 ## 3.2.1 — 2026-10-24
 
 Pulido del Resumen y tipografía.
@@ -19,7 +53,7 @@ Pulido del Resumen y tipografía.
   fila propia.
 - Esqueleto de carga del Resumen con la nueva forma.
 
-### Base de datos
+### Base de datos (correr a mano, DESPUÉS de todo 3.2.0)
 - Nada que correr: los favoritos se guardan en `profiles.preferences` (SQL 2.6.0).
 
 ### Configuración
@@ -334,7 +368,7 @@ red de prueba (testnet).
   colones (último tipo de cambio), **Enviar** a otra persona con pantalla de
   revisión y aviso de posible estafa, y **Recibir** con QR y copiar dirección.
 
-### Base de datos
+### Base de datos (correr a mano, DESPUÉS de todo 3.2.0)
 - Sin cambios.
 
 ### Configuración
@@ -559,7 +593,7 @@ Rediseño visual: superficies más limpias, microinteracciones y tema oscuro.
 ### Dependencias
 - Se quitó `next-themes` (el tema lo maneja la app).
 
-### Base de datos
+### Base de datos (correr a mano, DESPUÉS de todo 3.2.0)
 - Sin cambios.
 
 ### Configuración
@@ -749,7 +783,7 @@ sin IA ni tokens, con una bandeja para confirmarlas.
 - Página pública `/privacidad` (requisito de Google OAuth) y `npm test`.
 - Historia de usuario nueva: `docs/historias-usuario/bancos.md`.
 
-### Base de datos
+### Base de datos (correr a mano, DESPUÉS de todo 3.2.0)
 - `supabase/Versionamiento/1.3.0/00_banks_and_pending.sql`: tablas `banks`,
   `mail_connections`, `pending_transactions`, `merchant_rules` y
   `credit_cards.bank_id`.
