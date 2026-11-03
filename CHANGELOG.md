@@ -1,5 +1,38 @@
 # Changelog
 
+## 3.4.0 — 2026-11-02
+
+Salida a los early birds: la guía de producción recorrida y la política de
+privacidad al día. Sin cambios de funciones.
+
+### Privacidad
+
+- La política de privacidad cubre **Outlook**: Microsoft en la lista de
+  servicios, los permisos que se piden (`Mail.Read`, `User.Read`,
+  `offline_access`), qué se lee, una sola conexión de correo y cómo revocar
+  el permiso.
+- Aclara que un aviso del banco puede registrarse solo con **Aceptar solas al
+  sincronizar** (I7).
+
+### Producción
+
+- `docs/produccion/guia-produccion.md` pasa a 3.4.0 con el estado de cada
+  paso: auditoría RLS sin hallazgos, Sentry recibiendo errores, funciones de
+  Vercel en `pdx1` (misma región que Supabase, `us-west-2`), Outlook
+  registrado en Azure. Pospuestos: plantillas de correo en español y el
+  primer respaldo. Sin *leaked password protection* (plan gratis).
+- La guía suma el SQL 3.3.0 y la prueba de registro con un correo fuera del
+  equipo de Supabase (el SMTP de fábrica podría no entregarle).
+
+### Base de datos
+
+- Sin SQL nuevo. Debe estar corrido todo `3.2.0/` y `3.3.0/`.
+
+### Configuración
+
+- Vercel: región de funciones `pdx1`, `NEXT_PUBLIC_SENTRY_DSN`,
+  `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`.
+
 ## 3.3.0 — 2026-10-28
 
 Correo: Outlook, mantenimiento de Bancos y aceptación automática.

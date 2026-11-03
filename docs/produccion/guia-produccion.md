@@ -1,18 +1,23 @@
-# Guía de producción (3.2.0)
+# Guía de producción (3.4.0)
 
 Lo que hay que configurar **fuera del código** para abrir Finance OS a los
 primeros usuarios. Cada paso dice dónde se hace y cómo comprobarlo. Plan
-general en [`plan-3.2.0.md`](./plan-3.2.0.md).
+general en [`plan-3.2.0.md`](./plan-3.2.0.md). La 3.4.0 es la salida a los
+early birds: esta guía recorrida y anotada (estado en §8).
 
 ## 1. Supabase · base de datos
 
 1. Correr en el SQL Editor, en orden, `supabase/Versionamiento/3.2.0/`:
    - `00_auditoria_rls.sql`: solo lee. Revisar que cada bloque dé lo esperado
-     (lo dice el comentario de cada uno).
+     (lo dice el comentario de cada uno). ✅ Revisada sin hallazgos (2026-11-02).
    - `01_feedback.sql`: buzón de comentarios. ✅ Ya corrido (2026-10-21).
    - `02_feedback_admin.sql`: rol admin con tu correo. ✅ Ya corrido.
-2. **Región**: en Settings → General, anotar la región del proyecto. La de las
-   funciones de Vercel debe ser la misma o la más cercana (ver §4).
+2. Después, `supabase/Versionamiento/3.3.0/00_mail_providers.sql` (Outlook,
+   una conexión de correo por usuario, resultado de la lectura). Sin él Gmail
+   sigue funcionando, pero Outlook y el resultado de la lectura no.
+3. **Región**: en Settings → General, anotar la región del proyecto. La de las
+   funciones de Vercel debe ser la misma o la más cercana (ver §4). Hoy:
+   `us-west-2` (Oregon).
 
 ## 2. Supabase · autenticación
 
@@ -71,7 +76,7 @@ Authentication → Emails → SMTP Settings.
 
 | Dónde | Qué | Valor |
 |---|---|---|
-| Settings → Functions → Region | Región de las funciones | La misma de Supabase (§1.2). |
+| Settings → Functions → Region | Región de las funciones | La misma de Supabase (§1.3). Supabase está en `us-west-2` (Oregon) → Vercel **Portland `pdx1`**. |
 | Settings → Environment Variables (Production) | `NEXT_PUBLIC_SENTRY_DSN` | El DSN del proyecto de Sentry (§5). |
 | | `NEXT_PUBLIC_FEATURE_CONSTELLATION` | **No poner** (la Constelación queda apagada hasta la 4.0.0). |
 | | `PERF_LOG`, `NEXT_PUBLIC_PERF_LOG` | No poner (solo para medir). |
@@ -140,10 +145,17 @@ Gmail. Los avisos de cuota por correo (F8) siguen saliendo solo desde Gmail.
 
 ## 8. Antes de anunciar
 
-- [ ] §1 auditoría sin hallazgos.
+- [x] §1 auditoría sin hallazgos.
 - [ ] §2 plantillas en español y leaked password protection (si el plan lo permite).
-- [ ] §3 SMTP propio (o aceptar el riesgo con pocos early birds).
-- [ ] §4 región y variables en Vercel.
-- [ ] §5 Sentry recibiendo un error de prueba.
-- [ ] §7 primer respaldo hecho y guardado.
+  Plantillas: pospuestas por decisión (2026-11-02); los correos salen con el texto de fábrica de Supabase.
+  Leaked password protection: no (plan gratis, 2026-11-02).
+- [ ] §1 SQL 3.3.0 corrido.
+- [ ] §3 SMTP propio (o aceptar el riesgo con pocos early birds). Probar
+  primero: registrarse con un correo que **no** sea del equipo de Supabase; si
+  no llega la confirmación, el SMTP propio es obligatorio.
+- [x] §4 región (`pdx1`) y `NEXT_PUBLIC_SENTRY_DSN` en Vercel (2026-11-02). `MICROSOFT_*` y app de Azure (2026-11-02).
+- [x] §5 Sentry recibiendo un error de prueba (2026-11-02).
+- [ ] §7 primer respaldo hecho y guardado. Pospuesto (2026-11-02).
 - [ ] Términos y Privacidad revisados por una persona (`/terminos`, `/privacidad`).
+  Privacidad ya cubre Outlook y la aceptación automática (3.4.0).
+- [ ] [Guion de prueba](./guion-prueba-early-bird.md) recorrido con una cuenta nueva.
