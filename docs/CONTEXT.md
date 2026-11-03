@@ -267,6 +267,7 @@ Variables de entorno de la importación de correo (ver `.env.example`):
 | 3.2 | Salida a producción para los primeros usuarios (early birds): promesa única "no pagar intereses" con funciones por logros, buzón de comentarios, velocidad y fluidez, seguridad multiusuario y pulido UI/UX (`docs/produccion/plan-3.2.0.md`) | ✅ v3.2.0 (en `main`) |
 | 3.2.1 | Fuente Oswald en títulos, cifras y botones; favoritos editables en el Resumen (U11) y Resumen reordenado | ✅ v3.2.1 (en `main`) |
 | 3.3 | Correo: Outlook personal (I8), mantenimiento de Bancos (resultado, errores, alerta de plantilla, Probar formato) y aceptación automática de compras (I7) | ✅ v3.3.0 (en `main`) |
+| 3.4 | Salida a los early birds: guía de producción recorrida (Sentry, región `pdx1`, Outlook en Azure) y Privacidad con Outlook e I7 | ✅ v3.4.0 |
 | 4.0 | Constelación completa: Apoyos (Trustless Work), Academia, letra grande, encaje con Finance OS (Fase 7), estrella ↔ miembro (D13) y guion de prueba (Fase 8) | 📝 plan |
 | 2.8 | Correcciones: día de corte al siguiente corte (BAC), abono anticipado, abono en otra moneda con tipo de cambio, SINPE y débito en el gasto rápido, tarjetas de débito y detalle de cuenta, gasto fijo con débito | ✅ v2.8.0 (en `main`) |
 

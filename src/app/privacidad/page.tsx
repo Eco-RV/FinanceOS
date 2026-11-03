@@ -9,11 +9,11 @@ export const metadata: Metadata = {
  * 3.2.0 · Fase 4: reescrita para varios usuarios (antes decía "de uso
  * individual"). Conserva la sección de Google (requisito de la verificación
  * de los permisos de Gmail). Borrador: revisar con una persona antes de
- * anunciar la app.
+ * anunciar la app. 3.4.0: Outlook (I8) y la aceptación automática (I7).
  */
 export default function PrivacidadPage() {
   return (
-    <LegalPage title="Política de privacidad" updated="21 de octubre de 2026">
+    <LegalPage title="Política de privacidad" updated="2 de noviembre de 2026">
       <p>
         Finance OS es una aplicación para ordenar tus finanzas personales: tarjetas, cuentas, gastos y lo que actives.
         Esta política explica qué datos guarda, para qué y qué control tienes sobre ellos. Se rige por la Ley 8968 de
@@ -65,6 +65,9 @@ export default function PrivacidadPage() {
         <li>
           <strong>Google:</strong> solo si entras con Google o conectas tu Gmail (ver abajo).
         </li>
+        <li>
+          <strong>Microsoft:</strong> solo si conectas tu Outlook (ver abajo).
+        </li>
       </ul>
       <p>
         El tipo de cambio se consulta a la API pública del Ministerio de Hacienda; esa consulta no lleva ningún dato
@@ -103,8 +106,9 @@ export default function PrivacidadPage() {
       </p>
       <p>
         De cada aviso se extraen comercio, fecha, monto, moneda, últimos cuatro dígitos de la tarjeta, número de
-        autorización y referencia, para proponerte un gasto que tú confirmas. No se guarda el contenido completo de
-        los correos. El token de acceso a Gmail se guarda cifrado (AES-256-GCM) y solo lo usa el servidor.
+        autorización y referencia, para proponerte un gasto que tú confirmas (o que se registra solo, si activas
+        &quot;Aceptar solas al sincronizar&quot;). No se guarda el contenido completo de los correos. El token de
+        acceso a Gmail se guarda cifrado (AES-256-GCM) y solo lo usa el servidor.
       </p>
       <p>
         Puedes desconectar tu correo en Ajustes → Bancos (se borra el token) o revocar el permiso en{" "}
@@ -116,6 +120,24 @@ export default function PrivacidadPage() {
       <p className="text-muted-foreground">
         El uso de la información recibida de las API de Google cumple con la Política de datos de usuario de los
         servicios de API de Google, incluidos los requisitos de uso limitado.
+      </p>
+
+      <h2>Tu cuenta de Outlook</h2>
+      <p>
+        Si conectas tu Outlook (outlook.com, hotmail o live), la app solicita a Microsoft los permisos{" "}
+        <code>Mail.Read</code> (solo lectura), <code>User.Read</code> (para mostrar qué correo conectaste) y{" "}
+        <code>offline_access</code> (para sincronizar cuando tú lo pides sin volver a iniciar sesión). Igual que con
+        Gmail, únicamente se leen los correos de los remitentes bancarios que registras en Ajustes → Bancos, se
+        extraen los mismos datos del aviso y no se guarda el contenido completo. La app no envía, modifica ni borra
+        correos de Outlook. El token se guarda cifrado (AES-256-GCM) y solo lo usa el servidor.
+      </p>
+      <p>
+        Tienes una sola conexión de correo: conectar Outlook desconecta Gmail y al revés. Puedes desconectarlo en
+        Ajustes → Bancos (se borra el token) o revocar el permiso en{" "}
+        <a className="underline" href="https://account.live.com/consent/Manage">
+          account.live.com/consent/Manage
+        </a>
+        .
       </p>
 
       <h2>Cambios</h2>
